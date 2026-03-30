@@ -190,19 +190,19 @@ export default function JoinPage() {
             <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>Tell us who you are and what you do.</p>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Full name</label>
-              <input type="text" placeholder="Sara Rodriguez" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} />
+              <input autoComplete="name" type="text" placeholder="Sara Rodriguez" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Email</label>
-              <input type="email" placeholder="sara@example.com" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
+              <input autoComplete="email" type="email" placeholder="sara@example.com" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Role / title</label>
-              <input type="text" placeholder="AI Automation Engineer" value={role} onChange={e => setRole(e.target.value)} style={inputStyle} />
+              <input autoComplete="organization-title" type="text" placeholder="AI Automation Engineer" value={role} onChange={e => setRole(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Location</label>
-              <input type="text" placeholder="Barcelona, Spain" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="text" placeholder="Barcelona, Spain" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Availability</label>
@@ -221,11 +221,11 @@ export default function JoinPage() {
             <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>This is what employers see first.</p>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>One-line bio</label>
-              <input type="text" placeholder="Builds Claude-powered automation tools for healthcare teams" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="text" placeholder="Builds Claude-powered automation tools for healthcare teams" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>What do you build with Claude?</label>
-              <textarea placeholder="Describe your Claude work, what problems you solve, who you have worked with..." value={about} onChange={e => setAbout(e.target.value)} rows={5}
+              <textarea autoComplete="off" placeholder="Describe your Claude work, what problems you solve, who you have worked with..." value={about} onChange={e => setAbout(e.target.value)} rows={5}
                 style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
           </div>
@@ -245,23 +245,23 @@ export default function JoinPage() {
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Project title</label>
-              <input type="text" placeholder="Automated reporting pipeline" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="text" placeholder="e.g. Automated reporting pipeline" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>What did you build?</label>
-              <textarea placeholder="Describe what the project does and the problem it solves" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+              <textarea autoComplete="off" placeholder="Describe what the project does and the problem it solves" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>How did you use Claude?</label>
-              <textarea placeholder="Describe your prompting approach and how you structured the workflow" value={projectPrompt} onChange={e => setProjectPrompt(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+              <textarea autoComplete="off" placeholder="Describe your prompting approach and how you structured the workflow" value={projectPrompt} onChange={e => setProjectPrompt(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>What was the outcome?</label>
-              <input type="text" placeholder="Cut reporting time by 80%, saved 12 hours per week" value={projectOutcome} onChange={e => setProjectOutcome(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="text" placeholder="e.g. Cut reporting time by 80%, saved 12 hours per week" value={projectOutcome} onChange={e => setProjectOutcome(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Project URL</label>
-              <input type="url" placeholder="https://" value={projectUrl} onChange={e => setProjectUrl(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="url" placeholder="https://" value={projectUrl} onChange={e => setProjectUrl(e.target.value)} style={inputStyle} />
             </div>
           </div>
         )}
@@ -295,19 +295,19 @@ export default function JoinPage() {
             <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>Help employers find your work. All optional.</p>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>GitHub</label>
-              <input type="url" placeholder="https://github.com/username" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="url" placeholder="https://github.com/username" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>X / Twitter</label>
-              <input type="url" placeholder="https://x.com/username" value={xUrl} onChange={e => setXUrl(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="url" placeholder="https://x.com/username" value={xUrl} onChange={e => setXUrl(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>LinkedIn</label>
-              <input type="url" placeholder="https://linkedin.com/in/username" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="url" placeholder="https://linkedin.com/in/username" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>Personal website</label>
-              <input type="url" placeholder="https://yoursite.com" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="url" placeholder="https://yoursite.com" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={inputStyle} />
             </div>
           </div>
         )}
