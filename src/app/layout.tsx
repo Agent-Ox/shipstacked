@@ -15,14 +15,14 @@ export const metadata: Metadata = {
     url: 'https://claudhire.com',
     title: 'ClaudHire — Hire Claude-Native Talent',
     description: 'The hiring platform for Claude-native builders. Find verified developers, prompt engineers, and AI automation specialists who prove their skills with real projects.',
-    images: [{ url: '/og-default.svg', width: 1200, height: 630, alt: 'ClaudHire' }],
+    images: [{ url: '/og-default.png', width: 1200, height: 630, alt: 'ClaudHire' }],
   },
   twitter: {
     card: 'summary_large_image',
     site: '@ClaudHire',
     title: 'ClaudHire — Hire Claude-Native Talent',
     description: 'The hiring platform for Claude-native builders. Verified skills. Real projects. Free to prove you can build.',
-    images: ['/og-default.svg'],
+    images: ['/og-default.png'],
   },
   robots: {
     index: true,
