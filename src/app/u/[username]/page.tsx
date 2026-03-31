@@ -33,13 +33,13 @@ export async function generateMetadata(
       description,
       url,
       type: 'profile',
-      images: [{ url: `/og-default.png`, width: 1200, height: 630, alt: title }],
+      images: [{ url: `/og-default.svg`, width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-default.png'],
+      images: ['/og-default.svg'],
     },
   }
 }
