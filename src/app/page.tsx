@@ -170,6 +170,7 @@ export default function Home() {
           <a href="#pricing">Pricing</a>
         </div>
         <div className="nav-right">
+          <a href="/login" style={{ fontSize: '0.8rem', color: 'var(--text)', textDecoration: 'none', opacity: 0.8 }}>Sign in</a>
           <Link href="/signup" className="nav-btn-primary">Create profile</Link>
         </div>
       </nav>
