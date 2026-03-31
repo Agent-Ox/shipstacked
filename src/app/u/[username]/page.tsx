@@ -72,13 +72,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
   const allSkillNames = skills?.map(s => s.name) || []
 
+  const profileUrl = `https://claudhire.com/u/${profile.username}`
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: profile.full_name,
     jobTitle: profile.role,
     description: profile.bio || profile.about,
-    url: `https://claudhire.com/u/${profile.username}`,
+    url: profileUrl,
     ...(profile.location && { address: { '@type': 'PostalAddress', addressLocality: profile.location } }),
     ...(profile.github_url && { sameAs: [profile.github_url, profile.x_url, profile.linkedin_url, profile.website_url].filter(Boolean) }),
     ...(allSkillNames.length > 0 && { knowsAbout: allSkillNames }),
@@ -95,7 +97,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <a href="/" style={{ fontSize: 16, fontWeight: 700, color: '#1d1d1f', textDecoration: 'none', letterSpacing: '-0.02em' }}>
             ClaudHire<span style={{ color: '#0071e3' }}>.</span>
           </a>
-          <a href="/join" style={{ padding: '0.4rem 1rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+          <a href="/signup" style={{ padding: '0.4rem 1rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
             Create your profile →
           </a>
         </nav>
@@ -200,14 +202,38 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingTop: '1.5rem', borderTop: '1px solid #e0e0e5' }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', paddingTop: '1.5rem', borderTop: '1px solid #e0e0e5', marginBottom: '2rem' }}>
             {profile.github_url && <a href={profile.github_url} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>GitHub →</a>}
             {profile.x_url && <a href={profile.x_url} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>X →</a>}
             {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>LinkedIn →</a>}
             {profile.website_url && <a href={profile.website_url} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>Website →</a>}
           </div>
 
-          <div style={{ marginTop: '3rem', padding: '1.5rem', background: '#f5f5f7', borderRadius: 14, textAlign: 'center' }}>
+          <div style={{ padding: '1.5rem', background: '#f5f5f7', borderRadius: 14, marginBottom: '1rem' }}>
+            <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem', textAlign: 'center' }}>Share this profile</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+              
+                href={`https://x.com/intent/tweet?text=Check out ${profile.full_name}'s Claude builder profile&url=${profileUrl}`}
+                target="_blank"
+                style={{ padding: '0.5rem 1.25rem', background: '#000', color: 'white', borderRadius: 20, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                Share on X
+              </a>
+              
+                href={`https://wa.me/?text=Check out ${profile.full_name}'s Claude builder profile: ${profileUrl}`}
+                target="_blank"
+                style={{ padding: '0.5rem 1.25rem', background: '#25D366', color: 'white', borderRadius: 20, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                WhatsApp
+              </a>
+              
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${profileUrl}`}
+                target="_blank"
+                style={{ padding: '0.5rem 1.25rem', background: '#0077b5', color: 'white', borderRadius: 20, fontSize: 13, textDecoration: 'none', fontWeight: 500 }}>
+                LinkedIn
+              </a>
+            </div>
+          </div>
+
+          <div style={{ padding: '1.5rem', background: '#f5f5f7', borderRadius: 14, textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '0.75rem' }}>Are you looking to hire Claude-native talent?</p>
             <a href="/signup?role=employer" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>Post a job on ClaudHire →</a>
           </div>
