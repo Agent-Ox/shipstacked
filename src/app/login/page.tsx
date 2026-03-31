@@ -3,14 +3,12 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
   const supabase = createClient()
 
   const handleLogin = async () => {
@@ -21,7 +19,7 @@ export default function LoginPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      window.location.href = '/dashboard'
     }
   }
 
@@ -65,7 +63,7 @@ export default function LoginPage() {
           {loading ? 'Signing in...' : 'Sign in →'}
         </button>
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 13, color: '#6e6e73' }}>
-          Want to showcase your Claude work? <Link href="/join" style={{ color: '#0071e3', textDecoration: 'none' }}>Create a builder profile →</Link>
+          Want to showcase your Claude work? <Link href="/signup" style={{ color: '#0071e3', textDecoration: 'none' }}>Create a builder profile →</Link>
         </p>
       </div>
     </div>
