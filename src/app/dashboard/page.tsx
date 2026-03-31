@@ -22,7 +22,7 @@ export default async function DashboardPage() {
         </a>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <span style={{ fontSize: 13, color: '#6e6e73' }}>{user.email}</span>
-          <Link href="/api/logout" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>Sign out</Link>
+          <a href="/api/logout" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>Sign out</a>
         </div>
       </nav>
 
