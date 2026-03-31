@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import ShareButtons from './ShareButtons'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ username: string }> }
@@ -42,16 +43,6 @@ export async function generateMetadata(
     },
   }
 }
-
-const btnStyle = {
-  padding: '0.5rem 1.25rem',
-  borderRadius: 20,
-  fontSize: 13,
-  textDecoration: 'none',
-  fontWeight: 500,
-  color: 'white',
-  display: 'inline-block',
-} as const
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params
@@ -95,9 +86,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     ...(profile.github_url && { sameAs: [profile.github_url, profile.x_url, profile.linkedin_url, profile.website_url].filter(Boolean) }),
     ...(allSkillNames.length > 0 && { knowsAbout: allSkillNames }),
   }
-
-  const xShareUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent('Check out ' + profile.full_name + ' on ClaudHire') + '&url=' + encodeURIComponent(profileUrl)
-  const waShareUrl = 'https://wa.me/?text=' + encodeURIComponent('Check out ' + profile.full_name + ' on ClaudHire: ' + profileUrl)
 
   return (
     <>
@@ -234,14 +222,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             {profile.website_url && <a href={profile.website_url} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>Website</a>}
           </div>
 
-          <div style={{ padding: '1.5rem', background: '#f5f5f7', borderRadius: 14, marginBottom: '1rem' }}>
-            <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem', textAlign: 'center' }}>Share this profile</p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href={xShareUrl} target="_blank" style={{ ...btnStyle, background: '#000' }}>Share on X</a>
-              <a href={waShareUrl} target="_blank" style={{ ...btnStyle, background: '#25D366' }}>WhatsApp</a>
-              <a href={profileUrl} style={{ ...btnStyle, background: '#0071e3' }}>Copy link</a>
-            </div>
-          </div>
+          <ShareButtons name={profile.full_name} url={profileUrl} />
 
           <div style={{ padding: '1.5rem', background: '#f5f5f7', borderRadius: 14, textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '0.75rem' }}>Looking to hire Claude-native talent?</p>
