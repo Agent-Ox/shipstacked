@@ -34,14 +34,20 @@ export default async function DashboardPage() {
 
         {profile ? (
           <div style={{ display: 'grid', gap: '1rem' }}>
+
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '0.25rem' }}>Your profile</p>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>claudhire.com/u/{profile.username}</p>
               </div>
-              <Link href={`/u/${profile.username}`} style={{ padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-                View →
-              </Link>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link href="/dashboard/edit" style={{ padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                  Edit
+                </Link>
+                <Link href={`/u/${profile.username}`} style={{ padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                  View →
+                </Link>
+              </div>
             </div>
 
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -74,6 +80,7 @@ export default async function DashboardPage() {
                 </a>
               </div>
             </div>
+
           </div>
         ) : (
           <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '2rem', textAlign: 'center' }}>
