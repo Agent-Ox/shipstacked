@@ -11,17 +11,19 @@ export default async function PostJobPage() {
     redirect('/login?next=/post-job')
   }
 
-  // Check subscription
+  // Check subscription — must be active and not expired
+  const now = new Date().toISOString()
   const { data: sub } = await supabase
     .from('subscriptions')
-    .select('id')
+    .select('id, product, expires_at')
     .eq('email', user.email)
-    .in('product', ['job_post', 'full_access'])
     .eq('status', 'active')
+    .in('product', ['job_post', 'full_access'])
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
     .maybeSingle()
 
   if (!sub) {
-    redirect('/#pricing?message=subscription_required')
+    redirect('/#pricing')
   }
 
   return <PostJobForm employerEmail={user.email!} />
