@@ -291,13 +291,19 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {hasAccess ? (
             <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center', animationDelay: '0.4s' }}>
               <p style={{ fontSize: 13, color: 'var(--accent2)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem', fontFamily: 'var(--mono)' }}>READY TO HIRE?</p>
-              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>Contact {profile.full_name.split(' ')[0]}</p>
-              <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: '1.25rem', fontWeight: 300 }}>Send them a message directly via email.</p>
-              <a href={`mailto:${profile.email}?subject=Opportunity via ClaudHire&body=Hi ${profile.full_name.split(" ")[0]},%0D%0A%0D%0AI found your profile on ClaudHire and would love to connect.%0D%0A%0D%0A`} style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: 'var(--accent)', color: 'white', borderRadius: 20, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
+                Contact {profile.full_name.split(' ')[0]}
+              </p>
+              <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: '1.25rem', fontWeight: 300 }}>
+                Send them a message directly via email.
+              </p>
+              
+                href={`mailto:${profile.email}?subject=Opportunity via ClaudHire`}
+                style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: 'var(--accent)', color: 'white', borderRadius: 20, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
                 Contact {profile.full_name.split(' ')[0]}
               </a>
-              <p style={{ fontSize: 12, color: 'var(--text3)', marginTop: '0.75rem' }}>Opens your email client with a pre-filled message.</p>
             </div>
+          ) : !resolvedUser ? (
             <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center', animationDelay: '0.4s' }}>
               <p style={{ fontSize: 13, color: 'var(--accent2)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem', fontFamily: 'var(--mono)' }}>FOR EMPLOYERS</p>
               <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>Looking to hire Claude-native talent?</p>
