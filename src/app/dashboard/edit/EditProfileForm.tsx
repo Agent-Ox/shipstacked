@@ -12,6 +12,8 @@ const AI_TOOLS = ['Cursor', 'Replit', 'Bolt', 'Lovable', 'v0', 'Windsurf', 'Midj
 const DOMAINS = ['Legal', 'Healthcare', 'Finance', 'Marketing', 'Education', 'E-commerce', 'Real estate', 'HR', 'Customer support', 'Research', 'Media', 'Gaming']
 const CLAUDE_USE_CASES = ['Automation and workflows', 'Content creation', 'Coding and development', 'Data analysis', 'Customer support', 'Research', 'Document processing', 'API integration', 'Agent systems', 'Education and training']
 
+const MAX_PROJECTS = 5
+
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem 1rem',
   border: '1px solid #d2d2d7', borderRadius: 10,
@@ -36,7 +38,56 @@ function Tag({ label, selected, onClick }: { label: string, selected: boolean, o
   )
 }
 
-export default function EditProfileForm({ profile, projects, skills }: {
+function TagGroup({ label, items, selected, setSelected }: {
+  label: string
+  items: string[]
+  selected: string[]
+  setSelected: (v: string[]) => void
+}) {
+  const allSelected = items.every(i => selected.includes(i))
+
+  const toggleItem = (val: string) => {
+    setSelected(selected.includes(val) ? selected.filter(x => x !== val) : [...selected, val])
+  }
+
+  const toggleAll = () => {
+    setSelected(allSelected ? [] : [...items])
+  }
+
+  return (
+    <div style={{ marginBottom: '1.75rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.6rem' }}>
+        <label style={labelStyle}>{label}</label>
+        <button
+          type="button"
+          onClick={toggleAll}
+          style={{ fontSize: 12, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, padding: 0 }}>
+          {allSelected ? 'Deselect all' : 'Select all'}
+        </button>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {items.map(item => (
+          <Tag key={item} label={item} selected={selected.includes(item)} onClick={() => toggleItem(item)} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+type Project = {
+  id?: string
+  title: string
+  description: string
+  prompt_approach: string
+  outcome: string
+  project_url: string
+}
+
+const emptyProject = (): Project => ({
+  title: '', description: '', prompt_approach: '', outcome: '', project_url: ''
+})
+
+export default function EditProfileForm({ profile, projects: initialProjects, skills }: {
   profile: any
   projects: any[]
   skills: any[]
@@ -59,12 +110,18 @@ export default function EditProfileForm({ profile, projects, skills }: {
   const [linkedinUrl, setLinkedinUrl] = useState(profile.linkedin_url || '')
   const [websiteUrl, setWebsiteUrl] = useState(profile.website_url || '')
 
-  const firstProject = projects[0]
-  const [projectTitle, setProjectTitle] = useState(firstProject?.title || '')
-  const [projectDesc, setProjectDesc] = useState(firstProject?.description || '')
-  const [projectPrompt, setProjectPrompt] = useState(firstProject?.prompt_approach || '')
-  const [projectOutcome, setProjectOutcome] = useState(firstProject?.outcome || '')
-  const [projectUrl, setProjectUrl] = useState(firstProject?.project_url || '')
+  const [projectsList, setProjectsList] = useState<Project[]>(
+    initialProjects.length > 0
+      ? initialProjects.slice(0, MAX_PROJECTS).map(p => ({
+          id: p.id,
+          title: p.title || '',
+          description: p.description || '',
+          prompt_approach: p.prompt_approach || '',
+          outcome: p.outcome || '',
+          project_url: p.project_url || '',
+        }))
+      : [emptyProject()]
+  )
 
   const [selectedUseCases, setSelectedUseCases] = useState<string[]>(byCategory('claude_use_case'))
   const [selectedLLMs, setSelectedLLMs] = useState<string[]>(byCategory('llm'))
@@ -73,8 +130,18 @@ export default function EditProfileForm({ profile, projects, skills }: {
   const [selectedAITools, setSelectedAITools] = useState<string[]>(byCategory('ai_tool'))
   const [selectedDomains, setSelectedDomains] = useState<string[]>(byCategory('domain'))
 
-  const toggle = (arr: string[], setArr: (v: string[]) => void, val: string) => {
-    setArr(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val])
+  const updateProject = (index: number, field: keyof Project, value: string) => {
+    setProjectsList(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p))
+  }
+
+  const addProject = () => {
+    if (projectsList.length < MAX_PROJECTS) {
+      setProjectsList(prev => [...prev, emptyProject()])
+    }
+  }
+
+  const removeProject = (index: number) => {
+    setProjectsList(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleSave = async () => {
@@ -84,50 +151,36 @@ export default function EditProfileForm({ profile, projects, skills }: {
     try {
       const supabase = createClient()
 
-      // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName,
-          role,
-          location,
-          availability,
-          bio,
-          about,
-          github_url: githubUrl,
-          x_url: xUrl,
-          linkedin_url: linkedinUrl,
-          website_url: websiteUrl,
+          full_name: fullName, role, location, availability, bio, about,
+          github_url: githubUrl, x_url: xUrl, linkedin_url: linkedinUrl, website_url: websiteUrl,
         })
         .eq('id', profile.id)
 
       if (profileError) throw profileError
 
-      // Update or insert first project
-      if (projectTitle) {
-        if (firstProject) {
-          await supabase.from('projects').update({
-            title: projectTitle,
-            description: projectDesc,
-            prompt_approach: projectPrompt,
-            outcome: projectOutcome,
-            project_url: projectUrl,
-          }).eq('id', firstProject.id)
-        } else {
-          await supabase.from('projects').insert([{
+      // Delete all existing projects then re-insert
+      await supabase.from('projects').delete().eq('profile_id', profile.id)
+
+      const validProjects = projectsList.filter(p => p.title.trim())
+      if (validProjects.length > 0) {
+        await supabase.from('projects').insert(
+          validProjects.map((p, i) => ({
             profile_id: profile.id,
-            title: projectTitle,
-            description: projectDesc,
-            prompt_approach: projectPrompt,
-            outcome: projectOutcome,
-            project_url: projectUrl,
-          }])
-        }
+            title: p.title,
+            description: p.description,
+            prompt_approach: p.prompt_approach,
+            outcome: p.outcome,
+            project_url: p.project_url,
+            display_order: i,
+          }))
+        )
       }
 
-      // Replace all skills — delete then re-insert
+      // Replace all skills
       await supabase.from('skills').delete().eq('profile_id', profile.id)
-
       const newSkills = [
         ...selectedUseCases.map(name => ({ profile_id: profile.id, category: 'claude_use_case', name })),
         ...selectedLLMs.map(name => ({ profile_id: profile.id, category: 'llm', name })),
@@ -136,10 +189,7 @@ export default function EditProfileForm({ profile, projects, skills }: {
         ...selectedAITools.map(name => ({ profile_id: profile.id, category: 'ai_tool', name })),
         ...selectedDomains.map(name => ({ profile_id: profile.id, category: 'domain', name })),
       ]
-
-      if (newSkills.length > 0) {
-        await supabase.from('skills').insert(newSkills)
-      }
+      if (newSkills.length > 0) await supabase.from('skills').insert(newSkills)
 
       setSaved(true)
       router.refresh()
@@ -152,38 +202,28 @@ export default function EditProfileForm({ profile, projects, skills }: {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-      <nav style={{ borderBottom: '0.5px solid #e0e0e5', padding: '1rem 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100 }}>
+      <nav style={{ borderBottom: '0.5px solid #e0e0e5', padding: '0 2rem', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(20px)', position: 'sticky', top: 0, zIndex: 100 }}>
         <a href="/" style={{ fontSize: 16, fontWeight: 700, color: '#1d1d1f', textDecoration: 'none', letterSpacing: '-0.02em' }}>
           ClaudHire<span style={{ color: '#0071e3' }}>.</span>
         </a>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <a href="/dashboard" style={{ fontSize: 13, color: '#6e6e73', textDecoration: 'none' }}>← Dashboard</a>
-          <a href={`/u/${profile.username}`} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none' }}>View profile →</a>
+          <a href="/dashboard" style={{ fontSize: 13, color: '#6e6e73', textDecoration: 'none' }}>Dashboard</a>
+          <a href={`/u/${profile.username}`} target="_blank" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>View profile</a>
         </div>
       </nav>
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>Edit profile</h1>
-        <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '3rem' }}>Changes are saved instantly and appear on your public profile.</p>
+        <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '3rem' }}>Changes appear on your public profile immediately.</p>
 
-        {error && (
-          <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#c00' }}>
-            {error}
-          </div>
-        )}
-
-        {saved && (
-          <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#1a7f37' }}>
-            ✓ Profile saved successfully.
-          </div>
-        )}
+        {error && <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#c00' }}>{error}</div>}
+        {saved && <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#1a7f37' }}>✓ Profile saved successfully.</div>}
 
         {/* Basics */}
         <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Basics</h2>
-
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Full name</label>
-          <input autoComplete="name" type="text" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} />
+          <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Email</label>
@@ -191,11 +231,11 @@ export default function EditProfileForm({ profile, projects, skills }: {
         </div>
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Role / title</label>
-          <input autoComplete="organization-title" type="text" value={role} onChange={e => setRole(e.target.value)} style={inputStyle} />
+          <input type="text" value={role} onChange={e => setRole(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Location</label>
-          <input autoComplete="off" type="text" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
+          <input type="text" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '2rem' }}>
           <label style={labelStyle}>Availability</label>
@@ -208,79 +248,85 @@ export default function EditProfileForm({ profile, projects, skills }: {
 
         {/* About */}
         <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>About</h2>
-
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>One-line bio</label>
-          <input autoComplete="off" type="text" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
+          <input type="text" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '2rem' }}>
           <label style={labelStyle}>What do you build with Claude?</label>
-          <textarea autoComplete="off" value={about} onChange={e => setAbout(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
+          <textarea value={about} onChange={e => setAbout(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
 
-        {/* Project */}
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Featured project</h2>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Project title</label>
-          <input autoComplete="off" type="text" value={projectTitle} onChange={e => setProjectTitle(e.target.value)} style={inputStyle} />
-        </div>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>What did you build?</label>
-          <textarea autoComplete="off" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-        </div>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>How did you use Claude?</label>
-          <textarea autoComplete="off" value={projectPrompt} onChange={e => setProjectPrompt(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-        </div>
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Outcome</label>
-          <input autoComplete="off" type="text" value={projectOutcome} onChange={e => setProjectOutcome(e.target.value)} style={inputStyle} />
-        </div>
-        <div style={{ marginBottom: '2rem' }}>
-          <label style={labelStyle}>Project URL</label>
-          <input autoComplete="off" type="url" value={projectUrl} onChange={e => setProjectUrl(e.target.value)} style={inputStyle} />
+        {/* Projects */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f' }}>Projects ({projectsList.length}/{MAX_PROJECTS})</h2>
+          {projectsList.length < MAX_PROJECTS && (
+            <button type="button" onClick={addProject} style={{ fontSize: 13, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, padding: 0 }}>
+              + Add project
+            </button>
+          )}
         </div>
 
-        {/* Skills */}
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Skills</h2>
-
-        {[
-          { label: 'Claude use cases', items: CLAUDE_USE_CASES, selected: selectedUseCases, setSelected: setSelectedUseCases },
-          { label: 'Other LLMs', items: LLMS, selected: selectedLLMs, setSelected: setSelectedLLMs },
-          { label: 'Coding languages', items: LANGUAGES, selected: selectedLanguages, setSelected: setSelectedLanguages },
-          { label: 'Frameworks and tools', items: FRAMEWORKS, selected: selectedFrameworks, setSelected: setSelectedFrameworks },
-          { label: 'AI-native platforms', items: AI_TOOLS, selected: selectedAITools, setSelected: setSelectedAITools },
-          { label: 'Domain expertise', items: DOMAINS, selected: selectedDomains, setSelected: setSelectedDomains },
-        ].map(({ label, items, selected, setSelected }) => (
-          <div key={label} style={{ marginBottom: '1.75rem' }}>
-            <label style={labelStyle}>{label}</label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {items.map(item => (
-                <Tag key={item} label={item} selected={selected.includes(item)} onClick={() => toggle(selected, setSelected, item)} />
-              ))}
+        {projectsList.map((p, index) => (
+          <div key={index} style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: '#6e6e73' }}>Project {index + 1}</p>
+              {projectsList.length > 1 && (
+                <button type="button" onClick={() => removeProject(index)} style={{ fontSize: 12, color: '#c00', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                  Remove
+                </button>
+              )}
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={labelStyle}>Project title</label>
+              <input type="text" value={p.title} onChange={e => updateProject(index, 'title', e.target.value)} style={inputStyle} />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={labelStyle}>What did you build?</label>
+              <textarea value={p.description} onChange={e => updateProject(index, 'description', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={labelStyle}>How did you use Claude?</label>
+              <textarea value={p.prompt_approach} onChange={e => updateProject(index, 'prompt_approach', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+            </div>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={labelStyle}>Outcome</label>
+              <input type="text" value={p.outcome} onChange={e => updateProject(index, 'outcome', e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Project URL</label>
+              <input type="url" value={p.project_url} onChange={e => updateProject(index, 'project_url', e.target.value)} style={inputStyle} />
             </div>
           </div>
         ))}
 
+        {/* Skills */}
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', margin: '2rem 0 1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Skills</h2>
+
+        <TagGroup label="Claude use cases" items={CLAUDE_USE_CASES} selected={selectedUseCases} setSelected={setSelectedUseCases} />
+        <TagGroup label="Other LLMs" items={LLMS} selected={selectedLLMs} setSelected={setSelectedLLMs} />
+        <TagGroup label="Coding languages" items={LANGUAGES} selected={selectedLanguages} setSelected={setSelectedLanguages} />
+        <TagGroup label="Frameworks and tools" items={FRAMEWORKS} selected={selectedFrameworks} setSelected={setSelectedFrameworks} />
+        <TagGroup label="AI-native platforms" items={AI_TOOLS} selected={selectedAITools} setSelected={setSelectedAITools} />
+        <TagGroup label="Domain expertise" items={DOMAINS} selected={selectedDomains} setSelected={setSelectedDomains} />
+
         {/* Links */}
         <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Links</h2>
-
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>GitHub</label>
-          <input autoComplete="off" type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} style={inputStyle} />
+          <input type="url" value={githubUrl} onChange={e => setGithubUrl(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>X / Twitter</label>
-          <input autoComplete="off" type="url" value={xUrl} onChange={e => setXUrl(e.target.value)} style={inputStyle} />
+          <input type="url" value={xUrl} onChange={e => setXUrl(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>LinkedIn</label>
-          <input autoComplete="off" type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} style={inputStyle} />
+          <input type="url" value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '2rem' }}>
           <label style={labelStyle}>Personal website</label>
-          <input autoComplete="off" type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={inputStyle} />
+          <input type="url" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} style={inputStyle} />
         </div>
 
         <button
