@@ -95,7 +95,7 @@ export default function NavBar() {
 
         {/* Desktop center links */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }} className="ch-desktop-links">
-          {isHomepage ? (
+          {isHomepage && !navUser ? (
             <>
               <a href="#how" style={{ fontSize: '0.8rem', color: textColor, textDecoration: 'none', opacity: 0.7 }}>How it works</a>
               <a href="#talent" style={{ fontSize: '0.8rem', color: textColor, textDecoration: 'none', opacity: 0.7 }}>Talent</a>
@@ -154,11 +154,16 @@ export default function NavBar() {
           padding: '0.5rem 1.25rem 1rem',
           display: 'flex', flexDirection: 'column',
         }}>
-          {isHomepage ? (
+          {isHomepage && !navUser ? (
             <>
               <a href="#how" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>How it works</a>
               <a href="#talent" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Talent</a>
               <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Pricing</a>
+            </>
+          ) : isHomepage && navUser?.role === 'employer' ? (
+            <>
+              <a href="/talent" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Browse talent</a>
+              <a href="/post-job" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Post a job</a>
             </>
           ) : contextLinks.filter(link => link.href !== dashboardLink).map(link => (
             <a key={link.label} href={link.href || '#'} onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
