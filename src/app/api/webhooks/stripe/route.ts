@@ -30,6 +30,8 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'
+
     // Create auth account if doesn't exist
     const { data: existingUsers } = await supabase.auth.admin.listUsers()
     const alreadyExists = existingUsers?.users?.some((u: any) => u.email === email)
@@ -43,8 +45,7 @@ export async function POST(req: Request) {
       })
     }
 
-    // Generate a magic link for instant login
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'
+    // Generate magic link for instant login on success page
     const { data: linkData } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email,
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
 
     const magicLink = linkData?.properties?.action_link || null
 
-    // Write subscription row with magic link
+    // Write subscription row
     let expiresAt = null
     if (product === 'job_post') {
       const d = new Date()
@@ -76,6 +77,17 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Supabase insert error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Send employer welcome email with password setup link
+    try {
+      await fetch(`${siteUrl}/api/employer-welcome`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      })
+    } catch (e) {
+      console.error('Failed to send employer welcome email:', e)
     }
   }
 
