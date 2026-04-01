@@ -12,13 +12,9 @@ export async function login(formData: FormData) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
+        getAll() { return cookieStore.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
         },
       },
     }
@@ -33,22 +29,29 @@ export async function login(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
-  // Check if employer (has subscription, no builder profile)
   const { data: { user } } = await supabase.auth.getUser()
-  if (user) {
-    const now = new Date().toISOString()
-    const { data: sub } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('email', user.email)
-      .eq('status', 'active')
-      .eq('product', 'full_access')
-      .or(`expires_at.is.null,expires_at.gt.${now}`)
-      .maybeSingle()
+  if (!user) redirect('/login')
 
-    if (sub) {
-      redirect('/employer')
-    }
+  // Role-based redirect
+  const metaRole = user.user_metadata?.role
+
+  if (metaRole === 'employer') {
+    redirect('/employer')
+  }
+
+  // Check subscription (employer who paid before role was set)
+  const now = new Date().toISOString()
+  const { data: sub } = await supabase
+    .from('subscriptions')
+    .select('id')
+    .eq('email', user.email)
+    .eq('status', 'active')
+    .eq('product', 'full_access')
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .maybeSingle()
+
+  if (sub) {
+    redirect('/employer')
   }
 
   redirect('/dashboard')

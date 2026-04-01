@@ -9,33 +9,49 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
       },
     }
   )
 
   const { data: { session } } = await supabase.auth.getSession()
+  const { pathname } = request.nextUrl
 
-  const protectedRoutes = ['/dashboard', '/post-job', '/talent', '/admin', '/employer']
-  const isProtected = protectedRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
-  )
+  // Routes that require auth
+  const authRequired = ['/dashboard', '/post-job', '/talent', '/admin', '/employer']
+  const isProtected = authRequired.some(route => pathname.startsWith(route))
 
   if (isProtected && !session) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
+  }
+
+  // Employer-only routes — if builder tries to access, redirect to dashboard
+  const employerOnly = ['/employer', '/talent', '/post-job']
+  if (session && employerOnly.some(route => pathname.startsWith(route))) {
+    const metaRole = session.user.user_metadata?.role
+    // Only redirect if explicitly a builder (not employer)
+    if (metaRole === 'builder') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // Builder-only routes — if employer tries to access dashboard, redirect to employer
+  if (session && pathname.startsWith('/dashboard')) {
+    const metaRole = session.user.user_metadata?.role
+    if (metaRole === 'employer') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/employer'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

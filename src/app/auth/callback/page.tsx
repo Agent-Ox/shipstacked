@@ -16,18 +16,26 @@ export default function AuthCallbackPage() {
       if (access_token && refresh_token) {
         supabase.auth.setSession({ access_token, refresh_token }).then(async ({ data, error }) => {
           if (!error && data.session) {
-            // Check if employer
+            const user = data.session.user
+            const metaRole = user.user_metadata?.role
+
+            if (metaRole === 'employer') {
+              window.location.href = '/employer'
+              return
+            }
+
+            // Check subscription for employers who paid before role was set
             const now = new Date().toISOString()
             const { data: sub } = await supabase
               .from('subscriptions')
               .select('id')
-              .eq('email', data.session.user.email)
+              .eq('email', user.email)
               .eq('status', 'active')
               .eq('product', 'full_access')
               .or(`expires_at.is.null,expires_at.gt.${now}`)
               .maybeSingle()
 
-            window.location.href = sub ? '/employer' : '/talent'
+            window.location.href = sub ? '/employer' : '/dashboard'
           } else {
             window.location.href = '/login?error=auth'
           }
@@ -38,7 +46,8 @@ export default function AuthCallbackPage() {
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          window.location.href = '/employer'
+          const metaRole = session.user.user_metadata?.role
+          window.location.href = metaRole === 'employer' ? '/employer' : '/dashboard'
         } else {
           window.location.href = '/login?error=auth'
         }
@@ -48,9 +57,7 @@ export default function AuthCallbackPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: 16, color: '#6e6e73' }}>Signing you in...</p>
-      </div>
+      <p style={{ fontSize: 16, color: '#6e6e73' }}>Signing you in...</p>
     </div>
   )
 }

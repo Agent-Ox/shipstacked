@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { getResolvedUser } from '@/lib/user'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import ShareButtons from './ShareButtons'
@@ -52,31 +52,14 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     .select('*')
     .eq('profile_id', profile.id)
 
-  // Check if viewer has active subscription
-  let hasAccess = false
-  try {
-    const serverSupabase = await createServerSupabaseClient()
-    const { data: { user } } = await serverSupabase.auth.getUser()
-    if (user) {
-      const now = new Date().toISOString()
-      const { data: sub } = await serverSupabase
-        .from('subscriptions')
-        .select('id')
-        .eq('email', user.email)
-        .eq('status', 'active')
-        .eq('product', 'full_access')
-        .or(`expires_at.is.null,expires_at.gt.${now}`)
-        .maybeSingle()
-      hasAccess = !!sub
-      // Also allow the profile owner to see their own contact info
-      if (!hasAccess && user.email === profile.email) hasAccess = true
-    }
-  } catch {}
 
   const byCategory = (cat: string) => skills?.filter(s => s.category === cat).map(s => s.name) || []
   const initials = profile.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const profileUrl = 'https://claudhire.com/u/' + profile.username
   const allSkillNames = skills?.map(s => s.name) || []
+
+  const { hasSubscription, user: resolvedUser } = await getResolvedUser()
+  const hasAccess = !!resolvedUser && (resolvedUser.email === profile.email || hasSubscription)
 
   const claudeSkills = byCategory('claude_use_case')
   const languages = byCategory('language')
