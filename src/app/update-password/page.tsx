@@ -1,25 +1,41 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
+  const [ready, setReady] = useState(false)
+  const supabase = createClient()
+
+  useEffect(() => {
+    // Supabase puts the session in the URL fragment after invite
+    // calling getSession() triggers the client to pick it up automatically
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setReady(true)
+      } else {
+        // Try to exchange the fragment tokens
+        supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+            setReady(true)
+          }
+        })
+      }
+    })
+  }, [])
 
   const handleUpdate = async () => {
     setLoading(true)
     setError('')
-    const supabase = createClient()
     const { error } = await supabase.auth.updateUser({ password })
     if (error) {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      window.location.href = '/talent'
     }
   }
 
@@ -29,8 +45,8 @@ export default function UpdatePasswordPage() {
         <a href="/" style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', textDecoration: 'none', letterSpacing: '-0.02em', display: 'block', marginBottom: '2rem' }}>
           ClaudHire<span style={{ color: '#0071e3' }}>.</span>
         </a>
-        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>Set new password</h1>
-        <p style={{ color: '#6e6e73', fontSize: 14, marginBottom: '2rem' }}>Choose a strong password for your account.</p>
+        <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>Set your password</h1>
+        <p style={{ color: '#6e6e73', fontSize: 14, marginBottom: '2rem' }}>Choose a password to access your ClaudHire employer account.</p>
 
         {error && (
           <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14, color: '#c00' }}>
@@ -45,7 +61,7 @@ export default function UpdatePasswordPage() {
             placeholder="Min 6 characters"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleUpdate()}
+            onKeyDown={e => e.key === 'Enter' && password.length >= 6 && handleUpdate()}
             style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #d2d2d7', borderRadius: 10, fontSize: 15, outline: 'none', fontFamily: 'inherit', background: 'white', boxSizing: 'border-box' }}
           />
         </div>
@@ -54,7 +70,7 @@ export default function UpdatePasswordPage() {
           onClick={handleUpdate}
           disabled={loading || password.length < 6}
           style={{ width: '100%', padding: '0.85rem', background: loading || password.length < 6 ? '#d2d2d7' : '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 15, fontWeight: 500, cursor: loading || password.length < 6 ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
-          {loading ? 'Updating...' : 'Set new password →'}
+          {loading ? 'Setting password...' : 'Set password and continue →'}
         </button>
       </div>
     </div>

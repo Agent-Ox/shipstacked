@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     if (!alreadyExists) {
       await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'}/api/auth/confirm?next=/update-password`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'}/update-password`,
         data: { role: 'employer' }
       })
     }
