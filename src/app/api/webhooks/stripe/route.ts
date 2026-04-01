@@ -35,13 +35,27 @@ export async function POST(req: Request) {
     const alreadyExists = existingUsers?.users?.some((u: any) => u.email === email)
 
     if (!alreadyExists) {
-      await supabase.auth.admin.inviteUserByEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'}/update-password`,
-        data: { role: 'employer' }
+      await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12),
+        user_metadata: { role: 'employer' }
       })
     }
 
-    // Write subscription row
+    // Generate a magic link for instant login
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'
+    const { data: linkData } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: `${siteUrl}/talent`
+      }
+    })
+
+    const magicLink = linkData?.properties?.action_link || null
+
+    // Write subscription row with magic link
     let expiresAt = null
     if (product === 'job_post') {
       const d = new Date()
@@ -55,7 +69,8 @@ export async function POST(req: Request) {
       stripe_session_id: session.id,
       product,
       status: 'active',
-      expires_at: expiresAt
+      expires_at: expiresAt,
+      magic_link: magicLink
     }])
 
     if (error) {
