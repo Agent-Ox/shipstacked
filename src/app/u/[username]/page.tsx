@@ -332,7 +332,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             </div>
 
             {profile.bio && (
-              <p style={{ fontSize: 17, color: 'var(--text)', lineHeight: 1.7, fontWeight: 300, fontStyle: 'italic', borderLeft: '2px solid var(--accent)', paddingLeft: '1rem', color: 'var(--text2)' }}>
+              <p style={{ fontSize: 17, color: 'var(--text2)', lineHeight: 1.7, fontWeight: 300, fontStyle: 'italic', borderLeft: '2px solid var(--accent)', paddingLeft: '1rem' }}>
                 {profile.bio}
               </p>
             )}
