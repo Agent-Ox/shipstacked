@@ -160,7 +160,7 @@ export default function NavBar() {
               <a href="#talent" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Talent</a>
               <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>Pricing</a>
             </>
-          ) : contextLinks.map(link => (
+          ) : contextLinks.filter(link => link.href !== dashboardLink).map(link => (
             <a key={link.label} href={link.href || '#'} onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
               {link.label}
             </a>
@@ -169,7 +169,7 @@ export default function NavBar() {
           {navUser ? (
             <>
               <a href={dashboardLink} onClick={() => setMenuOpen(false)} style={{ fontSize: 15, color: accentColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, fontWeight: 500 }}>
-                {navUser.role === 'employer' ? 'Dashboard' : 'My profile'}
+                {navUser.role === 'employer' ? 'Employer dashboard' : 'My profile'}
               </a>
               <a href="/api/logout" style={{ fontSize: 15, color: '#ef4444', textDecoration: 'none', padding: '0.7rem 0', fontWeight: 500 }}>Sign out</a>
             </>
