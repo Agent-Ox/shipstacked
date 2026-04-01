@@ -2,6 +2,18 @@
 
 import Link from 'next/link'
 
+async function goToCheckout(product: string) {
+  const res = await fetch('/api/checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product })
+  })
+  const data = await res.json()
+  if (data.url) {
+    window.location.href = data.url
+  }
+}
+
 export default function Home() {
   return (
     <>
@@ -301,7 +313,7 @@ export default function Home() {
                 <li>Applicant tracking</li>
                 <li>Concierge matching available</li>
               </ul>
-              <Link href="/signup?role=employer" className="price-btn price-btn-white">Get full access →</Link>
+              <button className="price-btn price-btn-white" onClick={() => goToCheckout('full_access')}>Get full access →</button>
             </div>
             <div className="price-card">
               <div className="price-tier">Employer — Job post</div>
@@ -315,7 +327,7 @@ export default function Home() {
                 <li>Role promoted to matched talent</li>
                 <li>Basic applicant list</li>
               </ul>
-              <Link href="/signup?role=employer" className="price-btn price-btn-ghost">Post a job →</Link>
+              <button className="price-btn price-btn-ghost" onClick={() => goToCheckout('job_post')}>Post a job →</button>
             </div>
           </div>
           <div className="concierge">
@@ -324,7 +336,7 @@ export default function Home() {
               <p>Tell us exactly what you need. We manually find and vet 3 Claude builders and deliver them to your inbox within 48 hours.</p>
             </div>
             <div className="concierge-price">$500 <span>per match</span></div>
-            <Link href="/signup?role=employer" className="btn-blue" style={{whiteSpace:'nowrap'}}>Request a match →</Link>
+            <button className="btn-blue" style={{whiteSpace:'nowrap', border:'none', cursor:'pointer', fontFamily:'inherit'}} onClick={() => goToCheckout('concierge')}>Request a match →</button>
           </div>
         </div>
       </section>

@@ -24,6 +24,8 @@ export async function POST(req: Request) {
     mode: isSubscription ? 'subscription' : 'payment',
     customer_email: email || undefined,
     line_items: [{ price: priceId, quantity: 1 }],
+    metadata: { product },
+    subscription_data: isSubscription ? { metadata: { product } } : undefined,
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://claudhire.com'}/#pricing`,
   })
