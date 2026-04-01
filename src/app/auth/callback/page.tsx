@@ -7,7 +7,6 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient()
 
-    // Parse tokens from URL fragment manually and set session
     const hash = window.location.hash
     if (hash) {
       const params = new URLSearchParams(hash.substring(1))
@@ -15,9 +14,20 @@ export default function AuthCallbackPage() {
       const refresh_token = params.get('refresh_token')
 
       if (access_token && refresh_token) {
-        supabase.auth.setSession({ access_token, refresh_token }).then(({ error }) => {
-          if (!error) {
-            window.location.href = '/talent'
+        supabase.auth.setSession({ access_token, refresh_token }).then(async ({ data, error }) => {
+          if (!error && data.session) {
+            // Check if employer
+            const now = new Date().toISOString()
+            const { data: sub } = await supabase
+              .from('subscriptions')
+              .select('id')
+              .eq('email', data.session.user.email)
+              .eq('status', 'active')
+              .eq('product', 'full_access')
+              .or(`expires_at.is.null,expires_at.gt.${now}`)
+              .maybeSingle()
+
+            window.location.href = sub ? '/employer' : '/talent'
           } else {
             window.location.href = '/login?error=auth'
           }
@@ -28,7 +38,7 @@ export default function AuthCallbackPage() {
     } else {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          window.location.href = '/talent'
+          window.location.href = '/employer'
         } else {
           window.location.href = '/login?error=auth'
         }

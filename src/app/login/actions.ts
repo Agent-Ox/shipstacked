@@ -33,5 +33,23 @@ export async function login(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
+  // Check if employer (has subscription, no builder profile)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const now = new Date().toISOString()
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('id')
+      .eq('email', user.email)
+      .eq('status', 'active')
+      .eq('product', 'full_access')
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
+      .maybeSingle()
+
+    if (sub) {
+      redirect('/employer')
+    }
+  }
+
   redirect('/dashboard')
 }
