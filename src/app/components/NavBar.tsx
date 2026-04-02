@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 
 type NavUser = {
   email: string
-  role: 'employer' | 'builder' | null
+  role: 'employer' | 'builder' | 'admin' | null
 }
 
 export default function NavBar() {
@@ -29,7 +29,7 @@ export default function NavBar() {
   const mobileBorder = isDark ? 'rgba(255,255,255,0.08)' : '#f0f0f0'
 
   const dashboardLink = navUser?.role === 'employer' ? '/employer' : '/dashboard'
-  const isAdmin = navUser?.email === 'oxleethomas+admin@gmail.com'
+  const isAdmin = navUser?.role === 'admin'
 
   // Context links based on path
   const getContextLinks = () => {
@@ -79,7 +79,7 @@ export default function NavBar() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { setLoading(false); return }
       const user = session.user
-      const metaRole = user.user_metadata?.role as 'employer' | 'builder' | null
+      const metaRole = user.user_metadata?.role as 'employer' | 'builder' | 'admin' | null
       setNavUser({ email: user.email || '', role: metaRole })
       setLoading(false)
     })

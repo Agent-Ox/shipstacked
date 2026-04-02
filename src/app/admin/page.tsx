@@ -40,7 +40,7 @@ export default async function AdminPage() {
         <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '2.5rem' }}>ClaudHire platform overview.</p>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '1rem', marginBottom: '3rem' }}>
           {[
             { label: 'Total profiles', value: totalProfiles },
             { label: 'Verified builders', value: verifiedProfiles },
@@ -64,7 +64,8 @@ export default async function AdminPage() {
             {!profiles || profiles.length === 0 ? (
               <p style={{ padding: '2rem', color: '#6e6e73', textAlign: 'center' }}>No profiles yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
                     {['Name', 'Email', 'Role', 'Verified', 'Created', 'Profile', 'Actions'].map(h => (
@@ -98,6 +99,7 @@ export default async function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -111,7 +113,8 @@ export default async function AdminPage() {
             {!subscriptions || subscriptions.length === 0 ? (
               <p style={{ padding: '2rem', color: '#6e6e73', textAlign: 'center' }}>No payments yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
                     {['Email', 'Product', 'Status', 'Expires', 'Date'].map(h => (
@@ -143,6 +146,7 @@ export default async function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -156,7 +160,8 @@ export default async function AdminPage() {
             {!jobs || jobs.length === 0 ? (
               <p style={{ padding: '2rem', color: '#6e6e73', textAlign: 'center' }}>No jobs posted yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
                     {['Role', 'Company', 'Employer email', 'Status', 'Expires', 'Posted'].map(h => (
@@ -185,6 +190,7 @@ export default async function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
@@ -198,7 +204,8 @@ export default async function AdminPage() {
             {!applications || applications.length === 0 ? (
               <p style={{ padding: '2rem', color: '#6e6e73', textAlign: 'center' }}>No applications yet.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 500 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
                     {['Builder', 'Role', 'Company', 'Status', 'Date'].map(h => (
@@ -224,6 +231,7 @@ export default async function AdminPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </div>
