@@ -40,10 +40,29 @@ export default function Scout() {
           content: "Hey — I know your profile. Ask me who's hiring for your skills and I'll find your best matches."
         }])
       } else {
-        setMessages([{
-          role: 'assistant',
-          content: "Hi, I'm Scout — I know every builder on ClaudHire. Tell me what you're looking for and I'll find your best matches."
-        }])
+        // Employer greeting — personalised via API
+        setLoading(true)
+        fetch('/api/scout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [{ role: 'user', content: '__EMPLOYER_GREETING__' }] })
+        }).then(async res => {
+          if (!res.body) return
+          const reader = res.body.getReader()
+          const decoder = new TextDecoder()
+          let text = ''
+          setMessages([{ role: 'assistant', content: '' }])
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            text += decoder.decode(value, { stream: true })
+            setMessages([{ role: 'assistant', content: text }])
+          }
+          setLoading(false)
+        }).catch(() => {
+          setMessages([{ role: 'assistant', content: "Hey — I know your listings. Ask me to find builders for any of your roles." }])
+          setLoading(false)
+        })
       }
     }
   }, [open])
