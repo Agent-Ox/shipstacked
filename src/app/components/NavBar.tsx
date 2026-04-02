@@ -29,6 +29,7 @@ export default function NavBar() {
   const mobileBorder = isDark ? 'rgba(255,255,255,0.08)' : '#f0f0f0'
 
   const dashboardLink = navUser?.role === 'employer' ? '/employer' : '/dashboard'
+  const isAdmin = navUser?.email === 'oxleethomas+admin@gmail.com'
 
   // Context links based on path
   const getContextLinks = () => {
@@ -54,13 +55,19 @@ export default function NavBar() {
       return [{ label: 'Dashboard', href: '/employer' }]
     }
     if (pathname.startsWith('/u/')) {
-      return navUser ? [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'Back to dashboard', href: dashboardLink }] : []
+      if (!navUser) return []
+      if (isAdmin) return [{ label: 'Back to admin', href: '/admin' }]
+      return [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'Back to dashboard', href: dashboardLink }]
     }
     if (pathname.startsWith('/jobs')) {
-      return navUser ? [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'My profile', href: dashboardLink }] : []
+      if (!navUser) return []
+      if (isAdmin) return [{ label: 'Admin', href: '/admin' }]
+      return [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'My profile', href: dashboardLink }]
     }
     if (pathname.startsWith('/company/')) {
-      return navUser ? [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'My profile', href: dashboardLink }] : []
+      if (!navUser) return []
+      if (isAdmin) return [{ label: 'Admin', href: '/admin' }]
+      return [{ label: dashboardLink === '/employer' ? 'Dashboard' : 'My profile', href: dashboardLink }]
     }
     return []
   }
