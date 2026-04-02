@@ -165,6 +165,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
             Create free profile →
           </Link>
         </div>
+        )}
 
       </div>
     </div>
