@@ -96,8 +96,31 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
   const [loading, setLoading] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '')
+  const [avatarUploading, setAvatarUploading] = useState(false)
 
   const byCategory = (cat: string) => skills.filter(s => s.category === cat).map(s => s.name)
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarUploading(true)
+    setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch('/api/avatar', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setAvatarUrl(data.url)
+      } else {
+        setError(data.error || 'Upload failed')
+      }
+    } catch {
+      setError('Upload failed')
+    }
+    setAvatarUploading(false)
+  }
 
   const [fullName, setFullName] = useState(profile.full_name || '')
   const [role, setRole] = useState(profile.role || '')
@@ -212,6 +235,27 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
 
         {/* Basics */}
         <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Basics</h2>
+
+        {/* Avatar upload */}
+        <div style={{ marginBottom: '1.75rem', display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+          <div style={{ width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', background: '#e8f1fd', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ fontSize: 24, fontWeight: 700, color: '#0071e3' }}>
+                {fullName ? fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?'}
+              </span>
+            )}
+          </div>
+          <div>
+            <label style={{ display: 'inline-block', padding: '0.5rem 1rem', background: avatarUploading ? '#d2d2d7' : '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, cursor: avatarUploading ? 'not-allowed' : 'pointer' }}>
+              {avatarUploading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Upload photo'}
+              <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={avatarUploading} />
+            </label>
+            <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '0.4rem' }}>JPG, PNG or WebP. Max 5MB.</p>
+          </div>
+        </div>
+
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Full name</label>
           <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} style={inputStyle} />

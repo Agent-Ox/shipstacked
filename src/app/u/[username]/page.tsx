@@ -123,7 +123,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         .availability-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--green-bg); border: 1px solid rgba(52,211,153,0.2); color: var(--green); font-size: 12px; font-weight: 500; padding: 0.3rem 0.75rem; border-radius: 20px; }
         .availability-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s ease infinite; }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-        .avatar-ring { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; flex-shrink: 0; }
+        .avatar-ring { width: 88px; height: 88px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: white; flex-shrink: 0; overflow: hidden; }
         .mesh-bg { position: fixed; top: 0; left: 0; right: 0; height: 500px; background: radial-gradient(ellipse at 20% 0%, rgba(108,99,255,0.12) 0%, transparent 60%), radial-gradient(ellipse at 80% 0%, rgba(167,139,250,0.08) 0%, transparent 60%); pointer-events: none; z-index: 0; }
         .locked-overlay { position: relative; }
         .locked-blur { filter: blur(6px); user-select: none; pointer-events: none; opacity: 0.4; }
@@ -139,7 +139,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {/* Hero */}
           <div className="fade-up" style={{ marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-              <div className="avatar-ring">{initials}</div>
+              <div className="avatar-ring">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  initials
+                )}
+              </div>
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: '0.4rem' }}>
                   <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1.1 }}>
