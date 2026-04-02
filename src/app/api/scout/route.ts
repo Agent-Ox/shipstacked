@@ -123,7 +123,7 @@ Use this context to personalise your responses. You already know what they are h
     // Handle builder auto-init — replace with a proper prompt
     const processedMessages = messages.map((m: any) => {
       if (m.content === '__BUILDER_INIT__') {
-        return { ...m, content: 'Hi Scout. Based on my profile, what opportunities are available for me right now on ClaudHire? Be specific and personal.' }
+        return { ...m, content: '__BUILDER_GREETING__' }
       }
       return m
     })

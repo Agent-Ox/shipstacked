@@ -40,7 +40,7 @@ export default function Scout() {
         fetch('/api/scout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: autoMessages })
+          body: JSON.stringify({ messages: [{ role: 'user', content: '__BUILDER_INIT__' }] })
         }).then(async res => {
           if (!res.body) return
           const reader = res.body.getReader()
