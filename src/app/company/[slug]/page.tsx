@@ -1,5 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound } from 'next/navigation'
+import { getResolvedUser } from '@/lib/user'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 
@@ -33,6 +34,9 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
     .maybeSingle()
 
   if (!company) notFound()
+
+  const { role } = await getResolvedUser()
+  const showBuilderCTA = role !== 'employer'
 
   const { data: jobs } = await supabase
     .from('jobs')
@@ -148,6 +152,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
         </div>
 
         {/* Builder CTA */}
+        {showBuilderCTA && (
         <div style={{ background: 'linear-gradient(135deg, #0f0f18, #1a1a2e)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(167,139,250,0.9)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Are you a Claude builder?</p>
           <p style={{ fontSize: 17, fontWeight: 600, color: 'rgba(240,240,245,0.95)', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>
