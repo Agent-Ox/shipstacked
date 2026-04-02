@@ -193,7 +193,7 @@ export default function EmployerDashboardClient({
               <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>Company profile</h2>
               <p style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.25rem' }}>
                 {isPublic && profile.slug
-                  ? `Public at claudhire.com/company/${profile.slug}`
+                  ? "Public at claudhire.com/company/" + profile.slug
                   : 'Your profile is private — only you can see this.'}
               </p>
             </div>
@@ -229,7 +229,7 @@ export default function EmployerDashboardClient({
 
           {isPublic && profile.slug && (
             
-              href={`/company/${profile.slug}`}
+              href={"/company/" + profile.slug}
               target="_blank"
               style={{ display: 'inline-block', fontSize: 12, color: '#0071e3', textDecoration: 'none', marginBottom: '1.25rem', fontWeight: 500 }}
             >
