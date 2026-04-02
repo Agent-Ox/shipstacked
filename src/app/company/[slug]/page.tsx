@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getResolvedUser } from '@/lib/user'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import ApplyButton from './ApplyButton'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -35,8 +36,10 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
 
   if (!company) notFound()
 
-  const { role } = await getResolvedUser()
+  const { role, user: resolvedUser, profile: builderProfile } = await getResolvedUser()
   const showBuilderCTA = role !== 'employer'
+  const isBuilder = role === 'builder'
+  const isVisitor = role === 'visitor'
 
   const { data: jobs } = await supabase
     .from('jobs')
