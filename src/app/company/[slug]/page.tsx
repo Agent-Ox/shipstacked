@@ -136,10 +136,10 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                     </p>
                   )}
                   
-                    href={'mailto:' + job.employer_email + '?subject=Application for ' + job.role_title + ' via ClaudHire'}
+                    href={'mailto:' + job.employer_email + '?subject=Application via ClaudHire'}
                     style={{ display: 'inline-block', padding: '0.5rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}
                   >
-                    Apply →
+                    Apply
                   </a>
                 </div>
               ))}
