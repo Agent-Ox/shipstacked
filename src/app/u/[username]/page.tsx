@@ -59,7 +59,8 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const allSkillNames = skills?.map(s => s.name) || []
 
   const { hasSubscription, user: resolvedUser } = await getResolvedUser()
-  const hasAccess = !!resolvedUser && (resolvedUser.email === profile.email || hasSubscription)
+  const isAdmin = resolvedUser?.email === 'oxleethomas+admin@gmail.com'
+  const hasAccess = !!resolvedUser && (resolvedUser.email === profile.email || hasSubscription || isAdmin)
 
   const claudeSkills = byCategory('claude_use_case')
   const languages = byCategory('language')
@@ -118,7 +119,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         .project-card:hover { border-color: var(--border-hover); }
         .outcome-bar { background: var(--green-bg); border: 1px solid rgba(52,211,153,0.2); border-radius: 10px; padding: 0.75rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
         .how-claude-box { background: rgba(108,99,255,0.06); border: 1px solid rgba(108,99,255,0.15); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.75rem; }
-        .verified-badge { display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(167,139,250,0.15)); border: 1px solid rgba(108,99,255,0.3); color: var(--accent2); font-size: 11px; font-weight: 700; padding: 0.25rem 0.7rem; border-radius: 20px; letter-spacing: 0.06em; font-family: var(--mono); }
+        .verified-badge { display: inline-flex; align-items: center; gap: 5px; background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.15)); border: 1px solid rgba(52,211,153,0.4); color: #34d399; font-size: 11px; font-weight: 700; padding: 0.25rem 0.7rem; border-radius: 20px; letter-spacing: 0.06em; font-family: var(--mono); box-shadow: 0 0 12px rgba(52,211,153,0.15); }
         .availability-badge { display: inline-flex; align-items: center; gap: 5px; background: var(--green-bg); border: 1px solid rgba(52,211,153,0.2); color: var(--green); font-size: 12px; font-weight: 500; padding: 0.3rem 0.75rem; border-radius: 20px; }
         .availability-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse-dot 2s ease infinite; }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
@@ -144,7 +145,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', lineHeight: 1.1 }}>
                     {profile.full_name}
                   </h1>
-                  {profile.verified && <span className="verified-badge">✦ VERIFIED</span>}
+                  {profile.verified && <span className="verified-badge">🛡 VERIFIED</span>}
                 </div>
                 <p style={{ fontSize: 16, color: 'var(--text2)', marginBottom: '0.4rem' }}>{profile.role}</p>
                 {profile.location && <p style={{ fontSize: 14, color: 'var(--text3)' }}>📍 {profile.location}</p>}
