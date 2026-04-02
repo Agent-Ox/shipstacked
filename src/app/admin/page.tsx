@@ -2,7 +2,6 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import VerifyToggle from './VerifyToggle'
-import VerifyToggle from './VerifyToggle'
 
 const ADMIN_EMAIL = 'oxleythomas@gmail.com'
 
