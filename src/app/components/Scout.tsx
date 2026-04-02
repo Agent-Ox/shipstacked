@@ -34,30 +34,12 @@ export default function Scout() {
   useEffect(() => {
     if (open && messages.length === 0) {
       if (userRole === 'builder') {
-        // For builders — send an automatic first message to get personalised response
-        const autoMessages = [{ role: 'user' as const, content: '__BUILDER_INIT__' }]
-        setLoading(true)
-        fetch('/api/scout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: [{ role: 'user', content: '__BUILDER_INIT__' }] })
-        }).then(async res => {
-          if (!res.body) return
-          const reader = res.body.getReader()
-          const decoder = new TextDecoder()
-          let text = ''
-          setMessages([{ role: 'assistant', content: '' }])
-          while (true) {
-            const { done, value } = await reader.read()
-            if (done) break
-            text += decoder.decode(value, { stream: true })
-            setMessages([{ role: 'assistant', content: text }])
-          }
-          setLoading(false)
-        }).catch(() => {
-          setMessages([{ role: 'assistant', content: "Hi, I'm Scout — tell me about your skills and I'll find who's hiring for someone like you." }])
-          setLoading(false)
-        })
+        // Hardcoded greeting — instant, no API call needed
+        const firstName = navUser?.email?.split('@')[0] || 'there'
+        setMessages([{
+          role: 'assistant',
+          content: "Hey — I know your profile. Ask me who's hiring for your skills and I'll find your best matches."
+        }])
       } else {
         setMessages([{
           role: 'assistant',
