@@ -4,6 +4,11 @@ import NavBar from '@/app/components/NavBar'
 import Scout from '@/app/components/Scout'
 
 export const metadata: Metadata = {
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
   title: {
     default: 'ClaudHire — Hire Claude-Native Talent',
     template: '%s | ClaudHire',
