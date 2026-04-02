@@ -141,6 +141,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                     <p style={{ fontSize: 14, color: '#3d3d3f', lineHeight: 1.6, marginBottom: '1rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                       {job.description}
                     </p>
+                  )}
                   {isBuilder && (
                     <ApplyButton jobId={job.id} jobTitle={job.role_title} />
                   )}
