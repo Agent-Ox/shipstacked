@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     await resend.emails.send({
       from: 'ClaudHire <hello@claudhire.com>',
-      to: 'oxleethomas@gmail.com',
+      to: 'oxleethomas+admin@gmail.com',
       subject: 'Verification request — ' + name,
       html: '<div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">' +
         '<h2 style="font-size: 20px; font-weight: 700; color: #1d1d1f; margin-bottom: 0.5rem;">Verification request</h2>' +
