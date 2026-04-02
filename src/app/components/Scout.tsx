@@ -150,7 +150,8 @@ export default function Scout() {
     })
   }
 
-  if (!mounted || !isEmployer) return null
+  const isSignupFlow = typeof window !== 'undefined' && (window.location.pathname === '/join' || window.location.pathname === '/signup')
+  if (!mounted || !isEmployer || isSignupFlow) return null
 
   return (
     <>

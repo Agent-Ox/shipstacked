@@ -7,15 +7,21 @@ function calcScore(profile: any): { score: number, tips: string[] } {
   const tips: string[] = []
   let score = 0
 
-  if (profile.full_name) score += 10; else tips.push('Add your full name')
-  if (profile.role) score += 10; else tips.push('Add your role or title')
+  if (profile.avatar_url) score += 10; else tips.push('Add a profile photo — profiles with photos get more employer attention')
+  if (profile.full_name) score += 5; else tips.push('Add your full name')
+  if (profile.role) score += 5; else tips.push('Add your role or title')
   if (profile.location) score += 5; else tips.push('Add your location')
-  if (profile.bio) score += 15; else tips.push('Add a one-line bio — this is what employers see first')
-  if (profile.about) score += 15; else tips.push('Add an about section describing what you build')
-  if (profile.projects && profile.projects.length >= 1) score += 20; else tips.push('Add at least one project with real outcomes')
+  if (profile.bio) score += 10; else tips.push('Add a one-line bio — this is what employers see first')
+  if (profile.about) score += 10; else tips.push('Add an about section describing what you build')
+  if (profile.projects && profile.projects.length >= 1) score += 15; else tips.push('Add at least one project with real outcomes')
   if (profile.projects && profile.projects.length >= 3) score += 10; else if (profile.projects?.length >= 1) tips.push('Add 2 more projects to strengthen your profile')
   if (profile.skills && profile.skills.length >= 3) score += 10; else tips.push('Select your Claude use cases and skills')
   if (profile.github_url || profile.x_url || profile.linkedin_url || profile.website_url) score += 5; else tips.push('Add at least one social link')
+  if (profile.primary_profession) score += 5; else tips.push('Add your primary profession')
+  if (profile.seniority) score += 5; else tips.push('Add your seniority level')
+  if (profile.work_type) score += 5; else tips.push('Add your work type preference')
+  if (profile.day_rate) score += 5; else tips.push('Add your day rate — employers filter by budget')
+  if (profile.timezone) score += 5; else tips.push('Add your timezone')
 
   return { score: Math.min(score, 100), tips: tips.slice(0, 3) }
 }
