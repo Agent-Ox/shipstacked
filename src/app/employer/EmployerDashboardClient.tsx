@@ -228,8 +228,8 @@ export default function EmployerDashboardClient({
           </div>
 
           {isPublic && profile.slug && (
-            
-              href={"/company/" + profile.slug}
+            <a
+              href={'/company/' + profile.slug}
               target="_blank"
               style={{ display: 'inline-block', fontSize: 12, color: '#0071e3', textDecoration: 'none', marginBottom: '1.25rem', fontWeight: 500 }}
             >
