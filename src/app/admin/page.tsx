@@ -1,6 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import VerifyToggle from './VerifyToggle'
+import VerifyToggle from './VerifyToggle'
 
 const ADMIN_EMAIL = 'oxleythomas@gmail.com'
 
@@ -17,10 +19,12 @@ export default async function AdminPage() {
     { data: profiles },
     { data: subscriptions },
     { data: jobs },
+    { data: applications },
   ] = await Promise.all([
     supabase.from('profiles').select('*').order('created_at', { ascending: false }),
     supabase.from('subscriptions').select('*').order('created_at', { ascending: false }),
     supabase.from('jobs').select('*').order('created_at', { ascending: false }),
+    supabase.from('applications').select('*, jobs(role_title, company_name)').order('created_at', { ascending: false }).limit(20),
   ])
 
   const totalProfiles = profiles?.length || 0
@@ -46,12 +50,13 @@ export default async function AdminPage() {
         <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '2.5rem' }}>ClaudHire platform overview.</p>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', marginBottom: '3rem' }}>
           {[
             { label: 'Total profiles', value: totalProfiles },
             { label: 'Verified builders', value: verifiedProfiles },
             { label: 'Payments received', value: totalRevenue },
             { label: 'Active job listings', value: activeJobs },
+            { label: 'Total applications', value: applications?.length || 0 },
           ].map(stat => (
             <div key={stat.label} style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.25rem' }}>
               <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '0.4rem' }}>{stat.label}</p>
@@ -72,7 +77,7 @@ export default async function AdminPage() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
-                    {['Name', 'Email', 'Role', 'Verified', 'Created', 'Profile'].map(h => (
+                    {['Name', 'Email', 'Role', 'Verified', 'Created', 'Profile', 'Actions'].map(h => (
                       <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.03em' }}>{h}</th>
                     ))}
                   </tr>
@@ -84,9 +89,12 @@ export default async function AdminPage() {
                       <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>{p.email}</td>
                       <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>{p.role || '—'}</td>
                       <td style={{ padding: '0.75rem 1rem' }}>
-                        <span style={{ fontSize: 12, fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6, background: p.verified ? '#e3f3e3' : '#f5f5f7', color: p.verified ? '#1a7f37' : '#aeaeb2' }}>
-                          {p.verified ? '✓ Verified' : 'Unverified'}
-                        </span>
+                        <VerifyToggle
+                          profileId={p.id}
+                          initialVerified={p.verified}
+                          builderEmail={p.email}
+                          builderName={p.full_name}
+                        />
                       </td>
                       <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>
                         {new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -182,6 +190,45 @@ export default async function AdminPage() {
                       </td>
                       <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>
                         {new Date(j.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* Applications */}
+        <div style={{ marginBottom: '3rem' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '1rem', color: '#1d1d1f' }}>
+            Recent applications ({applications?.length || 0})
+          </h2>
+          <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden' }}>
+            {!applications || applications.length === 0 ? (
+              <p style={{ padding: '2rem', color: '#6e6e73', textAlign: 'center' }}>No applications yet.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e0e0e5', background: '#f5f5f7' }}>
+                    {['Builder', 'Role', 'Company', 'Status', 'Date'].map(h => (
+                      <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.03em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {applications.map((a: any, i: number) => (
+                    <tr key={a.id} style={{ borderBottom: i < applications.length - 1 ? '1px solid #f0f0f5' : 'none' }}>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: 14, fontWeight: 500, color: '#1d1d1f' }}>{a.builder_name}</td>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>{a.jobs?.role_title || '—'}</td>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>{a.jobs?.company_name || '—'}</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6, background: '#e3f3e3', color: '#1a7f37' }}>
+                          {a.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem', fontSize: 13, color: '#6e6e73' }}>
+                        {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
                     </tr>
                   ))}
