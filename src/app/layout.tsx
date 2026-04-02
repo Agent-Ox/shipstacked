@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import NavBar from '@/app/components/NavBar'
+import Scout from '@/app/components/Scout'
 
 export const metadata: Metadata = {
   title: {
@@ -38,7 +39,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body><NavBar /><div style={{ paddingTop: 52 }}>{children}</div></body>
+      <body>
+        <NavBar />
+        <Scout />
+        <div style={{ paddingTop: 52 }}>{children}</div>
+      </body>
     </html>
   )
 }
