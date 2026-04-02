@@ -33,13 +33,37 @@ export default function Scout() {
 
   useEffect(() => {
     if (open && messages.length === 0) {
-      const isBuilder = userRole === 'builder'
-      setMessages([{
-        role: 'assistant',
-        content: isBuilder
-          ? "Hi, I'm Scout — I know every employer on ClaudHire. Tell me about your skills and I'll find who's hiring for someone like you."
-          : "Hi, I'm Scout — I know every builder on ClaudHire. Tell me what you're looking for and I'll find your best matches."
-      }])
+      if (userRole === 'builder') {
+        // For builders — send an automatic first message to get personalised response
+        const autoMessages = [{ role: 'user' as const, content: '__BUILDER_INIT__' }]
+        setLoading(true)
+        fetch('/api/scout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: autoMessages })
+        }).then(async res => {
+          if (!res.body) return
+          const reader = res.body.getReader()
+          const decoder = new TextDecoder()
+          let text = ''
+          setMessages([{ role: 'assistant', content: '' }])
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            text += decoder.decode(value, { stream: true })
+            setMessages([{ role: 'assistant', content: text }])
+          }
+          setLoading(false)
+        }).catch(() => {
+          setMessages([{ role: 'assistant', content: "Hi, I'm Scout — tell me about your skills and I'll find who's hiring for someone like you." }])
+          setLoading(false)
+        })
+      } else {
+        setMessages([{
+          role: 'assistant',
+          content: "Hi, I'm Scout — I know every builder on ClaudHire. Tell me what you're looking for and I'll find your best matches."
+        }])
+      }
     }
   }, [open])
 
