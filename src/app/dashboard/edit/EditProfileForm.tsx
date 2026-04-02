@@ -5,6 +5,12 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 const AVAILABILITY_OPTIONS = ['freelance', 'full-time', 'contract', 'part-time', 'open']
+const PROFESSIONS = ['Developer', 'Designer', 'Product Manager', 'Consultant', 'Marketer', 'Operator', 'Founder', 'Other']
+const SENIORITY_OPTIONS = ['Junior', 'Mid-level', 'Senior', 'Principal', 'Founder / Independent']
+const WORK_TYPE_OPTIONS = ['Freelance', 'Full-time', 'Contract', 'Both']
+const DAY_RATE_OPTIONS = ['Under $200/day', '$200-500/day', '$500-1000/day', '$1000+/day', 'Prefer not to say']
+const TIMEZONES = ['UTC-8 (PST)', 'UTC-7 (MST)', 'UTC-6 (CST)', 'UTC-5 (EST)', 'UTC+0 (GMT)', 'UTC+1 (CET)', 'UTC+2 (EET)', 'UTC+3 (Moscow)', 'UTC+5:30 (IST)', 'UTC+8 (SGT/HKT)', 'UTC+9 (JST)', 'UTC+10 (AEST)', 'UTC+12 (NZST)']
+const SPOKEN_LANGUAGES = ['English', 'Spanish', 'French', 'German', 'Portuguese', 'Mandarin', 'Japanese', 'Arabic', 'Hindi', 'Italian', 'Dutch', 'Russian', 'Korean']
 const LLMS = ['ChatGPT / GPT-4', 'Gemini', 'Mistral', 'Llama', 'Grok', 'Perplexity', 'Cohere', 'Other']
 const LANGUAGES = ['Python', 'JavaScript', 'TypeScript', 'Ruby', 'Go', 'Rust', 'Java', 'C#', 'PHP', 'SQL', 'Swift', 'Kotlin']
 const FRAMEWORKS = ['Next.js', 'React', 'Vue', 'LangChain', 'LlamaIndex', 'n8n', 'Make', 'Zapier', 'Supabase', 'Firebase', 'FastAPI', 'Node.js', 'Vercel', 'AWS', 'Docker']
@@ -163,6 +169,12 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
   const [role, setRole] = useState(profile.role || '')
   const [location, setLocation] = useState(profile.location || '')
   const [availability, setAvailability] = useState(profile.availability || 'freelance')
+  const [primaryProfession, setPrimaryProfession] = useState(profile.primary_profession || '')
+  const [seniority, setSeniority] = useState(profile.seniority || '')
+  const [workType, setWorkType] = useState(profile.work_type || '')
+  const [dayRate, setDayRate] = useState(profile.day_rate || '')
+  const [timezone, setTimezone] = useState(profile.timezone || '')
+  const [spokenLanguages, setSpokenLanguages] = useState<string[]>(profile.languages || [])
   const [bio, setBio] = useState(profile.bio || '')
   const [about, setAbout] = useState(profile.about || '')
   const [githubUrl, setGithubUrl] = useState(profile.github_url || '')
@@ -216,6 +228,12 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
         .update({
           full_name: fullName, role, location, availability, bio, about,
           github_url: githubUrl, x_url: xUrl, linkedin_url: linkedinUrl, website_url: websiteUrl,
+          primary_profession: primaryProfession,
+          seniority,
+          work_type: workType,
+          day_rate: dayRate,
+          timezone,
+          languages: spokenLanguages.length > 0 ? spokenLanguages : null,
         })
         .eq('id', profile.id)
 
@@ -309,11 +327,64 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           <label style={labelStyle}>Location</label>
           <input type="text" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
         </div>
-        <div style={{ marginBottom: '2rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
           <label style={labelStyle}>Availability</label>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {AVAILABILITY_OPTIONS.map(opt => (
               <Tag key={opt} label={opt} selected={availability === opt} onClick={() => setAvailability(opt)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Primary profession</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {PROFESSIONS.map(opt => (
+              <Tag key={opt} label={opt} selected={primaryProfession === opt} onClick={() => setPrimaryProfession(opt)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Seniority</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {SENIORITY_OPTIONS.map(opt => (
+              <Tag key={opt} label={opt} selected={seniority === opt} onClick={() => setSeniority(opt)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Work type preference</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {WORK_TYPE_OPTIONS.map(opt => (
+              <Tag key={opt} label={opt} selected={workType === opt} onClick={() => setWorkType(opt)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Day rate <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {DAY_RATE_OPTIONS.map(opt => (
+              <Tag key={opt} label={opt} selected={dayRate === opt} onClick={() => setDayRate(opt)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={labelStyle}>Timezone</label>
+          <select value={timezone} onChange={e => setTimezone(e.target.value)} style={{ width: '100%', padding: '0.75rem 1rem', border: '1px solid #d2d2d7', borderRadius: 10, fontSize: 15, outline: 'none', fontFamily: 'inherit', background: 'white', boxSizing: 'border-box' as const }}>
+            <option value="">Select timezone</option>
+            {TIMEZONES.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={labelStyle}>Languages spoken <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {SPOKEN_LANGUAGES.map(lang => (
+              <Tag key={lang} label={lang} selected={spokenLanguages.includes(lang)} onClick={() => setSpokenLanguages(spokenLanguages.includes(lang) ? spokenLanguages.filter(l => l !== lang) : [...spokenLanguages, lang])} />
             ))}
           </div>
         </div>
