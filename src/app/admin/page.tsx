@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import VerifyToggle from './VerifyToggle'
 
-const ADMIN_EMAIL = 'oxleythomas@gmail.com'
+const ADMIN_EMAIL = 'oxleethomas+admin@gmail.com'
 
 export default async function AdminPage() {
   const supabase = await createServerSupabaseClient()
