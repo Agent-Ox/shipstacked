@@ -170,6 +170,50 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             )}
           </div>
 
+          {/* Professional info */}
+          {(profile.primary_profession || profile.seniority || profile.work_type || profile.day_rate || profile.timezone || (profile.languages && profile.languages.length > 0)) && (
+            <div className="fade-up card" style={{ padding: '1.25rem 1.75rem', marginBottom: '1.5rem', animationDelay: '0.08s' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
+                {profile.primary_profession && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Profession</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.primary_profession}</p>
+                  </div>
+                )}
+                {profile.seniority && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Seniority</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.seniority}</p>
+                  </div>
+                )}
+                {profile.work_type && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Work type</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.work_type}</p>
+                  </div>
+                )}
+                {profile.day_rate && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Day rate</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.day_rate}</p>
+                  </div>
+                )}
+                {profile.timezone && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Timezone</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.timezone}</p>
+                  </div>
+                )}
+                {profile.languages && profile.languages.length > 0 && (
+                  <div>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Languages</p>
+                    <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.languages.join(', ')}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Contact / Social links — gated */}
           {hasLinks && (
             <div className="fade-up" style={{ marginBottom: '2.5rem', animationDelay: '0.1s' }}>
