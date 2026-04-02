@@ -35,7 +35,6 @@ export default function Scout() {
     if (open && messages.length === 0) {
       if (userRole === 'builder') {
         // Hardcoded greeting — instant, no API call needed
-        const firstName = navUser?.email?.split('@')[0] || 'there'
         setMessages([{
           role: 'assistant',
           content: "Hey — I know your profile. Ask me who's hiring for your skills and I'll find your best matches."
