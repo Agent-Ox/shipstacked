@@ -4,9 +4,7 @@ import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICES = {
-  job_post: 'price_1TGQJEAxtRelGvaRZifhWrIF',
-  full_access: 'price_1TGQJFAxtRelGvaRXjR4Dwtb',
-  concierge: 'price_1TGQJGAxtRelGvaRUmvJyM1O',
+  full_access: 'price_1TIBUCE3cjWtx7BryE30mxxK',
 }
 
 export async function POST(req: Request) {
@@ -17,15 +15,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid product' }, { status: 400 })
   }
 
-  const isSubscription = product === 'full_access'
-
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
-    mode: isSubscription ? 'subscription' : 'payment',
+    mode: 'subscription',
     customer_email: email || undefined,
     line_items: [{ price: priceId, quantity: 1 }],
     metadata: { product },
-    subscription_data: isSubscription ? { metadata: { product } } : undefined,
+    subscription_data: { metadata: { product } },
     success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'}/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'}/#pricing`,
   })
