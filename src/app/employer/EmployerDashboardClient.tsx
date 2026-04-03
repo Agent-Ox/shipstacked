@@ -127,7 +127,7 @@ export default function EmployerDashboardClient({
         {/* Header */}
         <div style={{ marginBottom: '2.5rem' }}>
           <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.4rem' }}>
-            Hire Claude builders.
+            Find and hire AI-native builders.
           </h1>
           <p style={{ fontSize: 15, color: '#6e6e73' }}>
             Full Access · active

@@ -173,7 +173,7 @@ export default function Home() {
         </div>
         <h1>The home for<br /><span className="blue">AI-native</span> talent.</h1>
         <p className="hero-sub">
-          AI is reshaping how work gets done. The builders leading that shift deserve a platform built for this moment — not retrofitted from the last one. ShipStacked is proof-first hiring for the Claude economy.
+          AI is reshaping how work gets done. The builders leading that shift deserve a platform built for this moment — not retrofitted from the last one. ShipStacked is proof-of-work platform for the AI-native builder generation.
         </p>
         <div className="hero-actions">
           <Link href="/signup" className="btn-blue">Create free profile</Link>

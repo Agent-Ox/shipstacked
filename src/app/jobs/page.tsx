@@ -3,11 +3,11 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Claude-Native Jobs',
+  title: 'AI-Native Jobs',
   description: 'Browse open roles at companies hiring Claude builders, prompt engineers, and AI automation specialists. Verified talent. Direct applications.',
   alternates: { canonical: 'https://shipstacked.com/jobs' },
   openGraph: {
-    title: 'Claude-Native Jobs — ShipStacked',
+    title: 'AI-Native Jobs — ShipStacked',
     description: 'Browse open roles at companies hiring Claude builders, prompt engineers, and AI automation specialists.',
     url: 'https://shipstacked.com/jobs',
   },
