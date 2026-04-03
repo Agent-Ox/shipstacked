@@ -42,18 +42,17 @@ export default function NavBar() {
         { label: 'Post a job', href: '/post-job' },
       ]
     }
-    if (pathname.startsWith('/dashboard/edit')) return [{ label: 'Dashboard', href: '/dashboard' }]
+    if (pathname.startsWith('/dashboard/edit')) return [{ label: 'Back to dashboard', href: '/dashboard' }]
     if (pathname.startsWith('/dashboard')) return [{ label: 'Edit profile', href: '/dashboard/edit' }]
     if (pathname.startsWith('/employer')) return [
       { label: 'Browse talent', href: '/talent' },
       { label: 'Post a job', href: '/post-job' },
     ]
-    if (pathname.startsWith('/talent')) return [{ label: 'Dashboard', href: '/employer' }]
-    if (pathname.startsWith('/post-job')) return [{ label: 'Dashboard', href: '/employer' }]
+    if (pathname.startsWith('/talent')) return []
+    if (pathname.startsWith('/post-job')) return []
     if (pathname.startsWith('/u/') || pathname.startsWith('/jobs') || pathname.startsWith('/company/')) {
-      if (!navUser) return []
       if (isAdmin) return [{ label: 'Admin', href: '/admin' }]
-      return [{ label: 'Dashboard', href: dashboardLink }]
+      return []
     }
     return []
   }
