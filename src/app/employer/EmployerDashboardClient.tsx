@@ -378,7 +378,13 @@ export default function EmployerDashboardClient({
               </div>
             </div>
 
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label style={labelStyle}>Team size</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {TEAM_SIZES.map(size => <Tag key={size} label={size} selected={profile.team_size === size} onClick={() => setProfile(p => ({ ...p, team_size: size }))} />)}
+                </div>
               </div>
             </div>
 
