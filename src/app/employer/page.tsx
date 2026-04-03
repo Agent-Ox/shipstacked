@@ -32,6 +32,15 @@ export default async function EmployerDashboardPage() {
     .eq('email', user.email)
     .maybeSingle()
 
+  const jobIds = (jobs || []).map(j => j.id)
+  const { data: applications } = jobIds.length > 0
+    ? await supabase
+        .from('applications')
+        .select('*')
+        .in('job_id', jobIds)
+        .order('created_at', { ascending: false })
+    : { data: [] }
+
   const createdAt = new Date(sub.created_at)
   const renewsAt = new Date(createdAt)
   renewsAt.setMonth(renewsAt.getMonth() + 1)
@@ -43,6 +52,7 @@ export default async function EmployerDashboardPage() {
       renewsString={renewsString}
       jobs={jobs || []}
       employerProfile={employerProfile}
+      applications={applications || []}
     />
   )
 }
