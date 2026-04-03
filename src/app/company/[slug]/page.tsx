@@ -96,14 +96,6 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                   {company.hiring_type}
                 </span>
               )}
-              {company.urgency && (
-                <span style={{ fontSize: 12, fontWeight: 500,
-                  color: company.urgency === 'Immediate' ? '#c05000' : '#6e6e73',
-                  background: company.urgency === 'Immediate' ? '#fff3e0' : '#f5f5f7',
-                  padding: '0.2rem 0.6rem', borderRadius: 980 }}>
-                  {company.urgency === 'Immediate' ? '🔥 Hiring now' : company.urgency}
-                </span>
-              )}
             </div>
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
               {company.website_url && (

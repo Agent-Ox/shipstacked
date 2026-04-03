@@ -18,14 +18,12 @@ type EmployerProfile = {
   logo_url?: string
   industry?: string
   hiring_type?: string
-  urgency?: string
   public?: boolean
 }
 
 const TEAM_SIZES = ['1-5', '6-20', '21-50', '51-200', '200+']
 const INDUSTRIES = ['AI / Machine Learning', 'Software / SaaS', 'Fintech', 'Healthcare', 'Legal', 'Marketing / AdTech', 'E-commerce', 'Education', 'Real estate', 'Media / Content', 'Consulting', 'Other']
 const HIRING_TYPES = ['Freelance', 'Full-time', 'Both']
-const URGENCY_OPTIONS = ['Immediate', '1-3 months', 'Building pipeline']
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
@@ -144,7 +142,6 @@ export default function EmployerDashboardClient({
         website_url: profile.website_url, linkedin_url: profile.linkedin_url,
         x_url: profile.x_url, logo_url: profile.logo_url,
         industry: profile.industry, hiring_type: profile.hiring_type,
-        urgency: profile.urgency,
         public: profile.public || false,
       }
       if (hasProfile) {
@@ -368,12 +365,6 @@ export default function EmployerDashboardClient({
                 <label style={labelStyle}>Hiring type</label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {HIRING_TYPES.map(ht => <Tag key={ht} label={ht} selected={profile.hiring_type === ht} onClick={() => setProfile(p => ({ ...p, hiring_type: ht }))} />)}
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Hiring urgency</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {URGENCY_OPTIONS.map(u => <Tag key={u} label={u} selected={profile.urgency === u} onClick={() => setProfile(p => ({ ...p, urgency: u }))} />)}
                 </div>
               </div>
             </div>
