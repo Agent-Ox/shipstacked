@@ -135,14 +135,6 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
           </div>
         )}
 
-        {/* Budget signal */}
-        {company.budget_range && (
-          <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.25rem 1.75rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: 13, color: '#6e6e73', fontWeight: 500 }}>Budget per hire:</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#1a7f37', background: '#e3f3e3', padding: '0.2rem 0.75rem', borderRadius: 980 }}>{company.budget_range}</span>
-          </div>
-        )}
-
         {/* Open roles */}
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: 18, fontWeight: 600, letterSpacing: '-0.02em', color: '#1d1d1f', marginBottom: '1rem' }}>

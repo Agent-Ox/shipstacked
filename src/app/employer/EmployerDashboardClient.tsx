@@ -19,7 +19,6 @@ type EmployerProfile = {
   industry?: string
   hiring_type?: string
   urgency?: string
-  budget_range?: string
   public?: boolean
 }
 
@@ -27,7 +26,6 @@ const TEAM_SIZES = ['1-5', '6-20', '21-50', '51-200', '200+']
 const INDUSTRIES = ['AI / Machine Learning', 'Software / SaaS', 'Fintech', 'Healthcare', 'Legal', 'Marketing / AdTech', 'E-commerce', 'Education', 'Real estate', 'Media / Content', 'Consulting', 'Other']
 const HIRING_TYPES = ['Freelance', 'Full-time', 'Both']
 const URGENCY_OPTIONS = ['Immediate', '1-3 months', 'Building pipeline']
-const BUDGET_RANGES = ['Under $500/day', '$500-1000/day', '$1000-2000/day', '$2000+/day', 'Negotiable']
 
 function slugify(name: string) {
   return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
@@ -146,7 +144,7 @@ export default function EmployerDashboardClient({
         website_url: profile.website_url, linkedin_url: profile.linkedin_url,
         x_url: profile.x_url, logo_url: profile.logo_url,
         industry: profile.industry, hiring_type: profile.hiring_type,
-        urgency: profile.urgency, budget_range: profile.budget_range,
+        urgency: profile.urgency,
         public: profile.public || false,
       }
       if (hasProfile) {
@@ -381,17 +379,6 @@ export default function EmployerDashboardClient({
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div>
-                <label style={labelStyle}>Budget per hire</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {BUDGET_RANGES.map(b => <Tag key={b} label={b} selected={profile.budget_range === b} onClick={() => setProfile(p => ({ ...p, budget_range: b }))} />)}
-                </div>
-              </div>
-              <div>
-                <label style={labelStyle}>Team size</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {TEAM_SIZES.map(size => <Tag key={size} label={size} selected={profile.team_size === size} onClick={() => setProfile(p => ({ ...p, team_size: size }))} />)}
-                </div>
               </div>
             </div>
 
@@ -406,7 +393,7 @@ export default function EmployerDashboardClient({
               </div>
               <div>
                 <label style={labelStyle}>X (Twitter)</label>
-                <input type="text" placeholder="@yourcompany" value={profile.x_url || ''} onChange={e => setProfile(p => ({ ...p, x_url: e.target.value }))} style={inputStyle} />
+                <input type="url" placeholder="https://x.com/yourcompany" value={profile.x_url || ''} onChange={e => setProfile(p => ({ ...p, x_url: e.target.value }))} style={inputStyle} />
               </div>
             </div>
 
