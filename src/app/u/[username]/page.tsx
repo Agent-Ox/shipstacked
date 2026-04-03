@@ -17,7 +17,7 @@ export async function generateMetadata(
 
   if (!profile) return { title: 'Profile not found' }
 
-  const title = `${profile.full_name} — Claude Builder on ShipStacked`
+  const title = `${profile.full_name} — AI-native builder on ShipStacked`
   const description = profile.bio || profile.about?.slice(0, 155) || `${profile.full_name} is a verified AI-native builder. View their projects on ShipStacked.`
   const url = `https://shipstacked.com/u/${username}`
 
@@ -251,10 +251,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
             </div>
           )}
 
-          {/* Claude use cases */}
+          {/* AI use cases */}
           {claudeSkills.length > 0 && (
             <div className="fade-up card" style={{ padding: '1.75rem', marginBottom: '1.5rem', animationDelay: '0.2s' }}>
-              <p className="section-label">Claude use cases</p>
+              <p className="section-label">AI use cases</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {claudeSkills.map((s: string) => <span key={s} className="tag-claude">{s}</span>)}
               </div>

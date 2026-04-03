@@ -57,7 +57,7 @@ export default async function LoginPage({
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: 13, color: '#6e6e73' }}>
-          Want to showcase your Claude work? <Link href="/signup" style={{ color: '#0071e3', textDecoration: 'none' }}>Create a builder profile →</Link>
+          Want to showcase your AI work? <Link href="/signup" style={{ color: '#0071e3', textDecoration: 'none' }}>Create a builder profile →</Link>
         </p>
       </div>
     </div>

@@ -107,7 +107,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
         {/* What they build */}
         {company.what_they_build && (
           <div style={{ background: '#f0f5ff', border: '1px solid #dce8fb', borderRadius: 14, padding: '1.75rem', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>What they're building with Claude</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>What they're building with AI</p>
             <p style={{ fontSize: 15, color: '#1d1d1f', lineHeight: 1.7 }}>{company.what_they_build}</p>
           </div>
         )}
@@ -162,7 +162,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
         {/* Builder CTA */}
         {showBuilderCTA && (
         <div style={{ background: 'linear-gradient(135deg, #0f0f18, #1a1a2e)', border: '1px solid rgba(108,99,255,0.2)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(167,139,250,0.9)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Are you a Claude builder?</p>
+          <p style={{ fontSize: 13, fontWeight: 600, color: 'rgba(167,139,250,0.9)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Are you an AI-native builder?</p>
           <p style={{ fontSize: 17, fontWeight: 600, color: 'rgba(240,240,245,0.95)', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>
             Get discovered by {company.company_name} and others.
           </p>

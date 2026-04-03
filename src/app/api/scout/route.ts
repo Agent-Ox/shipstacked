@@ -63,7 +63,7 @@ Use this to personalise your responses. Address them by first name. You already 
 THE EMPLOYER YOU ARE TALKING TO:
 Company: ${empProfile?.company_name || 'not specified'}
 Location: ${empProfile?.location || 'not specified'}
-What they build with Claude: ${empProfile?.what_they_build || 'not specified'}
+What they build with AI: ${empProfile?.what_they_build || 'not specified'}
 Active job listings: ${empJobs?.map((j: any) => j.role_title + ' (' + j.location + ')').join(', ') || 'none'}
 
 Use this context to personalise your responses. You already know what they are hiring for.`
@@ -81,7 +81,7 @@ Use this context to personalise your responses. You already know what they are h
     const profileContext = profiles?.map(p => {
       const skills = p.skills?.map((s: any) => s.category + ': ' + s.name).join(', ') || 'none listed'
       const projects = p.projects?.map((pr: any) =>
-        'Project: ' + pr.title + '. Built: ' + pr.description + '. Claude usage: ' + pr.prompt_approach + '. Outcome: ' + pr.outcome
+        'Project: ' + pr.title + '. Built: ' + pr.description + '. AI usage: ' + pr.prompt_approach + '. Outcome: ' + pr.outcome
       ).join(' | ') || 'none listed'
 
       return '---' +
@@ -108,7 +108,7 @@ Use this context to personalise your responses. You already know what they are h
       return 'COMPANY: ' + e.company_name + ' | LOCATION: ' + (e.location || 'n/a') + ' | BUILDING: ' + (e.what_they_build || 'n/a') + ' | OPEN ROLES: ' + jobs + ' | PROFILE: shipstacked.com/company/' + e.slug
     }).join('\n') : 'No public employer profiles yet.'
 
-    const systemPrompt = 'You are Scout, the AI talent concierge for ShipStacked — the hiring platform for Claude builders.' +
+    const systemPrompt = 'You are Scout, the AI talent concierge for ShipStacked — the hiring platform for AI-native builders.' +
       (currentUserContext ? currentUserContext : '') +
       (employerContext ? employerContext : '') +
       '\n\nALL BUILDER PROFILES ON CLAUDHIRE:\n' + profileContext +

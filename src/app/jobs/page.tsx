@@ -4,11 +4,11 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'AI-Native Jobs',
-  description: 'Browse open roles at companies hiring Claude builders, prompt engineers, and AI automation specialists. Verified talent. Direct applications.',
+  description: 'Browse open roles at companies hiring AI-native builders, prompt engineers, and AI automation specialists. Verified talent. Direct applications.',
   alternates: { canonical: 'https://shipstacked.com/jobs' },
   openGraph: {
     title: 'AI-Native Jobs — ShipStacked',
-    description: 'Browse open roles at companies hiring Claude builders, prompt engineers, and AI automation specialists.',
+    description: 'Browse open roles at companies hiring AI-native builders, prompt engineers, and AI automation specialists.',
     url: 'https://shipstacked.com/jobs',
   },
 }
@@ -30,7 +30,7 @@ export default async function JobsPage() {
         <div style={{ marginBottom: '2.5rem' }}>
           <p style={{ fontSize: 12, fontWeight: 500, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Jobs</p>
           <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.5rem' }}>AI-native roles</h1>
-          <p style={{ fontSize: 15, color: '#6e6e73' }}>Companies hiring people who actually build with Claude.</p>
+          <p style={{ fontSize: 15, color: '#6e6e73' }}>Companies hiring AI-native builders.</p>
         </div>
 
         {!jobs || jobs.length === 0 ? (
@@ -87,7 +87,7 @@ export default async function JobsPage() {
         )}
 
         <div style={{ marginTop: '3rem', padding: '2rem', background: '#f0f5ff', borderRadius: 14, textAlign: 'center' }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>Are you a Claude builder?</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>Are you an AI-native builder?</p>
           <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Create a free profile and get discovered by companies hiring right now.</p>
           <Link href="/join" style={{ padding: '0.65rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
             Create free profile →

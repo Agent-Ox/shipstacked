@@ -15,7 +15,7 @@ function calcScore(profile: any): { score: number, tips: string[] } {
   if (profile.about) score += 10; else tips.push('Add an about section describing what you build')
   if (profile.projects && profile.projects.length >= 1) score += 15; else tips.push('Add at least one project with real outcomes')
   if (profile.projects && profile.projects.length >= 3) score += 10; else if (profile.projects?.length >= 1) tips.push('Add 2 more projects to strengthen your profile')
-  if (profile.skills && profile.skills.length >= 3) score += 10; else tips.push('Select your Claude use cases and skills')
+  if (profile.skills && profile.skills.length >= 3) score += 10; else tips.push('Select your AI use cases and skills')
   if (profile.github_url || profile.x_url || profile.linkedin_url || profile.website_url) score += 5; else tips.push('Add at least one social link')
   if (profile.primary_profession) score += 5; else tips.push('Add your primary profession')
   if (profile.seniority) score += 5; else tips.push('Add your seniority level')
@@ -210,7 +210,7 @@ export default function BuilderDashboardClient({
             {employers.length > 0 && (
               <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Companies hiring</p>
-                <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>These employers are actively looking for Claude builders.</p>
+                <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>These employers are actively looking for AI-native builders.</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.75rem' }}>
                   {employers.map((emp: any) => {
                     const initials = emp.company_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -237,7 +237,7 @@ export default function BuilderDashboardClient({
             {/* Share */}
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem' }}>
               <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Share your profile</p>
-              <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Let the world know you build with Claude.</p>
+              <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Let the world know you build with AI.</p>
               <ShareButtons name={profile.full_name} url={profileUrl} />
             </div>
 

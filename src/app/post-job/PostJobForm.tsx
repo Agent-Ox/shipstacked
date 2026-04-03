@@ -169,7 +169,7 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
 
         <div style={{ marginBottom: '1.25rem' }}>
           <label style={labelStyle}>Role title *</label>
-          <input type="text" placeholder="Claude AI Engineer" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} style={inputStyle} />
+          <input type="text" placeholder="AI Engineer" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} style={inputStyle} />
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>

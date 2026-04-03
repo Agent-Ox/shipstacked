@@ -5,12 +5,12 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
 const DUMMY_PROFILES = [
-  { initials: 'SR', av: 'av1', name: 'Sara R.', role: 'AI Automation · Barcelona', bio: 'Builds end-to-end automation pipelines using Claude API and n8n. Cut client reporting time by 80% across 3 healthcare orgs.', tags: ['n8n workflows', 'Claude API', 'healthcare'] },
+  { initials: 'SR', av: 'av1', name: 'Sara R.', role: 'AI Automation · Barcelona', bio: 'Builds end-to-end automation pipelines using AI API and n8n. Cut client reporting time by 80% across 3 healthcare orgs.', tags: ['n8n workflows', 'AI API', 'healthcare'] },
   { initials: 'JM', av: 'av2', name: 'James M.', role: 'Prompt Engineer · London', bio: 'Specialises in RAG systems for legal and financial document processing. Built internal research tools for 2 top-10 law firms.', tags: ['RAG systems', 'legal tech', 'document AI'] },
   { initials: 'AL', av: 'av3', name: 'Ana L.', role: 'Claude Developer · Remote', bio: 'Ships full SaaS MVPs using Claude Code and Supabase. Launched 4 products in 2025, two with paying customers within 30 days.', tags: ['Claude Code', 'SaaS MVPs', 'Supabase'] },
-  { initials: 'DK', av: 'av4', name: 'David K.', role: 'AI Consultant · Berlin', bio: 'Trains enterprise teams to integrate Claude into existing workflows. 12 companies onboarded, avg 40% productivity gain reported.', tags: ['enterprise AI', 'training', 'workflow design'] },
-  { initials: 'MP', av: 'av5', name: 'Maya P.', role: 'Content Strategist · NYC', bio: 'Builds Claude-powered content pipelines for B2B SaaS. Scaled one client from 4 to 40 articles/month with zero extra headcount.', tags: ['content pipelines', 'B2B SaaS', 'SEO'] },
-  { initials: 'RT', av: 'av6', name: 'Ravi T.', role: 'Full-Stack Dev · Singapore', bio: 'Integrates Claude into production apps via API. Built a customer support system handling 10k+ queries/day with 94% resolution rate.', tags: ['Claude API', 'customer support', 'Node.js'] },
+  { initials: 'DK', av: 'av4', name: 'David K.', role: 'AI Consultant · Berlin', bio: 'Trains enterprise teams to integrate AI into existing workflows. 12 companies onboarded, avg 40% productivity gain reported.', tags: ['enterprise AI', 'training', 'workflow design'] },
+  { initials: 'MP', av: 'av5', name: 'Maya P.', role: 'Content Strategist · NYC', bio: 'Builds AI-powered content pipelines for B2B SaaS. Scaled one client from 4 to 40 articles/month with zero extra headcount.', tags: ['content pipelines', 'B2B SaaS', 'SEO'] },
+  { initials: 'RT', av: 'av6', name: 'Ravi T.', role: 'Full-Stack Dev · Singapore', bio: 'Integrates AI into production apps via API. Built a customer support system handling 10k+ queries/day with 94% resolution rate.', tags: ['AI API', 'customer support', 'Node.js'] },
 ]
 
 async function goToCheckout(product: string) {
@@ -218,7 +218,7 @@ export default function Home() {
             <div className="how-card blue-card">
               <span className="how-pill pill-paid">Employers — Paid</span>
               <h3>Hire with certainty.</h3>
-              <p className="card-sub" style={{color:'rgba(255,255,255,0.75)'}}>Stop guessing who actually builds with Claude. Find verified talent, post roles, and let Scout match you instantly.</p>
+              <p className="card-sub" style={{color:'rgba(255,255,255,0.75)'}}>Stop guessing who actually builds with AI. Find verified talent, post roles, and let Scout match you instantly.</p>
               <ul className="how-list" style={{color:'rgba(255,255,255,0.9)'}}>
                 <li><span className="check">✓</span> Full talent directory access</li>
                 <li><span className="check">✓</span> AI-powered matching via Scout</li>

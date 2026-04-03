@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { Skill } from '@/lib/types'
 
-const STEPS = ['Basics', 'About', 'Your Claude work', 'Your stack', 'Links', 'Done']
+const STEPS = ['Basics', 'About', 'Your AI work', 'Your stack', 'Links', 'Done']
 const AVAILABILITY_OPTIONS = ['freelance', 'full-time', 'contract', 'part-time', 'open']
 const LLMS = ['ChatGPT / GPT-4', 'Gemini', 'Mistral', 'Llama', 'Grok', 'Perplexity', 'Cohere', 'Other']
 const LANGUAGES = ['Python', 'JavaScript', 'TypeScript', 'Ruby', 'Go', 'Rust', 'Java', 'C#', 'PHP', 'SQL', 'Swift', 'Kotlin']
@@ -328,11 +328,11 @@ export default function JoinPage() {
             <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>This is what employers see first.</p>
             <div style={{ marginBottom: '1.25rem' }}>
               <label style={labelStyle}>One-line bio</label>
-              <input autoComplete="off" type="text" placeholder="Builds Claude-powered automation tools for healthcare teams" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
+              <input autoComplete="off" type="text" placeholder="Builds AI-powered automation tools for healthcare teams" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>What do you build with Claude?</label>
-              <textarea autoComplete="off" placeholder="Describe your Claude work, what problems you solve, who you have worked with..." value={about} onChange={e => setAbout(e.target.value)} rows={5}
+              <label style={labelStyle}>What do you build with AI?</label>
+              <textarea autoComplete="off" placeholder="Describe your AI work, what problems you solve, who you have worked with..." value={about} onChange={e => setAbout(e.target.value)} rows={5}
                 style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
           </div>
@@ -340,10 +340,10 @@ export default function JoinPage() {
 
         {step === 2 && (
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Your Claude work</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Your AI work</h1>
             <p style={{ color: '#6e6e73', marginBottom: '1.5rem', fontSize: 15 }}>Show one real project. This is your proof.</p>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={labelStyle}>How do you primarily use Claude?</label>
+              <label style={labelStyle}>How do you primarily use AI?</label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {CLAUDE_USE_CASES.map(uc => (
                   <Tag key={uc} label={uc} selected={selectedUseCases.includes(uc)} onClick={() => toggle(selectedUseCases, setSelectedUseCases, uc)} />
@@ -359,7 +359,7 @@ export default function JoinPage() {
               <textarea autoComplete="off" placeholder="Describe what the project does and the problem it solves" value={projectDesc} onChange={e => setProjectDesc(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>How did you use Claude?</label>
+              <label style={labelStyle}>How did you use AI?</label>
               <textarea autoComplete="off" placeholder="Describe your prompting approach and how you structured the workflow" value={projectPrompt} onChange={e => setProjectPrompt(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1.25rem' }}>
@@ -376,7 +376,7 @@ export default function JoinPage() {
         {step === 3 && (
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Your full stack</h1>
-            <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>Select everything you work with — not just Claude.</p>
+            <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>Select everything you work with.</p>
             {[
               { label: 'Other LLMs you use', items: LLMS, selected: selectedLLMs, setSelected: setSelectedLLMs },
               { label: 'Coding languages', items: LANGUAGES, selected: selectedLanguages, setSelected: setSelectedLanguages },
@@ -439,7 +439,7 @@ export default function JoinPage() {
               shipstacked.com/u/{username}
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <a href={`https://x.com/intent/tweet?text=I just created my ShipStacked profile — here is what I build with Claude&url=https://shipstacked.com/u/${username}`}
+              <a href={`https://x.com/intent/tweet?text=I just created my ShipStacked profile — here is what I build with AI&url=https://shipstacked.com/u/${username}`}
                 target="_blank" style={{ padding: '0.75rem 1.5rem', background: '#000', color: 'white', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>
                 Share on X
               </a>

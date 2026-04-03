@@ -396,7 +396,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           <input type="text" value={bio} onChange={e => setBio(e.target.value)} style={inputStyle} />
         </div>
         <div style={{ marginBottom: '2rem' }}>
-          <label style={labelStyle}>What do you build with Claude?</label>
+          <label style={labelStyle}>What do you build with AI?</label>
           <textarea value={about} onChange={e => setAbout(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
         </div>
 
@@ -429,7 +429,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
               <textarea value={p.description} onChange={e => updateProject(index, 'description', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={labelStyle}>How did you use Claude?</label>
+              <label style={labelStyle}>How did you use AI?</label>
               <textarea value={p.prompt_approach} onChange={e => updateProject(index, 'prompt_approach', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
             </div>
             <div style={{ marginBottom: '1rem' }}>
@@ -446,7 +446,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
         {/* Skills */}
         <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', margin: '2rem 0 1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid #e0e0e5' }}>Skills</h2>
 
-        <TagGroup label="Claude use cases" items={CLAUDE_USE_CASES} selected={selectedUseCases} setSelected={setSelectedUseCases} />
+        <TagGroup label="AI use cases" items={CLAUDE_USE_CASES} selected={selectedUseCases} setSelected={setSelectedUseCases} />
         <TagGroup label="Other LLMs" items={LLMS} selected={selectedLLMs} setSelected={setSelectedLLMs} />
         <TagGroup label="Coding languages" items={LANGUAGES} selected={selectedLanguages} setSelected={setSelectedLanguages} />
         <TagGroup label="Frameworks and tools" items={FRAMEWORKS} selected={selectedFrameworks} setSelected={setSelectedFrameworks} />
