@@ -56,6 +56,15 @@ export async function POST(req: Request) {
 
     const magicLink = linkData?.properties?.action_link || null
 
+    // Generate password reset link for welcome email
+    const { data: resetLinkData } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo: `${siteUrl}/update-password` }
+    })
+
+    const resetLink = resetLinkData?.properties?.action_link || `${siteUrl}/reset-password`
+
     // Write subscription row
     let expiresAt = null
     if (product === 'job_post') {
@@ -94,7 +103,7 @@ export async function POST(req: Request) {
               Access talent directory
             </a>
             <p style="color: #6e6e73; font-size: 14px; line-height: 1.6;">Set a password so you can sign in any time:</p>
-            <a href="${siteUrl}/reset-password"
+            <a href="${resetLink}"
               style="display: inline-block; margin: 1rem 0; padding: 0.75rem 1.5rem; background: #f5f5f7; color: #1d1d1f; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 500;">
               Set your password
             </a>
