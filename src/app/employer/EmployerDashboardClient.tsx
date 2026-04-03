@@ -284,9 +284,9 @@ export default function EmployerDashboardClient({
             </div>
 
             <div>
-              <label style={labelStyle}>What are you building with Claude?</label>
+              <label style={labelStyle}>What are you building with AI?</label>
               <textarea
-                placeholder="We're using Claude to automate legal document review..."
+                placeholder="We're using AI to automate legal document review..."
                 value={profile.what_they_build || ''}
                 onChange={e => setProfile(p => ({ ...p, what_they_build: e.target.value }))}
                 rows={3}
