@@ -43,8 +43,14 @@ export default function EmployerDashboardClient({
   const hasProfile = !!initial?.id
 
   const handleToggle = async () => {
+    if (!isPublic && !hasProfile) {
+      // Turning on but profile not saved yet
+      setError('Save your company profile first before making it public.')
+      document.getElementById('company-form')?.scrollIntoView({ behavior: 'smooth' })
+      return
+    }
     if (!isPublic && !profile.company_name) {
-      // Turning on but no company name — scroll to form
+      setError('Add a company name before making your profile public.')
       document.getElementById('company-form')?.scrollIntoView({ behavior: 'smooth' })
       return
     }
