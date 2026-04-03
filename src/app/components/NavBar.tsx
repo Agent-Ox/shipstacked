@@ -100,11 +100,15 @@ export default function NavBar() {
       {/* Dropdown menu */}
       {menuOpen && (
         <div style={{
-          position: 'fixed', top: 52, left: 0, right: 0, zIndex: 99,
+          position: 'fixed', top: 52, right: 0, zIndex: 99,
           background: mobileBg,
-          borderBottom: `0.5px solid ${borderColor}`,
-          padding: '0.5rem 1.25rem 1rem',
+          border: `0.5px solid ${borderColor}`,
+          borderTop: 'none',
+          borderRadius: '0 0 0 12px',
+          padding: '0.5rem 1.5rem 1rem',
           display: 'flex', flexDirection: 'column',
+          minWidth: 220,
+          boxShadow: '-4px 4px 24px rgba(0,0,0,0.08)',
         }}>
           {/* Context links */}
           {menuLinks.map(link => (
@@ -123,7 +127,7 @@ export default function NavBar() {
                     style={{ fontSize: 15, color: accentColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, fontWeight: 500 }}>
                     Admin dashboard
                   </a>
-                ) : (
+                ) : menuLinks.some(l => l.href === dashboardLink || l.href === '/dashboard') ? null : (
                   <a href={dashboardLink} onClick={() => setMenuOpen(false)}
                     style={{ fontSize: 15, color: accentColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, fontWeight: 500 }}>
                     {navUser.role === 'employer' ? 'Employer dashboard' : 'Dashboard'}
