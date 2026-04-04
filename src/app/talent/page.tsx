@@ -91,7 +91,7 @@ export default async function TalentPage() {
 
         {/* Scout bar — paid employers only */}
         {isPaidEmployer && (
-          <div style={{ background: 'linear-gradient(135deg, #0f0f18 0%, #1a1a2e 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '1.5rem 1.75rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', flexWrap: 'wrap' }}>
+          <div style={{ background: 'linear-gradient(135deg, #0f0f18 0%, #1a1a2e 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '1.25rem', marginBottom: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2"/><path d="M16.5 16.5L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
@@ -101,7 +101,7 @@ export default async function TalentPage() {
                 <p style={{ fontSize: 13, color: 'rgba(167,139,250,0.8)' }}>Ask Scout — describe your ideal hire and get matched instantly.</p>
               </div>
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(240,240,245,0.9)', background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.3)', padding: '0.5rem 1.1rem', borderRadius: 980, whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(240,240,245,0.9)', background: 'rgba(108,99,255,0.2)', border: '1px solid rgba(108,99,255,0.3)', padding: '0.5rem 1.1rem', borderRadius: 980 }}>
               Scout is active ↘
             </div>
           </div>
