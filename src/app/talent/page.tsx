@@ -1,3 +1,4 @@
+import React from 'react'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -128,30 +129,14 @@ export default async function TalentPage() {
               const velocityColor = profile.velocity_score >= 75 ? '#1a7f37' : profile.velocity_score >= 50 ? '#0071e3' : profile.velocity_score >= 25 ? '#bf7e00' : '#6e6e73'
 
               return (
-                <>
+                <React.Fragment key={profile.id}>
                   {showUnverifiedDivider && (
                     <div key={`divider-${index}`} style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
                       <span style={{ fontSize: 12, fontWeight: 600, color: '#aeaeb2', letterSpacing: '0.05em', textTransform: 'uppercase' }}>All builders</span>
                       <div style={{ flex: 1, height: '0.5px', background: '#e0e0e5' }} />
                     </div>
                   )}
-                  <a key={profile.id} href={`/u/${profile.username}`}
-                    style={{
-                      background: 'white',
-                      border: `1px solid ${profile.verified ? '#dce8fb' : '#e0e0e5'}`,
-                      borderRadius: 16,
-                      padding: '1.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.875rem',
-                      textDecoration: 'none',
-                      cursor: 'pointer',
-                      transition: 'box-shadow 0.2s, transform 0.2s, border-color 0.2s',
-                      boxShadow: profile.verified ? '0 2px 12px rgba(0,113,227,0.06)' : 'none',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = profile.verified ? '#0071e3' : '#c0c0c5' }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow = profile.verified ? '0 2px 12px rgba(0,113,227,0.06)' : 'none'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = profile.verified ? '#dce8fb' : '#e0e0e5' }}
-                  >
+                  <a href={`/u/${profile.username}`} className={profile.verified ? 'talent-card talent-card-verified' : 'talent-card'}>
                     {/* Header row */}
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem' }}>
                       <div style={{
@@ -222,7 +207,7 @@ export default async function TalentPage() {
                       </a>
                     </div>
                   </a>
-                </>
+                </React.Fragment>
               )
             })}
           </div>

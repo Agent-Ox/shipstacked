@@ -207,7 +207,7 @@ export default function Home() {
       <section id="how">
         <div className="section-inner">
           <p className="section-eyebrow">How it works</p>
-          <h2 className="section-title">Built for the builders LinkedIn forgot.</h2>
+          <h2 className="section-title">Built for the builders traditional hiring forgot.</h2>
           <p className="section-sub">Vibe coders, domain experts, AI-native generalists — they ship real things but have nowhere to prove it. Until now.</p>
           <div className="how-grid">
             <div className="how-card">
