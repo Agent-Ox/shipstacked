@@ -23,8 +23,8 @@ export default function Scout() {
   const pathname = usePathname()
 
   // Hide Scout on pages where it clutters or conflicts
-  const HIDE_ON = ['/messages', '/employer/messages', '/feed', '/admin', '/post-job', '/reset-password', '/update-password', '/login', '/signup', '/join']
-  const shouldHide = HIDE_ON.some(p => pathname.startsWith(p)) || pathname.match(/^\/feed\/[^/]+$/)
+  const HIDE_ON = ['/messages', '/employer/messages', '/feed', '/admin', '/post-job', '/reset-password', '/update-password', '/login', '/signup', '/join', '/auth']
+  const shouldHide = HIDE_ON.some(p => pathname === p || pathname.startsWith(p + '/') || pathname.startsWith(p))
 
   useEffect(() => {
     setMounted(true)
@@ -157,7 +157,7 @@ export default function Scout() {
   }
 
   const isSignupFlow = typeof window !== 'undefined' && (window.location.pathname === '/join' || window.location.pathname === '/signup')
-  if (!mounted || !isEmployer || isSignupFlow) return null
+  if (!mounted || !isEmployer || isSignupFlow || shouldHide) return null
 
   return (
     <>
