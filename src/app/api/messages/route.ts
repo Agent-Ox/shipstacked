@@ -6,8 +6,10 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'
 
-// GET — fetch conversations for current user
-export async function GET() {
+// GET — fetch conversations for current user, or create/get one for ?new=profileId
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const newProfileId = searchParams.get('new')
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
@@ -16,6 +18,21 @@ export async function GET() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
+
+  // Handle ?new=profileId — upsert conversation and return it
+  if (newProfileId) {
+    const { data: conv } = await admin
+      .from('conversations')
+      .upsert({
+        employer_email: user.email!,
+        builder_profile_id: newProfileId,
+        job_id: null,
+        last_message_at: new Date().toISOString(),
+      }, { onConflict: 'employer_email,builder_profile_id,job_id' })
+      .select('*, profiles!builder_profile_id(username, full_name, avatar_url, verified, velocity_score), jobs(role_title, company_name)')
+      .single()
+    return NextResponse.json({ conversation: conv })
+  }
 
   const role = user.user_metadata?.role
 

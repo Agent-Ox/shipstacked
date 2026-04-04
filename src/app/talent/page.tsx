@@ -118,72 +118,83 @@ export default async function TalentPage() {
             <p style={{ color: '#6e6e73', fontSize: 14 }}>We are onboarding our first verified builders. Check back shortly.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
             {profiles.map((profile: any, index: number) => {
               const initials = profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
               const claudeSkills = profile.skills?.filter((s: any) => s.category === 'claude_use_case').slice(0, 3) || []
               const otherSkills = profile.skills?.filter((s: any) => s.category !== 'claude_use_case').slice(0, 2) || []
-
-              // Section divider between verified and unverified
               const prevProfile = profiles[index - 1]
               const showUnverifiedDivider = index > 0 && !profile.verified && prevProfile?.verified
+              const velocityColor = profile.velocity_score >= 75 ? '#1a7f37' : profile.velocity_score >= 50 ? '#0071e3' : profile.velocity_score >= 25 ? '#bf7e00' : '#6e6e73'
 
               return (
                 <>
                   {showUnverifiedDivider && (
                     <div key={`divider-${index}`} style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '0.5rem 0' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: '#aeaeb2', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                        All builders
-                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: '#aeaeb2', letterSpacing: '0.05em', textTransform: 'uppercase' }}>All builders</span>
                       <div style={{ flex: 1, height: '0.5px', background: '#e0e0e5' }} />
                     </div>
                   )}
-                  <div key={profile.id} style={{
-                    background: 'white',
-                    border: `1px solid ${profile.verified ? '#dce8fb' : '#e0e0e5'}`,
-                    borderRadius: 14,
-                    padding: '1.5rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.75rem',
-                    transition: 'box-shadow 0.2s, transform 0.2s',
-                    boxShadow: profile.verified ? '0 2px 12px rgba(0,113,227,0.06)' : 'none',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <a key={profile.id} href={`/u/${profile.username}`}
+                    style={{
+                      background: 'white',
+                      border: `1px solid ${profile.verified ? '#dce8fb' : '#e0e0e5'}`,
+                      borderRadius: 16,
+                      padding: '1.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.875rem',
+                      textDecoration: 'none',
+                      cursor: 'pointer',
+                      transition: 'box-shadow 0.2s, transform 0.2s, border-color 0.2s',
+                      boxShadow: profile.verified ? '0 2px 12px rgba(0,113,227,0.06)' : 'none',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = profile.verified ? '#0071e3' : '#c0c0c5' }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = profile.verified ? '0 2px 12px rgba(0,113,227,0.06)' : 'none'; e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = profile.verified ? '#dce8fb' : '#e0e0e5' }}
+                  >
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem' }}>
                       <div style={{
-                        width: 44, height: 44, borderRadius: '50%',
+                        width: 48, height: 48, borderRadius: '50%', flexShrink: 0,
                         background: profile.verified ? 'linear-gradient(135deg, #e8f1fd, #d0e4fb)' : '#f0f0f5',
-                        color: profile.verified ? '#0071e3' : '#6e6e73',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 15, fontWeight: 700, flexShrink: 0,
-                        border: profile.verified ? '1.5px solid rgba(0,113,227,0.2)' : 'none',
+                        fontSize: 16, fontWeight: 700,
+                        color: profile.verified ? '#0071e3' : '#6e6e73',
+                        border: profile.verified ? '2px solid rgba(0,113,227,0.2)' : 'none',
+                        overflow: 'hidden',
                       }}>
-                        {initials}
+                        {profile.avatar_url
+                          ? <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : initials
+                        }
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{profile.full_name}</div>
-                        <div style={{ fontSize: 13, color: '#6e6e73', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{profile.full_name}</span>
+                          {profile.verified && (
+                            <span style={{ fontSize: 10, fontWeight: 700, color: '#0071e3', background: '#e8f1fd', padding: '0.15rem 0.45rem', borderRadius: 980 }}>✓ Verified</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {profile.role}{profile.location ? ` · ${profile.location}` : ''}
                         </div>
                       </div>
-                      {profile.verified && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#0071e3', background: '#e8f1fd', padding: '0.2rem 0.5rem', borderRadius: 980, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          ✓ Verified
-                        </span>
-                      )}
                       {profile.velocity_score > 0 && (
-                        <span style={{ fontSize: 11, fontWeight: 600, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.5rem', borderRadius: 980, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          ⚡ {profile.velocity_score}
-                        </span>
+                        <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                          <div style={{ fontSize: 16, fontWeight: 800, color: velocityColor, lineHeight: 1 }}>{profile.velocity_score}</div>
+                          <div style={{ fontSize: 9, color: '#aeaeb2', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>velocity</div>
+                        </div>
                       )}
                     </div>
 
+                    {/* Bio */}
                     {profile.bio && (
-                      <p style={{ fontSize: 13, color: '#3d3d3f', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      <p style={{ fontSize: 13, color: '#3d3d3f', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0 }}>
                         {profile.bio}
                       </p>
                     )}
 
+                    {/* Skills */}
                     {(claudeSkills.length > 0 || otherSkills.length > 0) && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                         {claudeSkills.map((s: any) => (
@@ -199,23 +210,18 @@ export default async function TalentPage() {
                       </div>
                     )}
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.5rem' }}>
-                      <span style={{
-                        fontSize: 11, color: '#6e6e73', textTransform: 'capitalize',
-                        background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500,
-                      }}>
+                    {/* Footer */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.25rem' }}>
+                      <span style={{ fontSize: 11, color: '#6e6e73', textTransform: 'capitalize', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>
                         {profile.availability || 'open'}
                       </span>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <Link href={`/u/${profile.username}`} style={{ fontSize: 12, padding: '0.4rem 0.85rem', background: '#f0f0f5', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
-                          Profile
-                        </Link>
-                        <a href={`/employer/messages?new=${profile.id}`} style={{ fontSize: 12, padding: '0.4rem 0.85rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
-                          Message
-                        </a>
-                      </div>
+                      <a href={`/employer/messages?new=${profile.id}`}
+                        onClick={e => e.stopPropagation()}
+                        style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
+                        Message →
+                      </a>
                     </div>
-                  </div>
+                  </a>
                 </>
               )
             })}

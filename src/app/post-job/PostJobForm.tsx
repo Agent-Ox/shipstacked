@@ -12,18 +12,26 @@ const inputStyle: React.CSSProperties = {
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: 13, fontWeight: 500,
+  display: 'block', fontSize: 13, fontWeight: 600,
   marginBottom: '0.4rem', color: '#1d1d1f'
 }
 
+const hintStyle: React.CSSProperties = {
+  fontSize: 12, color: '#6e6e73', marginTop: '0.3rem'
+}
+
 const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'freelance']
-const SKILLS = ['Claude API', 'Prompt engineering', 'Python', 'JavaScript', 'TypeScript', 'n8n', 'Make', 'Zapier', 'LangChain', 'RAG systems', 'Claude Code', 'Automation', 'Content creation', 'Data analysis', 'Agent systems']
+const WORK_LOCATIONS = ['Remote', 'Hybrid', 'On-site']
+const URGENCY_OPTIONS = ['Actively hiring', 'Hiring soon', 'Building pipeline']
+const HIRING_FOR_OPTIONS = ['First AI hire', 'Growing AI team', 'Replacing existing role', 'Project-based']
+const TIMEZONES = ['Any', 'UTC-8 to UTC-5 (Americas)', 'UTC-0 to UTC+2 (Europe/Africa)', 'UTC+5 to UTC+8 (Asia)', 'UTC+8 to UTC+12 (Asia-Pacific)']
+const SKILLS = ['Claude API', 'Prompt engineering', 'Python', 'JavaScript', 'TypeScript', 'n8n', 'Make', 'Zapier', 'LangChain', 'RAG systems', 'Claude Code', 'Bolt / Lovable', 'Cursor', 'Automation', 'Content creation', 'Data analysis', 'Agent systems', 'Supabase', 'Next.js', 'React']
 
 function Tag({ label, selected, onClick }: { label: string, selected: boolean, onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} style={{
       padding: '0.4rem 0.9rem', borderRadius: 20, border: '1px solid', fontSize: 13,
-      cursor: 'pointer', fontFamily: 'inherit',
+      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
       background: selected ? '#0071e3' : 'white',
       borderColor: selected ? '#0071e3' : '#d2d2d7',
       color: selected ? 'white' : '#1d1d1f'
@@ -31,24 +39,25 @@ function Tag({ label, selected, onClick }: { label: string, selected: boolean, o
   )
 }
 
+function Section({ title, children }: { title: string, children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: '2rem' }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1rem' }}>{title}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>{children}</div>
+    </div>
+  )
+}
+
 export default function PostJobForm({ employerEmail, jobId, initialData }: {
   employerEmail: string
   jobId?: string
-  initialData?: {
-    company_name: string
-    role_title: string
-    description: string
-    requirements: string
-    salary_range: string
-    location: string
-    employment_type: string
-    skills: string[]
-  }
+  initialData?: any
 }) {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
 
+  // Core fields
   const [companyName, setCompanyName] = useState(initialData?.company_name || '')
   const [roleTitle, setRoleTitle] = useState(initialData?.role_title || '')
   const [description, setDescription] = useState(initialData?.description || '')
@@ -58,59 +67,51 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
   const [employmentType, setEmploymentType] = useState(initialData?.employment_type || 'full-time')
   const [selectedSkills, setSelectedSkills] = useState<string[]>(initialData?.skills || [])
 
+  // Enhanced fields
+  const [dayRate, setDayRate] = useState(initialData?.day_rate || '')
+  const [timezone, setTimezone] = useState(initialData?.timezone || 'Any')
+  const [urgency, setUrgency] = useState(initialData?.urgency || 'Actively hiring')
+  const [hiringFor, setHiringFor] = useState(initialData?.hiring_for || '')
+  const [anonymous, setAnonymous] = useState(initialData?.anonymous || false)
+
   const toggle = (val: string) => {
     setSelectedSkills(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val])
   }
 
   const handleSubmit = async () => {
     if (!companyName || !roleTitle || !description) {
-      setError('Please fill in all required fields.')
+      setError('Company name, role title and description are required.')
       return
     }
     setLoading(true)
     setError('')
     try {
       const supabase = createClient()
+      const payload = {
+        company_name: companyName,
+        role_title: roleTitle,
+        description,
+        requirements,
+        salary_range: salaryRange,
+        location,
+        employment_type: employmentType,
+        skills: selectedSkills,
+        day_rate: dayRate,
+        timezone,
+        urgency,
+        hiring_for: hiringFor,
+        anonymous,
+      }
 
       if (jobId) {
-        // Edit existing job
         const { error: updateError } = await supabase
-          .from('jobs')
-          .update({
-            company_name: companyName,
-            role_title: roleTitle,
-            description,
-            requirements,
-            salary_range: salaryRange,
-            location,
-            employment_type: employmentType,
-            skills: selectedSkills,
-          })
-          .eq('id', jobId)
-          .eq('employer_email', employerEmail)
-
+          .from('jobs').update(payload).eq('id', jobId).eq('employer_email', employerEmail)
         if (updateError) throw updateError
       } else {
-        // Create new job
         const expires = new Date()
         expires.setDate(expires.getDate() + 30)
-
         const { error: insertError } = await supabase
-          .from('jobs')
-          .insert([{
-            employer_email: employerEmail,
-            company_name: companyName,
-            role_title: roleTitle,
-            description,
-            requirements,
-            salary_range: salaryRange,
-            location,
-            employment_type: employmentType,
-            skills: selectedSkills,
-            status: 'active',
-            expires_at: expires.toISOString()
-          }])
-
+          .from('jobs').insert([{ employer_email: employerEmail, ...payload, status: 'active', expires_at: expires.toISOString() }])
         if (insertError) throw insertError
       }
       setDone(true)
@@ -130,15 +131,11 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
             {jobId ? 'Job updated.' : 'Job posted.'}
           </h1>
           <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '2rem', lineHeight: 1.6 }}>
-            {jobId ? 'Your listing has been updated.' : 'Your listing is live for 30 days. Verified ShipStacked builders can now find and apply for your role.'}
+            {jobId ? 'Your listing has been updated.' : 'Your listing is live for 30 days. Verified ShipStacked builders can now find and apply.'}
           </p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/employer" style={{ padding: '0.75rem 1.5rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>
-              Back to dashboard
-            </a>
-            <Link href="/jobs" style={{ padding: '0.75rem 1.5rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>
-              View jobs board
-            </Link>
+            <a href="/employer" style={{ padding: '0.75rem 1.5rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Back to dashboard</a>
+            <Link href="/jobs" style={{ padding: '0.75rem 1.5rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>View jobs board</Link>
           </div>
         </div>
       </div>
@@ -147,7 +144,6 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>
           {jobId ? 'Edit job' : 'Post a job'}
@@ -157,68 +153,94 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
         </p>
 
         {error && (
-          <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14, color: '#c00' }}>
+          <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#c00' }}>
             {error}
           </div>
         )}
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Company name *</label>
-          <input type="text" placeholder="Acme Corp" value={companyName} onChange={e => setCompanyName(e.target.value)} style={inputStyle} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Role title *</label>
-          <input type="text" placeholder="AI Engineer" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} style={inputStyle} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Your email</label>
-          <input type="email" value={employerEmail} disabled style={{ ...inputStyle, background: '#f5f5f7', color: '#6e6e73' }} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Job description *</label>
-          <textarea placeholder="Describe the role, responsibilities, and what you are building..." value={description} onChange={e => setDescription(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Requirements</label>
-          <textarea placeholder="What experience or skills are you looking for?" value={requirements} onChange={e => setRequirements(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Salary range</label>
-          <input type="text" placeholder="e.g. $80k–$120k or $50–$100/hr" value={salaryRange} onChange={e => setSalaryRange(e.target.value)} style={inputStyle} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Location</label>
-          <input type="text" placeholder="Remote" value={location} onChange={e => setLocation(e.target.value)} style={inputStyle} />
-        </div>
-
-        <div style={{ marginBottom: '1.25rem' }}>
-          <label style={labelStyle}>Employment type</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {EMPLOYMENT_TYPES.map(t => (
-              <Tag key={t} label={t} selected={employmentType === t} onClick={() => setEmploymentType(t)} />
-            ))}
+        <Section title="The role">
+          <div>
+            <label style={labelStyle}>Role title *</label>
+            <input type="text" placeholder="AI Automation Engineer" value={roleTitle} onChange={e => setRoleTitle(e.target.value)} style={inputStyle} />
           </div>
-        </div>
-
-        <div style={{ marginBottom: '2rem' }}>
-          <label style={labelStyle}>Skills needed</label>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-            {SKILLS.map(s => (
-              <Tag key={s} label={s} selected={selectedSkills.includes(s)} onClick={() => toggle(s)} />
-            ))}
+          <div>
+            <label style={labelStyle}>Company name *</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <input type="text" placeholder="Acme Corp" value={companyName} onChange={e => setCompanyName(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: 13, color: '#6e6e73', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                <input type="checkbox" checked={anonymous} onChange={e => setAnonymous(e.target.checked)} style={{ width: 15, height: 15 }} />
+                Post anonymously
+              </label>
+            </div>
+            <p style={hintStyle}>Check to hide company name from builders until you message them.</p>
           </div>
-        </div>
+          <div>
+            <label style={labelStyle}>Employment type</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {EMPLOYMENT_TYPES.map(t => <Tag key={t} label={t} selected={employmentType === t} onClick={() => setEmploymentType(t)} />)}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>What is this hire for?</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {HIRING_FOR_OPTIONS.map(t => <Tag key={t} label={t} selected={hiringFor === t} onClick={() => setHiringFor(t)} />)}
+            </div>
+          </div>
+          <div>
+            <label style={labelStyle}>Hiring urgency</label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {URGENCY_OPTIONS.map(t => <Tag key={t} label={t} selected={urgency === t} onClick={() => setUrgency(t)} />)}
+            </div>
+          </div>
+        </Section>
 
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={loading}
+        <Section title="Description">
+          <div>
+            <label style={labelStyle}>Job description *</label>
+            <textarea placeholder="Describe the role, what you're building, and what success looks like..." value={description} onChange={e => setDescription(e.target.value)} rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
+          </div>
+          <div>
+            <label style={labelStyle}>Requirements</label>
+            <textarea placeholder="What experience, skills or track record are you looking for?" value={requirements} onChange={e => setRequirements(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+          </div>
+        </Section>
+
+        <Section title="Compensation and logistics">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Salary range</label>
+              <input type="text" placeholder="e.g. $80k–$120k" value={salaryRange} onChange={e => setSalaryRange(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Day rate</label>
+              <input type="text" placeholder="e.g. $500–$800/day" value={dayRate} onChange={e => setDayRate(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={labelStyle}>Location</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {WORK_LOCATIONS.map(t => <Tag key={t} label={t} selected={location === t} onClick={() => setLocation(t)} />)}
+              </div>
+            </div>
+            <div>
+              <label style={labelStyle}>Timezone preference</label>
+              <select value={timezone} onChange={e => setTimezone(e.target.value)} style={{ ...inputStyle, appearance: 'none' }}>
+                {TIMEZONES.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+        </Section>
+
+        <Section title="Skills needed">
+          <div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {SKILLS.map(s => <Tag key={s} label={s} selected={selectedSkills.includes(s)} onClick={() => toggle(s)} />)}
+            </div>
+          </div>
+        </Section>
+
+        <button type="button" onClick={handleSubmit} disabled={loading}
           style={{ width: '100%', padding: '0.9rem', background: loading ? '#d2d2d7' : '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 15, fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
           {loading ? 'Saving...' : jobId ? 'Save changes' : 'Post job'}
         </button>

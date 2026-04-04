@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 function timeAgo(date: string) {
@@ -19,8 +20,11 @@ export default function EmployerMessagesPage() {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState('')
+  const [startingNew, setStartingNew] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<any>(null)
+  const searchParams = useSearchParams()
+  const newProfileId = searchParams.get('new')
   const userEmailRef = useRef<string>('')
 
   useEffect(() => {
@@ -28,7 +32,12 @@ export default function EmployerMessagesPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) setUserEmail(session.user.email || '')
     })
-    loadConversations()
+    loadConversations().then(() => {
+      // Handle ?new=profileId — auto-open new conversation
+      if (newProfileId) {
+        handleNewConversation(newProfileId)
+      }
+    })
 
     // Supabase Realtime
     const channel = supabase
@@ -69,6 +78,29 @@ export default function EmployerMessagesPage() {
   useEffect(() => { selectedRef.current = selected }, [selected])
   useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const handleNewConversation = async (profileId: string) => {
+    setStartingNew(true)
+    // Fetch builder profile info
+    const res = await fetch(`/api/messages?new=${profileId}`)
+    if (res.ok) {
+      const data = await res.json()
+      if (data.conversation) {
+        setConversations(prev => {
+          const exists = prev.some(c => c.id === data.conversation.id)
+          return exists ? prev : [data.conversation, ...prev]
+        })
+        setSelected(data.conversation)
+        // Load messages for this conversation
+        const msgRes = await fetch(`/api/messages/${data.conversation.id}`)
+        if (msgRes.ok) {
+          const { messages } = await msgRes.json()
+          setMessages(messages)
+        }
+      }
+    }
+    setStartingNew(false)
+  }
 
   const loadConversations = async () => {
     setLoading(true)

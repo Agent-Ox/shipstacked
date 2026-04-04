@@ -177,28 +177,28 @@ export default function Home() {
       <section className="hero">
         <div className="hero-tag">
           <span className="hero-tag-dot"></span>
-          Hiring is changing. ShipStacked is the change.
+          The proof-of-work platform for AI-native builders
         </div>
-        <h1>The home for<br /><span className="blue">AI-native</span> talent.</h1>
+        <h1>Stop guessing<br />who actually <span className="blue">ships.</span></h1>
         <p className="hero-sub">
-          AI is reshaping how work gets done. The builders leading that shift deserve a platform built for this moment — not retrofitted from the last one. ShipStacked is proof-of-work platform for the AI-native builder generation.
+          Builders prove what they've built. Employers pay to find them and message them directly. Every hire stays on-platform. No CVs. No guesswork. No commissions.
         </p>
         <div className="hero-actions">
-          <Link href="/signup" className="btn-blue">Create free profile</Link>
-          <a href="#pricing" className="btn-ghost">Hire talent</a>
+          <Link href="/join" className="btn-blue">Create free builder profile</Link>
+          <a href="#pricing" className="btn-ghost">Hire AI-native talent</a>
         </div>
         <div className="hero-stats">
           <div className="hero-stat">
-            <div className="hero-stat-num">Proof-first</div>
-            <div className="hero-stat-label">Real projects, not claims</div>
+            <div className="hero-stat-num">Build Feed</div>
+            <div className="hero-stat-label">Real builds, real outcomes</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-num">AI-matched</div>
-            <div className="hero-stat-label">Scout finds the right fit</div>
+            <div className="hero-stat-num">Velocity Score</div>
+            <div className="hero-stat-label">Activity-based proof of work</div>
           </div>
           <div className="hero-stat">
-            <div className="hero-stat-num">Free to build</div>
-            <div className="hero-stat-label">Builders always free</div>
+            <div className="hero-stat-num">In-platform DMs</div>
+            <div className="hero-stat-label">Every hire conversation owned</div>
           </div>
         </div>
       </section>
@@ -207,33 +207,33 @@ export default function Home() {
       <section id="how">
         <div className="section-inner">
           <p className="section-eyebrow">How it works</p>
-          <h2 className="section-title">Two sides. One engine.</h2>
-          <p className="section-sub">Builders prove their skills for free. Companies pay to find and hire them. That is the whole model.</p>
+          <h2 className="section-title">Built for the builders LinkedIn forgot.</h2>
+          <p className="section-sub">Vibe coders, domain experts, AI-native generalists — they ship real things but have nowhere to prove it. Until now.</p>
           <div className="how-grid">
             <div className="how-card">
-              <span className="how-pill pill-free">Builders — Free</span>
-              <h3>Prove what you can build.</h3>
-              <p className="card-sub">Create a profile, showcase real projects with actual prompts and outcomes, earn your verified ShipStacked badge.</p>
+              <span className="how-pill pill-free">Builders — Always free</span>
+              <h3>Ship it. Prove it. Get hired.</h3>
+              <p className="card-sub">Post your builds to the Build Feed. Let your Velocity Score show you're active. Get auto-verified when your outcomes are real.</p>
               <ul className="how-list">
                 <li><span className="check">✓</span> Profile live in 5 minutes</li>
-                <li><span className="check">✓</span> Showcase real projects with prompts and outcomes</li>
-                <li><span className="check">✓</span> Earn a verified ShipStacked badge</li>
-                <li><span className="check">✓</span> Get discovered by companies who need you</li>
-                <li><span className="check">✓</span> Browse and apply to open roles</li>
-                <li><span className="check">✓</span> Free forever. No catch.</li>
+                <li><span className="check">✓</span> Build Feed — post what you ship with real outcomes</li>
+                <li><span className="check">✓</span> Velocity Score — GitHub + builds + profile = 0-100</li>
+                <li><span className="check">✓</span> Auto-verified when your proof of work is real</li>
+                <li><span className="check">✓</span> In-platform DMs — no email required</li>
+                <li><span className="check">✓</span> No GitHub required — vibe coders welcome</li>
               </ul>
             </div>
             <div className="how-card blue-card">
-              <span className="how-pill pill-paid">Employers — Paid</span>
-              <h3>Hire with certainty.</h3>
-              <p className="card-sub" style={{color:'rgba(255,255,255,0.75)'}}>Stop guessing who actually builds with AI. Find verified talent, post roles, and let Scout match you instantly.</p>
+              <span className="how-pill pill-paid">Employers — $199/month</span>
+              <h3>Read the proof. Make the hire.</h3>
+              <p className="card-sub" style={{color:'rgba(255,255,255,0.75)'}}>Browse verified builders with real build histories. Message them directly on-platform. No placement fees, no middlemen.</p>
               <ul className="how-list" style={{color:'rgba(255,255,255,0.9)'}}>
-                <li><span className="check">✓</span> Full talent directory access</li>
-                <li><span className="check">✓</span> AI-powered matching via Scout</li>
-                <li><span className="check">✓</span> Contact verified builders directly</li>
-                <li><span className="check">✓</span> Post unlimited jobs</li>
-                <li><span className="check">✓</span> Public or anonymous — your choice</li>
-                <li><span className="check">✓</span> No commission — one flat monthly fee</li>
+                <li><span className="check">✓</span> Full access to verified builder directory</li>
+                <li><span className="check">✓</span> Read their Build Feed — real projects, real outcomes</li>
+                <li><span className="check">✓</span> Velocity Score ranks who's actively shipping</li>
+                <li><span className="check">✓</span> In-platform DMs — conversations stay on ShipStacked</li>
+                <li><span className="check">✓</span> Scout AI — ask in plain English, get instant matches</li>
+                <li><span className="check">✓</span> Post unlimited jobs. No commission. Ever.</li>
               </ul>
             </div>
           </div>
@@ -244,8 +244,8 @@ export default function Home() {
       <section className="profiles-section" id="talent">
         <div className="section-inner">
           <p className="section-eyebrow">The talent</p>
-          <h2 className="section-title">Real builders. Real proof.</h2>
-          <p className="section-sub">Every profile on ShipStacked shows actual work — not just a claim that someone uses AI.</p>
+          <h2 className="section-title">Verified builders, ready to ship.</h2>
+          <p className="section-sub">Every ShipStacked profile shows what was built, what problem it solved, and what the outcome was. No claims. No fluff.</p>
           <div className="profiles-scroll">
             {displayProfiles.map((profile: any, i: number) => {
               const isReal = showReal
