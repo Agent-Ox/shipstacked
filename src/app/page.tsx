@@ -440,6 +440,7 @@ export default function Home() {
             <a href="#pricing">Hire talent</a>
             <Link href="/feed">Build Feed</Link>
             <Link href="/join">Join</Link>
+            <Link href="/api-docs">Builder API</Link>
           </div>
           <p className="footer-copy">© 2026 ShipStacked. All rights reserved.</p>
         </div>

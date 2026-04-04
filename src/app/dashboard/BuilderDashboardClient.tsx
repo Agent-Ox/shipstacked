@@ -59,6 +59,11 @@ export default function BuilderDashboardClient({
   const [scoreBreakdown, setScoreBreakdown] = useState<{ github: number, feed: number, completeness: number } | null>(null)
   const [milestoneHit, setMilestoneHit] = useState<number | null>(null)
   const [calculating, setCalculating] = useState(false)
+  const [apiKeys, setApiKeys] = useState<any[]>([])
+  const [newKeyName, setNewKeyName] = useState('')
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null)
+  const [keysLoading, setKeysLoading] = useState(false)
+  const [keysLoaded, setKeysLoaded] = useState(false)
 
   const profileUrl = profile ? 'https://shipstacked.com/u/' + profile.username : ''
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
@@ -343,6 +348,89 @@ export default function BuilderDashboardClient({
                 </div>
               </div>
             )}
+
+
+            {/* API Keys */}
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Agent API Keys</p>
+                  <p style={{ fontSize: 13, color: '#6e6e73' }}>Let your agent update your profile and post builds automatically.</p>
+                </div>
+                <a href="/api-docs" style={{ fontSize: 12, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>API docs →</a>
+              </div>
+
+              {!keysLoaded ? (
+                <button onClick={async () => {
+                  setKeysLoading(true)
+                  const res = await fetch('/api/keys')
+                  if (res.ok) { const { keys } = await res.json(); setApiKeys(keys) }
+                  setKeysLoaded(true)
+                  setKeysLoading(false)
+                }} style={{ fontSize: 13, padding: '0.4rem 0.875rem', background: '#f5f5f7', color: '#1d1d1f', border: 'none', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                  {keysLoading ? 'Loading...' : 'Show API keys'}
+                </button>
+              ) : (
+                <>
+                  {/* Generated key — show once */}
+                  {generatedKey && (
+                    <div style={{ background: '#0f0f18', border: '1px solid rgba(108,99,255,0.3)', borderRadius: 10, padding: '1rem', marginBottom: '1rem' }}>
+                      <p style={{ fontSize: 11, fontWeight: 700, color: 'rgba(167,139,250,0.8)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>⚠ Copy now — shown once only</p>
+                      <code style={{ fontSize: 12, color: '#a78bfa', fontFamily: 'monospace', wordBreak: 'break-all', display: 'block', marginBottom: '0.75rem' }}>{generatedKey}</code>
+                      <button onClick={() => { navigator.clipboard.writeText(generatedKey); }} style={{ fontSize: 12, padding: '0.35rem 0.75rem', background: 'rgba(108,99,255,0.2)', color: '#a78bfa', border: '1px solid rgba(108,99,255,0.3)', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                        Copy to clipboard
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Existing keys */}
+                  {apiKeys.length > 0 && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      {apiKeys.map((key: any) => (
+                        <div key={key.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.625rem 0', borderBottom: '0.5px solid #f0f0f5', gap: '0.5rem' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{key.name}</p>
+                            <p style={{ fontSize: 11, color: '#aeaeb2', fontFamily: 'monospace' }}>{key.key_prefix}••••••••</p>
+                            {key.last_used_at && <p style={{ fontSize: 11, color: '#aeaeb2' }}>Last used: {new Date(key.last_used_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>}
+                          </div>
+                          <button onClick={async () => {
+                            if (!confirm('Revoke this key? Any agent using it will stop working.')) return
+                            await fetch('/api/keys', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: key.id }) })
+                            setApiKeys(prev => prev.filter(k => k.id !== key.id))
+                          }} style={{ fontSize: 12, padding: '0.3rem 0.6rem', background: '#fff0f0', color: '#c00', border: '1px solid #ffd0d0', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                            Revoke
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Create new key */}
+                  {apiKeys.length < 5 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <input
+                        value={newKeyName}
+                        onChange={e => setNewKeyName(e.target.value)}
+                        placeholder="Name this key (e.g. OX agent)"
+                        style={{ flex: 1, minWidth: 160, padding: '0.5rem 0.875rem', border: '1px solid #d2d2d7', borderRadius: 980, fontSize: 13, fontFamily: 'inherit', outline: 'none' }}
+                      />
+                      <button onClick={async () => {
+                        if (!newKeyName.trim()) return
+                        const res = await fetch('/api/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newKeyName.trim() }) })
+                        if (res.ok) {
+                          const data = await res.json()
+                          setGeneratedKey(data.key)
+                          setApiKeys(prev => [...prev, { id: data.id, name: data.name, key_prefix: data.key_prefix, last_used_at: null }])
+                          setNewKeyName('')
+                        }
+                      }} style={{ padding: '0.5rem 1rem', background: '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                        Generate key
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
 
             {/* Share */}
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem' }}>
