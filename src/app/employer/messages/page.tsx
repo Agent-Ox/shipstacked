@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -12,7 +12,7 @@ function timeAgo(date: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-export default function EmployerMessagesPage() {
+function EmployerMessagesInner() {
   const [conversations, setConversations] = useState<any[]>([])
   const [selected, setSelected] = useState<any>(null)
   const [messages, setMessages] = useState<any[]>([])
@@ -273,5 +273,13 @@ export default function EmployerMessagesPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function EmployerMessagesPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#fbfbfd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><p style={{ color: '#aeaeb2' }}>Loading...</p></div>}>
+      <EmployerMessagesInner />
+    </Suspense>
   )
 }
