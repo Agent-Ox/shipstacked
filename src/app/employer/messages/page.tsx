@@ -30,6 +30,12 @@ function EmployerMessagesInner() {
   const newProfileId = searchParams.get('new')
 
   useEffect(() => {
+    // Add class to html for full-height mobile layout
+    document.documentElement.classList.add('msgs-open')
+    return () => { document.documentElement.classList.remove('msgs-open') }
+  }, [])
+
+  useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) { setUserEmail(session.user.email || ''); userEmailRef.current = session.user.email || '' }
@@ -180,7 +186,7 @@ function EmployerMessagesInner() {
       `}</style>
 
       {/* ── MOBILE ── */}
-      <div className="emp-mobile" style={{ position: 'fixed', top: 52, left: 0, right: 0, bottom: 0, flexDirection: 'column', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div className="emp-mobile" style={{ height: '100svh', paddingTop: 52, flexDirection: 'column', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         {view === 'list' ? (
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '1rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

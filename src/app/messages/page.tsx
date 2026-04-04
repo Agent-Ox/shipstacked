@@ -26,6 +26,12 @@ export default function MessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    // Add class to html for full-height mobile layout
+    document.documentElement.classList.add('msgs-open')
+    return () => { document.documentElement.classList.remove('msgs-open') }
+  }, [])
+
+  useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) { setUserEmail(session.user.email || ''); userEmailRef.current = session.user.email || '' }
@@ -171,7 +177,7 @@ export default function MessagesPage() {
 
       {/* ── MOBILE ── full height flex column, keyboard-safe */}
       <div className="msgs-mobile" style={{
-        position: 'fixed', top: 52, left: 0, right: 0, bottom: 0,
+        height: '100svh', paddingTop: 52,
         flexDirection: 'column', background: '#fbfbfd',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       }}>
