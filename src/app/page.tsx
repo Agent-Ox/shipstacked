@@ -4,20 +4,53 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
-const DUMMY_PROFILES = [
-  { initials: 'SR', av: 'av1', name: 'Sara R.', role: 'AI Automation · Barcelona', bio: 'Builds end-to-end automation pipelines using AI API and n8n. Cut client reporting time by 80% across 3 healthcare orgs.', tags: ['n8n workflows', 'AI API', 'healthcare'] },
-  { initials: 'JM', av: 'av2', name: 'James M.', role: 'Prompt Engineer · London', bio: 'Specialises in RAG systems for legal and financial document processing. Built internal research tools for 2 top-10 law firms.', tags: ['RAG systems', 'legal tech', 'document AI'] },
-  { initials: 'AL', av: 'av3', name: 'Ana L.', role: 'Claude Developer · Remote', bio: 'Ships full SaaS MVPs using Claude Code and Supabase. Launched 4 products in 2025, two with paying customers within 30 days.', tags: ['Claude Code', 'SaaS MVPs', 'Supabase'] },
-  { initials: 'DK', av: 'av4', name: 'David K.', role: 'AI Consultant · Berlin', bio: 'Trains enterprise teams to integrate AI into existing workflows. 12 companies onboarded, avg 40% productivity gain reported.', tags: ['enterprise AI', 'training', 'workflow design'] },
-  { initials: 'MP', av: 'av5', name: 'Maya P.', role: 'Content Strategist · NYC', bio: 'Builds AI-powered content pipelines for B2B SaaS. Scaled one client from 4 to 40 articles/month with zero extra headcount.', tags: ['content pipelines', 'B2B SaaS', 'SEO'] },
-  { initials: 'RT', av: 'av6', name: 'Ravi T.', role: 'Full-Stack Dev · Singapore', bio: 'Integrates AI into production apps via API. Built a customer support system handling 10k+ queries/day with 94% resolution rate.', tags: ['AI API', 'customer support', 'Node.js'] },
+// Dummy feed posts — fall away automatically when real posts exist
+const DUMMY_POSTS = [
+  {
+    id: 'd1', title: 'AI contract review tool for a 3-person law firm',
+    problem_solved: 'Contract reviews were taking 4 hours each. Partner time was being wasted on routine checks.',
+    outcome: 'Review time cut from 4 hours to 20 minutes. Client is now productising it for other firms.',
+    tools_used: 'Claude API, n8n, Supabase', time_taken: '2 weekends',
+    profiles: { full_name: 'Sara R.', verified: true, avatar_url: null }
+  },
+  {
+    id: 'd2', title: 'Full social content pipeline — brief in, 30 posts out',
+    problem_solved: 'Client was paying a content agency £4k/month for inconsistent output.',
+    outcome: 'Brief goes in Monday morning, 30 posts scheduled by Monday afternoon. They cancelled the agency.',
+    tools_used: 'Claude Code, Make, Airtable', time_taken: '4 days',
+    profiles: { full_name: 'James M.', verified: true, avatar_url: null }
+  },
+  {
+    id: 'd3', title: 'Full SaaS MVP — auth, payments, AI insights layer',
+    problem_solved: 'Fintech client had a validated idea but no technical co-founder and no budget for an agency.',
+    outcome: 'Live with paying customers in 3 weeks. Client raised a pre-seed round off the back of it.',
+    tools_used: 'Lovable, Supabase, Stripe', time_taken: '3 weeks',
+    profiles: { full_name: 'Ana L.', verified: true, avatar_url: null }
+  },
+  {
+    id: 'd4', title: 'Outreach agent running 24/7 — books calls while I sleep',
+    problem_solved: 'Client was spending 3 hours a day on manual outreach with inconsistent results.',
+    outcome: '$40k in new business closed last month. Agent qualifies, personalises, books. Zero human input.',
+    tools_used: 'Claude Code, n8n, Apollo', time_taken: '5 days',
+    profiles: { full_name: 'Maya P.', verified: false, avatar_url: null }
+  },
 ]
 
-async function goToCheckout(product: string) {
+// Dummy profiles — fall away when 6+ real profiles exist
+const DUMMY_PROFILES = [
+  { initials: 'SR', av: 'av1', name: 'Sara R.', role: 'AI Automation · Barcelona', bio: 'Builds end-to-end automation pipelines. Cut client reporting time by 80% across 3 healthcare orgs.', tags: ['n8n workflows', 'Claude API', 'healthcare'] },
+  { initials: 'JM', av: 'av2', name: 'James M.', role: 'Prompt Engineer · London', bio: 'RAG systems for legal and financial document processing. Built internal research tools for 2 top-10 law firms.', tags: ['RAG systems', 'legal tech', 'document AI'] },
+  { initials: 'AL', av: 'av3', name: 'Ana L.', role: 'Vibe Coder · Remote', bio: 'Ships full SaaS MVPs using Claude Code and Supabase. Launched 4 products in 2025, two with paying customers in 30 days.', tags: ['Claude Code', 'SaaS MVPs', 'Supabase'] },
+  { initials: 'DK', av: 'av4', name: 'David K.', role: 'AI Consultant · Berlin', bio: 'Trains enterprise teams to integrate AI. 12 companies onboarded, avg 40% productivity gain.', tags: ['enterprise AI', 'agent systems', 'workflow design'] },
+  { initials: 'MP', av: 'av5', name: 'Maya P.', role: 'Agent Builder · NYC', bio: 'Deploys AI agents for B2B outreach and content. One agent closed $40k last month with zero human input.', tags: ['agent systems', 'outreach automation', 'B2B'] },
+  { initials: 'RT', av: 'av6', name: 'Ravi T.', role: 'Full-Stack AI Dev · Singapore', bio: 'Integrates AI into production apps. Built a support system handling 10k+ queries/day, 94% auto-resolution.', tags: ['Claude API', 'customer support', 'Node.js'] },
+]
+
+async function goToCheckout() {
   const res = await fetch('/api/checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ product })
+    body: JSON.stringify({ product: 'full_access' })
   })
   const data = await res.json()
   if (data.url) window.location.href = data.url
@@ -28,233 +61,284 @@ export default function Home() {
   const [feedPosts, setFeedPosts] = useState<any[]>([])
 
   useEffect(() => {
-    fetch('/api/feed?limit=3')
+    fetch('/api/feed?limit=4')
       .then(r => r.json())
-      .then(({ posts }) => { if (posts) setFeedPosts(posts) })
+      .then(({ posts }) => { if (posts?.length) setFeedPosts(posts) })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
     const supabase = createClient()
-    supabase
-      .from('profiles')
-      .select('*, skills(*)')
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .limit(6)
-      .then(({ data }) => {
-        if (data) setRealProfiles(data)
-      })
+    supabase.from('profiles').select('*, skills(*)').eq('published', true)
+      .order('created_at', { ascending: false }).limit(6)
+      .then(({ data }) => { if (data?.length >= 6) setRealProfiles(data) })
   }, [])
 
-  const showReal = realProfiles.length >= 6
-  const displayProfiles = showReal ? realProfiles : DUMMY_PROFILES
+  const showRealProfiles = realProfiles.length >= 6
+  const displayProfiles = showRealProfiles ? realProfiles : DUMMY_PROFILES
+  const displayPosts = feedPosts.length > 0 ? feedPosts : DUMMY_POSTS
 
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-          --bg: #ffffff;
-          --bg2: #f5f5f7;
-          --bg3: #e8e8ed;
-          --text: #1d1d1f;
-          --text2: #6e6e73;
-          --text3: #aeaeb2;
-          --accent: #0071e3;
-          --accent-hover: #0077ed;
-          --accent-light: #e8f1fd;
-          --border: #d2d2d7;
-          --border-light: #e8e8ed;
-          --purple: #6c63ff;
+          --bg: #ffffff; --bg2: #f5f5f7; --bg3: #e8e8ed;
+          --text: #1d1d1f; --text2: #6e6e73; --text3: #aeaeb2;
+          --accent: #0071e3; --accent-hover: #0077ed; --accent-light: #e8f1fd;
+          --border: #d2d2d7; --border-light: #e8e8ed;
+          --green: #1a7f37; --green-light: #e3f3e3;
           --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          --radius: 18px;
-          --radius-pill: 980px;
+          --radius: 18px; --radius-pill: 980px;
         }
-        body { background: var(--bg); color: var(--text); font-family: var(--sans); font-weight: 400; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-        .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 8rem 2rem 6rem; background: linear-gradient(180deg, #fbfbfd 0%, #ffffff 100%); }
-        .hero-tag { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 500; padding: 0.3rem 0.85rem; border-radius: var(--radius-pill); margin-bottom: 2rem; }
-        .hero-tag-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: pulse 2s ease infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.85); } }
-        .hero h1 { font-size: clamp(2.8rem, 7vw, 6rem); font-weight: 600; line-height: 1.05; letter-spacing: -0.03em; color: var(--text); max-width: 820px; margin-bottom: 1rem; }
-        .hero h1 .blue { color: var(--accent); }
-        .hero-sub { font-size: clamp(1rem, 2vw, 1.2rem); color: var(--text2); max-width: 560px; font-weight: 300; line-height: 1.7; margin-bottom: 2.5rem; }
-        .hero-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-        .btn-blue { background: var(--accent); color: white; padding: 0.85rem 1.75rem; border-radius: var(--radius-pill); font-size: 0.95rem; font-weight: 500; text-decoration: none; transition: background 0.2s; display: inline-block; letter-spacing: -0.01em; border: none; cursor: pointer; font-family: var(--sans); }
-        .btn-blue:hover { background: var(--accent-hover); }
-        .btn-ghost { background: var(--bg2); color: var(--text); padding: 0.85rem 1.75rem; border-radius: var(--radius-pill); font-size: 0.95rem; font-weight: 500; text-decoration: none; transition: background 0.2s; display: inline-block; letter-spacing: -0.01em; }
-        .btn-ghost:hover { background: var(--bg3); }
-        .hero-stats { display: flex; margin-top: 5rem; background: var(--bg2); border-radius: var(--radius); overflow: hidden; width: 100%; max-width: 640px; }
-        .hero-stat { flex: 1; padding: 1.5rem 1rem; text-align: center; border-right: 0.5px solid var(--border); }
-        .hero-stat:last-child { border-right: none; }
-        .hero-stat-num { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin-bottom: 0.3rem; }
-        .hero-stat-label { font-size: 0.72rem; color: var(--text2); line-height: 1.4; }
-        section { padding: 6rem 2rem; }
-        .section-inner { max-width: 1000px; margin: 0 auto; }
-        .section-eyebrow { font-size: 0.75rem; font-weight: 500; color: var(--accent); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; }
-        .section-title { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; color: var(--text); text-align: center; margin-bottom: 1rem; max-width: 640px; margin-left: auto; margin-right: auto; }
-        .section-sub { font-size: 1rem; color: var(--text2); text-align: center; max-width: 480px; margin: 0 auto 3.5rem; line-height: 1.6; font-weight: 300; }
-        .how-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .how-card { background: var(--bg2); border-radius: var(--radius); padding: 2.5rem; }
-        .how-card.blue-card { background: var(--accent); color: white; }
-        .how-pill { display: inline-block; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.3rem 0.75rem; border-radius: var(--radius-pill); margin-bottom: 1.5rem; }
-        .pill-free { background: #e3f3e3; color: #1a7f37; }
-        .pill-paid { background: rgba(255,255,255,0.2); color: white; }
-        .how-card h3 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-        .card-sub { font-size: 0.9rem; opacity: 0.7; margin-bottom: 2rem; line-height: 1.5; }
-        .how-list { list-style: none; display: flex; flex-direction: column; gap: 0.75rem; }
-        .how-list li { font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.5; }
-        .check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 10px; background: rgba(255,255,255,0.25); }
-        .how-card:not(.blue-card) .check { background: var(--accent-light); color: var(--accent); }
-        .profiles-section { background: var(--bg2); }
-        .profiles-scroll { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 3rem; }
-        .profile-card { background: var(--bg); border-radius: var(--radius); padding: 1.75rem; transition: transform 0.3s ease; cursor: default; }
-        .profile-card:hover { transform: translateY(-4px); }
-        .profile-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
-        .avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; flex-shrink: 0; }
-        .av1 { background: #e8f1fd; color: #0071e3; }
-        .av2 { background: #fde8e8; color: #c00; }
-        .av3 { background: #e8fdf0; color: #1a7f37; }
-        .av4 { background: #fdf5e8; color: #bf7e00; }
-        .av5 { background: #f0e8fd; color: #6e36c9; }
-        .av6 { background: #e8f9fd; color: #0076a3; }
-        .profile-name { font-size: 0.95rem; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 0.1rem; }
+        body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+
+        /* Hero */
+        .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6rem 1.5rem 5rem; background: linear-gradient(180deg, #fbfbfd 0%, #ffffff 100%); }
+        .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.875rem; border-radius: var(--radius-pill); margin-bottom: 2rem; letter-spacing: 0.02em; }
+        .hero-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: pulse 2s ease infinite; }
+        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+        .hero h1 { font-size: clamp(2.6rem, 7vw, 5.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; color: var(--text); max-width: 800px; margin-bottom: 0.5rem; }
+        .hero h1 .muted { color: var(--text3); font-weight: 400; }
+        .hero-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text2); max-width: 520px; line-height: 1.7; margin: 1.25rem auto 2.5rem; font-weight: 300; }
+        .btn-primary { display: inline-block; background: var(--accent); color: white; padding: 1rem 2rem; border-radius: var(--radius-pill); font-size: 1rem; font-weight: 600; text-decoration: none; transition: background 0.2s, transform 0.15s; letter-spacing: -0.01em; border: none; cursor: pointer; font-family: var(--sans); }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .hero-note { font-size: 0.8rem; color: var(--text3); margin-top: 0.875rem; }
+        .hero-proof { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 3.5rem; flex-wrap: wrap; }
+        .proof-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text2); }
+        .proof-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+        /* Sections */
+        .section { padding: 5rem 1.5rem; }
+        .section-inner { max-width: 960px; margin: 0 auto; }
+        .section-inner-narrow { max-width: 680px; margin: 0 auto; }
+        .eyebrow { font-size: 0.72rem; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.75rem; }
+        .section-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; color: var(--text); margin-bottom: 1rem; }
+
+        /* Manifesto */
+        .manifesto { background: #0a0a0f; padding: 5rem 1.5rem; }
+        .manifesto-inner { max-width: 720px; margin: 0 auto; }
+        .manifesto h2 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; color: #f0f0f5; margin-bottom: 2rem; }
+        .manifesto h2 .accent { color: #6c63ff; }
+        .manifesto p { font-size: clamp(1rem, 2vw, 1.1rem); color: rgba(240,240,245,0.65); line-height: 1.85; font-weight: 300; margin-bottom: 1.25rem; }
+        .manifesto p:last-child { margin-bottom: 0; }
+        .manifesto strong { color: rgba(240,240,245,0.9); font-weight: 500; }
+
+        /* Feed preview */
+        .feed-card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.375rem 1.5rem; margin-bottom: 0.875rem; transition: border-color 0.2s; }
+        .feed-card:hover { border-color: #c0c0c8; }
+        .feed-author { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; }
+        .feed-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #e8f1fd, #d0e4fb); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); overflow: hidden; flex-shrink: 0; }
+        .feed-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; margin-bottom: 0.625rem; line-height: 1.35; }
+        .feed-outcome { background: var(--green-light); border: 1px solid #b3e0b3; border-radius: 8px; padding: 0.6rem 0.875rem; margin-bottom: 0.625rem; }
+        .feed-outcome-label { font-size: 10px; font-weight: 700; color: var(--green); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.2rem; }
+        .feed-outcome-text { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.5; }
+        .feed-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .feed-meta-item { font-size: 12px; color: var(--text3); }
+
+        /* How it works */
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
+        .step { background: var(--bg2); border-radius: var(--radius); padding: 2rem 1.75rem; }
+        .step-num { font-size: 0.7rem; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; font-family: monospace; }
+        .step h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin-bottom: 0.5rem; }
+        .step p { font-size: 0.875rem; color: var(--text2); line-height: 1.6; }
+
+        /* Profile cards */
+        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2.5rem; }
+        .profile-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius); padding: 1.5rem; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .profile-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+        .profile-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.875rem; }
+        .avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+        .av1{background:#e8f1fd;color:#0071e3} .av2{background:#fde8e8;color:#c00}
+        .av3{background:#e8fdf0;color:#1a7f37} .av4{background:#fdf5e8;color:#bf7e00}
+        .av5{background:#f0e8fd;color:#6e36c9} .av6{background:#e8f9fd;color:#0076a3}
+        .profile-name { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.1rem; }
         .profile-role { font-size: 0.78rem; color: var(--text2); }
-        .verified-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--accent-light); color: var(--accent); font-size: 0.65rem; font-weight: 600; padding: 0.2rem 0.5rem; border-radius: var(--radius-pill); margin-left: auto; letter-spacing: 0.03em; flex-shrink: 0; }
-        .profile-bio { font-size: 0.82rem; color: var(--text2); line-height: 1.55; margin-bottom: 1rem; }
+        .verified-badge { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--accent-light); color: var(--accent); font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: var(--radius-pill); margin-left: auto; }
+        .profile-bio { font-size: 0.82rem; color: var(--text2); line-height: 1.55; margin-bottom: 0.875rem; }
         .profile-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
         .ptag { font-size: 0.7rem; padding: 0.25rem 0.6rem; background: var(--bg2); border-radius: var(--radius-pill); color: var(--text2); font-weight: 500; }
-        .scout-bar { background: linear-gradient(135deg, #0f0f18, #1a1a2e); border-radius: var(--radius); padding: 2rem 2.5rem; display: flex; align-items: center; justify-content: space-between; gap: 2rem; margin-top: 3rem; flex-wrap: wrap; }
-        .scout-bar-text h4 { font-size: 1rem; font-weight: 600; color: rgba(240,240,245,0.95); margin-bottom: 0.3rem; letter-spacing: -0.01em; }
-        .scout-bar-text p { font-size: 0.85rem; color: rgba(167,139,250,0.8); line-height: 1.5; }
-        .scout-badge { font-size: 0.8rem; font-weight: 600; color: rgba(240,240,245,0.9); background: rgba(108,99,255,0.2); border: 1px solid rgba(108,99,255,0.3); padding: 0.5rem 1.1rem; border-radius: var(--radius-pill); white-space: nowrap; }
-        .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; align-items: start; max-width: 680px; margin-left: auto; margin-right: auto; }
-        .price-card { background: var(--bg2); border-radius: var(--radius); padding: 2rem; }
-        .price-card.featured { background: var(--accent); color: white; }
-        .price-tier { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text2); margin-bottom: 1rem; }
-        .price-card.featured .price-tier { color: rgba(255,255,255,0.7); }
-        .price-num { font-size: 3rem; font-weight: 600; letter-spacing: -0.04em; line-height: 1; margin-bottom: 0.25rem; }
-        .price-num sup { font-size: 1.2rem; font-weight: 500; vertical-align: top; margin-top: 0.5rem; display: inline-block; }
-        .price-period { font-size: 0.8rem; color: var(--text2); margin-bottom: 1.5rem; }
-        .price-card.featured .price-period { color: rgba(255,255,255,0.7); }
-        .price-desc { font-size: 0.875rem; color: var(--text2); line-height: 1.6; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 0.5px solid var(--border-light); }
-        .price-card.featured .price-desc { color: rgba(255,255,255,0.8); border-color: rgba(255,255,255,0.2); }
-        .price-features { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
-        .price-features li { font-size: 0.85rem; color: var(--text2); display: flex; align-items: center; gap: 0.5rem; }
-        .price-card.featured .price-features li { color: rgba(255,255,255,0.85); }
-        .price-features li::before { content: ''; width: 14px; height: 14px; border-radius: 50%; background: var(--bg3); flex-shrink: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%230071e3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 10px; }
-        .price-card.featured .price-features li::before { background-color: rgba(255,255,255,0.2); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
-        .price-btn { display: block; text-align: center; padding: 0.8rem; border-radius: var(--radius-pill); font-size: 0.9rem; font-weight: 500; text-decoration: none; transition: all 0.2s; letter-spacing: -0.01em; border: none; cursor: pointer; font-family: var(--sans); width: 100%; }
-        .price-btn-blue { background: var(--accent); color: white; }
-        .price-btn-blue:hover { background: var(--accent-hover); }
-        .price-btn-white { background: white; color: var(--accent); }
-        .price-btn-white:hover { background: #f0f0f5; }
-        .cta-section { background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%); text-align: center; padding: 8rem 2rem; }
-        .cta-section h2 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 1.25rem; max-width: 600px; margin-left: auto; margin-right: auto; }
+
+        /* Employer section */
+        .employer-section { background: var(--bg2); padding: 5rem 1.5rem; }
+        .employer-inner { max-width: 580px; margin: 0 auto; text-align: center; }
+
+        /* Founder story */
+        .founder-section { padding: 5rem 1.5rem; border-top: 0.5px solid var(--border-light); }
+        .founder-inner { max-width: 680px; margin: 0 auto; display: flex; gap: 2rem; align-items: flex-start; }
+        .founder-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0071e3, #6c63ff); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .founder-text p { font-size: 15px; color: var(--text2); line-height: 1.8; margin-bottom: 1rem; }
+        .founder-text p:last-child { margin-bottom: 0; }
+        .founder-text strong { color: var(--text); font-weight: 600; }
+
+        /* Final CTA */
+        .cta-section { padding: 7rem 1.5rem; text-align: center; background: linear-gradient(180deg, white 0%, #f5f5f7 100%); }
+        .cta-section h2 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 1rem; }
         .cta-section p { font-size: 1rem; color: var(--text2); margin-bottom: 2.5rem; font-weight: 300; }
-        .cta-note { font-size: 0.75rem; color: var(--text3); margin-top: 0.75rem; }
-        footer { background: var(--bg2); border-top: 0.5px solid var(--border-light); padding: 2.5rem 2rem; }
-        .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+        /* Footer */
+        footer { background: var(--bg2); border-top: 0.5px solid var(--border-light); padding: 2.5rem 1.5rem; }
+        .footer-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
         .footer-logo { font-size: 0.95rem; font-weight: 700; color: var(--text); text-decoration: none; letter-spacing: -0.02em; }
-        .footer-links { display: flex; gap: 1.5rem; }
-        .footer-links a { font-size: 0.78rem; color: var(--text2); text-decoration: none; transition: color 0.2s; }
+        .footer-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+        .footer-links a { font-size: 0.78rem; color: var(--text2); text-decoration: none; }
         .footer-links a:hover { color: var(--text); }
         .footer-copy { font-size: 0.75rem; color: var(--text3); }
+
+        /* Responsive */
         @media (max-width: 768px) {
-          .how-grid { grid-template-columns: 1fr; }
-          .profiles-scroll { grid-template-columns: 1fr; }
-          .pricing-grid { grid-template-columns: 1fr; }
-          .hero-stats { flex-direction: column; }
-          .hero-stat { border-right: none; border-bottom: 0.5px solid var(--border); }
-          .hero-stat:last-child { border-bottom: none; }
-          .scout-bar { flex-direction: column; align-items: flex-start; }
-          section { padding: 4rem 1.25rem; }
+          .section { padding: 4rem 1.25rem; }
+          .manifesto { padding: 4rem 1.25rem; }
+          .steps { grid-template-columns: 1fr; gap: 1rem; }
+          .profiles-grid { grid-template-columns: 1fr; }
+          .founder-inner { flex-direction: column; gap: 1.25rem; }
+          .hero-proof { gap: 1rem; }
+          .employer-section { padding: 4rem 1.25rem; }
+          .founder-section { padding: 4rem 1.25rem; }
           .cta-section { padding: 5rem 1.25rem; }
+        }
+        @media (max-width: 480px) {
+          .hero { padding: 5rem 1.25rem 4rem; }
+          .btn-primary { width: 100%; text-align: center; padding: 1rem 1.5rem; }
         }
       `}</style>
 
-      {/* Hero */}
+      {/* ── HERO ── */}
       <section className="hero">
-        <div className="hero-tag">
-          <span className="hero-tag-dot"></span>
+        <div className="hero-eyebrow">
+          <span className="hero-dot" />
           The proof-of-work platform for AI-native builders
         </div>
-        <h1>Hire AI builders who<br /><span className="blue">prove</span> they ship.</h1>
+        <h1>
+          You shipped something incredible last week.<br />
+          <span className="muted">Nobody important saw it.</span>
+        </h1>
         <p className="hero-sub">
-          ShipStacked is the proof-of-work platform for AI-native builders. Post real outcomes, earn your verified badge, get hired — no CVs, no guesswork, no commissions.
+          ShipStacked is where AI-native builders post their work, prove what they can do, and get found by the people worth working with. No CVs. No guessing. Just proof.
         </p>
-        <div className="hero-actions">
-          <Link href="/join" className="btn-blue">Create free builder profile</Link>
-          <a href="#pricing" className="btn-ghost">Hire AI-native talent</a>
+        <Link href="/join" className="btn-primary">
+          Show what you&apos;ve built — it&apos;s free
+        </Link>
+        <p className="hero-note">Join the founding cohort of builders shipping in public</p>
+        <div className="hero-proof">
+          <div className="proof-item"><span className="proof-dot" /> Free forever for builders</div>
+          <div className="proof-item"><span className="proof-dot" /> Auto-verified when your proof is real</div>
+          <div className="proof-item"><span className="proof-dot" /> Live in 5 minutes</div>
         </div>
-        <div className="hero-stats">
-          <div className="hero-stat">
-            <div className="hero-stat-num">Build Feed</div>
-            <div className="hero-stat-label">Real builds, real outcomes</div>
+      </section>
+
+      {/* ── MANIFESTO ── */}
+      <section className="manifesto">
+        <div className="manifesto-inner">
+          <h2>The hiring world<br />just <span className="accent">broke.</span></h2>
+          <p>
+            The builders who matter right now aren&apos;t on LinkedIn. They&apos;re shipping production-grade AI tools over a weekend, automating entire workflows without a team, building things that didn&apos;t exist six months ago — with Bolt, Lovable, Cursor, Claude Code, and whatever drops next week.
+          </p>
+          <p>
+            <strong>Traditional platforms can&apos;t see them.</strong> The filters were built for a different era. CVs don&apos;t capture what you shipped at midnight. GitHub doesn&apos;t show what you built with AI. Recruiters don&apos;t know what questions to ask.
+          </p>
+          <p>
+            Some of these builders don&apos;t even show up themselves anymore — they send their agents. Outreach agents. Build agents. Research agents. The agentic economy is here, and the hiring infrastructure hasn&apos;t caught up.
+          </p>
+          <p>
+            ShipStacked was built for this moment. <strong>Post your builds. Show your outcomes. Get verified automatically. Get found — on your terms.</strong>
+          </p>
+        </div>
+      </section>
+
+      {/* ── BUILD FEED PREVIEW ── */}
+      <section className="section" style={{ background: '#fbfbfd' }}>
+        <div className="section-inner">
+          <p className="eyebrow">Build Feed</p>
+          <h2 className="section-title">What&apos;s being shipped right now</h2>
+          <p style={{ fontSize: '1rem', color: 'var(--text2)', marginBottom: '2rem', fontWeight: 300, lineHeight: 1.6 }}>
+            Real builds. Real outcomes. This is what proof of work looks like.
+          </p>
+
+          <div style={{ maxWidth: 680 }}>
+            {displayPosts.map((post: any) => {
+              const profile = post.profiles
+              const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
+              return (
+                <div key={post.id} className="feed-card">
+                  <div className="feed-author">
+                    <div className="feed-avatar">
+                      {profile?.avatar_url
+                        ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : initials
+                      }
+                    </div>
+                    <div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{profile?.full_name || 'Builder'}</span>
+                      {profile?.verified && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '0.1rem 0.4rem', borderRadius: 980 }}>✓ Verified</span>}
+                    </div>
+                  </div>
+                  <p className="feed-title">{post.title}</p>
+                  {post.outcome && (
+                    <div className="feed-outcome">
+                      <p className="feed-outcome-label">Outcome</p>
+                      <p className="feed-outcome-text">{post.outcome}</p>
+                    </div>
+                  )}
+                  <div className="feed-meta">
+                    {post.tools_used && <span className="feed-meta-item">🛠 {post.tools_used}</span>}
+                    {post.time_taken && <span className="feed-meta-item">⏱ {post.time_taken}</span>}
+                  </div>
+                </div>
+              )
+            })}
           </div>
-          <div className="hero-stat">
-            <div className="hero-stat-num">Velocity Score</div>
-            <div className="hero-stat-label">Activity-based proof of work</div>
-          </div>
-          <div className="hero-stat">
-            <div className="hero-stat-num">In-platform DMs</div>
-            <div className="hero-stat-label">Every hire conversation owned</div>
+
+          <div style={{ marginTop: '1.5rem' }}>
+            <Link href="/feed" style={{ fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
+              View the full Build Feed →
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how">
+      {/* ── HOW IT WORKS ── */}
+      <section className="section" id="how">
         <div className="section-inner">
-          <p className="section-eyebrow">How it works</p>
-          <h2 className="section-title">Built for the builders traditional hiring forgot.</h2>
-          <p className="section-sub">Vibe coders, domain experts, AI-native generalists — they ship real things but have nowhere to prove it. Until now.</p>
-          <div className="how-grid">
-            <div className="how-card">
-              <span className="how-pill pill-free">Builders — Always free</span>
-              <h3>Ship it. Prove it. Get hired.</h3>
-              <p className="card-sub">Post your builds to the Build Feed. Let your Velocity Score show you're active. Get auto-verified when your outcomes are real.</p>
-              <ul className="how-list">
-                <li><span className="check">✓</span> Profile live in 5 minutes</li>
-                <li><span className="check">✓</span> Build Feed — post what you ship with real outcomes</li>
-                <li><span className="check">✓</span> Velocity Score — GitHub + builds + profile = 0-100</li>
-                <li><span className="check">✓</span> Auto-verified when your proof of work is real</li>
-                <li><span className="check">✓</span> In-platform DMs — no email required</li>
-                <li><span className="check">✓</span> No GitHub required — vibe coders welcome</li>
-              </ul>
+          <p className="eyebrow" style={{ textAlign: 'center' }}>How it works</p>
+          <h2 className="section-title" style={{ textAlign: 'center' }}>Three steps. No gatekeepers.</h2>
+          <div className="steps">
+            <div className="step">
+              <p className="step-num">01 — Create</p>
+              <h3>Build your profile</h3>
+              <p>Tell us what you build and how. Add your projects, your tools, your stack. Takes 5 minutes. No CV required.</p>
             </div>
-            <div className="how-card blue-card">
-              <span className="how-pill pill-paid">Employers — $199/month</span>
-              <h3>Read the proof. Make the hire.</h3>
-              <p className="card-sub" style={{color:'rgba(255,255,255,0.75)'}}>Browse verified builders with real build histories. Message them directly on-platform. No placement fees, no middlemen.</p>
-              <ul className="how-list" style={{color:'rgba(255,255,255,0.9)'}}>
-                <li><span className="check">✓</span> Full access to verified builder directory</li>
-                <li><span className="check">✓</span> Read their Build Feed — real projects, real outcomes</li>
-                <li><span className="check">✓</span> Velocity Score ranks who's actively shipping</li>
-                <li><span className="check">✓</span> In-platform DMs — conversations stay on ShipStacked</li>
-                <li><span className="check">✓</span> Scout AI — ask in plain English, get instant matches</li>
-                <li><span className="check">✓</span> Post unlimited jobs. No commission. Ever.</li>
-              </ul>
+            <div className="step">
+              <p className="step-num">02 — Prove</p>
+              <h3>Post your builds</h3>
+              <p>Every project, every outcome. The Build Feed is your proof of work. Post what you shipped, what problem it solved, what the result was.</p>
+            </div>
+            <div className="step">
+              <p className="step-num">03 — Get found</p>
+              <h3>Let the work speak</h3>
+              <p>Get auto-verified when your proof is real. Your Velocity Score shows you&apos;re active. Employers with real budgets find you — no applications, no guessing.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Talent showcase */}
-      <section className="profiles-section" id="talent">
+      {/* ── PROFILE CARDS — social proof ── */}
+      <section className="section" style={{ background: 'var(--bg2)' }} id="builders">
         <div className="section-inner">
-          <p className="section-eyebrow">The talent</p>
-          <h2 className="section-title">Verified builders, ready to ship.</h2>
-          <p className="section-sub">Every ShipStacked profile shows what was built, what problem it solved, and what the outcome was. No claims. No fluff.</p>
-          <div className="profiles-scroll">
+          <p className="eyebrow" style={{ textAlign: 'center' }}>The community</p>
+          <h2 className="section-title" style={{ textAlign: 'center' }}>Builders already here</h2>
+          <p style={{ textAlign: 'center', fontSize: '1rem', color: 'var(--text2)', maxWidth: 480, margin: '0 auto', fontWeight: 300, lineHeight: 1.6 }}>
+            These are the people who don&apos;t wait for permission. They ship, they prove it, and they get found.
+          </p>
+          <div className="profiles-grid">
             {displayProfiles.map((profile: any, i: number) => {
-              const isReal = showReal
+              const isReal = showRealProfiles
               const initials = isReal
-                ? profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                ? profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
                 : profile.initials
               const name = isReal ? profile.full_name : profile.name
               const role = isReal ? (profile.role || '') + (profile.location ? ' · ' + profile.location : '') : profile.role
-              const bio = isReal ? profile.bio : profile.bio
+              const bio = profile.bio
               const tags = isReal
                 ? (profile.skills || []).filter((s: any) => s.category === 'claude_use_case').slice(0, 3).map((s: any) => s.name)
                 : profile.tags
@@ -264,8 +348,13 @@ export default function Home() {
               return (
                 <div key={i} className="profile-card">
                   <div className="profile-top">
-                    <div className={"avatar " + avClass}>{initials}</div>
-                    <div>
+                    <div className={`avatar ${isReal ? '' : avClass}`} style={isReal && profile.avatar_url ? {} : {}}>
+                      {isReal && profile.avatar_url
+                        ? <img src={profile.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : initials
+                      }
+                    </div>
+                    <div style={{ minWidth: 0 }}>
                       <div className="profile-name">{name}</div>
                       <div className="profile-role">{role}</div>
                     </div>
@@ -279,155 +368,78 @@ export default function Home() {
               )
             })}
           </div>
-
-          {/* Scout bar */}
-          <div className="scout-bar">
-            <div style={{display:'flex', alignItems:'center', gap:'1rem'}}>
-              <div style={{width:40, height:40, borderRadius:'50%', background:'linear-gradient(135deg, #6c63ff, #a78bfa)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <circle cx="11" cy="11" r="7" stroke="white" strokeWidth="2"/>
-                  <path d="M16.5 16.5L21 21" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
-                </svg>
-              </div>
-              <div className="scout-bar-text">
-                <h4>Meet Scout — your AI talent concierge</h4>
-                <p>Describe who you need in plain language. Scout searches every builder profile and surfaces your best matches instantly.</p>
-              </div>
-            </div>
-            <a href="#pricing" className="scout-badge">Get access to Scout</a>
-          </div>
-        </div>
-      </section>
-
-      {/* Build Feed preview */}
-      <section style={{ background: '#fbfbfd', padding: '6rem 2rem' }}>
-        <div className="section-inner">
-          <p className="section-eyebrow">Build Feed</p>
-          <h2 className="section-title">What's being shipped</h2>
-          <p className="section-sub">Real builds from AI-native builders. Proof of work, not promises.</p>
-
-          {feedPosts.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '2rem' }}>
-              {feedPosts.map((post: any) => {
-                const profile = post.profiles
-                const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
-                return (
-                  <div key={post.id} style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                        {profile?.avatar_url
-                          ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 11, fontWeight: 700, color: '#0071e3' }}>{initials}</span>
-                        }
-                      </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{profile?.full_name || 'Builder'}</span>
-                      {profile?.verified && <span style={{ fontSize: 10, fontWeight: 600, color: '#0071e3', background: '#e8f1fd', padding: '0.1rem 0.4rem', borderRadius: 980 }}>✓ Verified</span>}
-                    </div>
-                    <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>{post.title}</p>
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                      {post.tools_used && <span style={{ fontSize: 12, color: '#6e6e73' }}>🛠 {post.tools_used}</span>}
-                      {post.time_taken && <span style={{ fontSize: 12, color: '#6e6e73' }}>⏱ {post.time_taken}</span>}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div style={{ background: 'white', border: '1px dashed #d2d2d7', borderRadius: 14, padding: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
-              <p style={{ fontSize: 14, color: '#aeaeb2' }}>The first builds are being posted right now.</p>
-            </div>
-          )}
-
-          <div style={{ textAlign: 'center' }}>
-            <Link href="/feed" style={{ display: 'inline-block', padding: '0.75rem 1.75rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
-              View the full Build Feed →
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <Link href="/join" className="btn-primary" style={{ display: 'inline-block' }}>
+              Join them — create your free profile
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing">
-        <div className="section-inner">
-          <p className="section-eyebrow">Pricing</p>
-          <h2 className="section-title">Free to build. Paid to hire.</h2>
-          <p className="section-sub">Builders are always free. Companies pay one flat fee for full access — no commissions, no surprises.</p>
-          <div className="pricing-grid">
-            <div className="price-card">
-              <div className="price-tier">Builder</div>
-              <div className="price-num">$0</div>
-              <div className="price-period">Free forever</div>
-              <p className="price-desc">Create your profile, show your work, get discovered and apply to roles directly.</p>
-              <ul className="price-features">
-                <li>Public verified profile</li>
-                <li>Unlimited project showcases</li>
-                <li>Verified builder badge</li>
-                <li>Browse and apply to open roles</li>
-                <li>Discoverable by all employers</li>
-              </ul>
-              <Link href="/signup" className="price-btn price-btn-blue">Create free profile</Link>
-            </div>
-            <div className="price-card featured">
-              <div className="price-tier">Employer — Full access</div>
-              <div className="price-num"><sup>$</sup>199</div>
-              <div className="price-period">per month</div>
-              <p className="price-desc">Full talent directory, Scout AI matching, direct contact, and unlimited job posts — everything in one.</p>
-              <ul className="price-features">
-                <li>Full talent directory access</li>
-                <li>Scout AI concierge matching</li>
-                <li>Direct builder contact</li>
-                <li>Unlimited job posts</li>
-                <li>Public or anonymous profile</li>
-                <li>No commission ever</li>
-              </ul>
-              <button className="price-btn price-btn-white" onClick={() => goToCheckout('full_access')}>Get full access</button>
-            </div>
+      {/* ── EMPLOYER PAYOFF ── */}
+      <section className="employer-section" id="pricing">
+        <div className="employer-inner">
+          <p className="eyebrow">For founders and hiring teams</p>
+          <h2 className="section-title">The right people are already watching.</h2>
+          <p style={{ fontSize: '1rem', color: 'var(--text2)', lineHeight: 1.7, marginBottom: '2rem', fontWeight: 300 }}>
+            Employers on ShipStacked pay $199/month to browse verified builders and message them directly. No commissions. No middlemen. No placement fees. When you&apos;re ready to hire — they&apos;re here, and their proof of work is already waiting.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={goToCheckout}
+              className="btn-primary"
+            >
+              Get full access — $199/mo
+            </button>
+            <Link href="/talent" style={{ display: 'inline-block', padding: '1rem 1.75rem', background: 'var(--bg3)', color: 'var(--text)', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s' }}>
+              Browse talent first
+            </Link>
+          </div>
+          <p style={{ fontSize: 13, color: 'var(--text3)', marginTop: '1rem' }}>No commission. Cancel anytime.</p>
+        </div>
+      </section>
+
+      {/* ── FOUNDER STORY ── */}
+      <section className="founder-section">
+        <div className="founder-inner">
+          <div className="founder-avatar">👋</div>
+          <div className="founder-text">
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.875rem' }}>Built by a builder, for builders</p>
+            <p>
+              ShipStacked was built with Claude Code by a solo founder who tried to hire an AI-native developer the normal way — and couldn&apos;t. The best builders weren&apos;t on any platform. They were in Discord servers and Twitter threads, shipping things that blew my mind, completely invisible to anyone hiring.
+            </p>
+            <p>
+              So I built the platform they deserved. <strong>With a lot of help from my agent, OX.</strong> If you&apos;re running agents, shipping with AI, or building things that didn&apos;t exist six months ago — you&apos;re exactly who this is for.
+            </p>
+            <p style={{ fontSize: 13, color: 'var(--text3)' }}>
+              Built with Claude Code · Supabase · Vercel · Stripe · Resend
+            </p>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="cta-section" id="signup">
-        <h2>Free to prove<br />you can build.</h2>
-        <p>Create your profile in 5 minutes. No credit card. No catch.</p>
-        <Link href="/signup" className="btn-blue" style={{fontSize:'1rem', padding:'1rem 2rem'}}>Create your free profile</Link>
-        <p className="cta-note">Builders are free forever.</p>
+      {/* ── FINAL CTA ── */}
+      <section className="cta-section">
+        <h2>This is your home.</h2>
+        <p>Free forever for builders. Your profile, your builds, your proof of work — all in one place.</p>
+        <Link href="/join" className="btn-primary" style={{ display: 'inline-block', fontSize: '1.05rem', padding: '1.1rem 2.5rem' }}>
+          Create your free profile
+        </Link>
+        <p className="hero-note" style={{ marginTop: '1rem' }}>
+          Already have an account? <Link href="/login" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Sign in</Link>
+        </p>
       </section>
 
-      {/* Founder story */}
-      <section style={{ background: '#f5f5f7', padding: '5rem 2rem', borderTop: '0.5px solid #e8e8ed' }}>
-        <div className="section-inner" style={{ maxWidth: 680, margin: '0 auto', display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, #0071e3, #6c63ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>
-            👋
-          </div>
-          <div style={{ flex: 1, minWidth: 280 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Built by a builder, for builders</p>
-            <p style={{ fontSize: 17, color: '#1d1d1f', lineHeight: 1.75, marginBottom: '1rem', fontWeight: 400 }}>
-              ShipStacked was built with Claude Code by a solo founder who tried to hire an AI-native developer the normal way — and couldn&apos;t.
-            </p>
-            <p style={{ fontSize: 15, color: '#6e6e73', lineHeight: 1.75, marginBottom: '1rem' }}>
-              The best AI builders aren&apos;t on LinkedIn. They&apos;re shipping tools in Discord servers, building SaaS products over weekends, and automating entire workflows without writing a single line of traditional code. They have no résumé. They have receipts.
-            </p>
-            <p style={{ fontSize: 15, color: '#6e6e73', lineHeight: 1.75 }}>
-              ShipStacked exists so those builders have somewhere to prove it — and so founders can find them without guessing.
-            </p>
-            <div style={{ marginTop: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: '#aeaeb2' }}>Built entirely with Claude Code ·</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#0071e3', background: '#e8f1fd', padding: '0.2rem 0.6rem', borderRadius: 980 }}>Velocity Score: 94</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
+      {/* ── FOOTER ── */}
       <footer>
         <div className="footer-inner">
-          <a href="/" className="footer-logo">ShipStacked.</a>
+          <a href="/" className="footer-logo">ShipStacked<span style={{ color: 'var(--accent)' }}>.</span></a>
           <div className="footer-links">
             <a href="#how">How it works</a>
-            <a href="#talent">Talent</a>
-            <a href="#pricing">Pricing</a>
-            <Link href="/signup">Join</Link>
+            <a href="#builders">Community</a>
+            <a href="#pricing">Hire talent</a>
+            <Link href="/feed">Build Feed</Link>
+            <Link href="/join">Join</Link>
           </div>
           <p className="footer-copy">© 2026 ShipStacked. All rights reserved.</p>
         </div>
