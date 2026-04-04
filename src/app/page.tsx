@@ -25,6 +25,14 @@ async function goToCheckout(product: string) {
 
 export default function Home() {
   const [realProfiles, setRealProfiles] = useState<any[]>([])
+  const [feedPosts, setFeedPosts] = useState<any[]>([])
+
+  useEffect(() => {
+    fetch('/api/feed?limit=3')
+      .then(r => r.json())
+      .then(({ posts }) => { if (posts) setFeedPosts(posts) })
+      .catch(() => {})
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -287,6 +295,53 @@ export default function Home() {
               </div>
             </div>
             <a href="#pricing" className="scout-badge">Get access to Scout</a>
+          </div>
+        </div>
+      </section>
+
+      {/* Build Feed preview */}
+      <section style={{ background: '#fbfbfd', padding: '6rem 2rem' }}>
+        <div className="section-inner">
+          <p className="section-eyebrow">Build Feed</p>
+          <h2 className="section-title">What's being shipped</h2>
+          <p className="section-sub">Real builds from AI-native builders. Proof of work, not promises.</p>
+
+          {feedPosts.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', marginBottom: '2rem' }}>
+              {feedPosts.map((post: any) => {
+                const profile = post.profiles
+                const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
+                return (
+                  <div key={post.id} style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.25rem 1.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
+                      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                        {profile?.avatar_url
+                          ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <span style={{ fontSize: 11, fontWeight: 700, color: '#0071e3' }}>{initials}</span>
+                        }
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{profile?.full_name || 'Builder'}</span>
+                      {profile?.verified && <span style={{ fontSize: 10, fontWeight: 600, color: '#0071e3', background: '#e8f1fd', padding: '0.1rem 0.4rem', borderRadius: 980 }}>✓ Verified</span>}
+                    </div>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>{post.title}</p>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      {post.tools_used && <span style={{ fontSize: 12, color: '#6e6e73' }}>🛠 {post.tools_used}</span>}
+                      {post.time_taken && <span style={{ fontSize: 12, color: '#6e6e73' }}>⏱ {post.time_taken}</span>}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div style={{ background: 'white', border: '1px dashed #d2d2d7', borderRadius: 14, padding: '2rem', textAlign: 'center', marginBottom: '2rem' }}>
+              <p style={{ fontSize: 14, color: '#aeaeb2' }}>The first builds are being posted right now.</p>
+            </div>
+          )}
+
+          <div style={{ textAlign: 'center' }}>
+            <Link href="/feed" style={{ display: 'inline-block', padding: '0.75rem 1.75rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>
+              View the full Build Feed →
+            </Link>
           </div>
         </div>
       </section>

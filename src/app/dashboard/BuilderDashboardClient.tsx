@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import ShareButtons from '@/app/u/[username]/ShareButtons'
+import FeedPostForm from '@/app/feed/FeedPostForm'
 
 function calcScore(profile: any): { score: number, tips: string[] } {
   const tips: string[] = []
@@ -295,6 +296,15 @@ export default function BuilderDashboardClient({
                   View live
                 </a>
               </div>
+            </div>
+
+            {/* Build Feed post */}
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Build Feed</p>
+                <a href="/feed" style={{ fontSize: 12, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>View feed →</a>
+              </div>
+              <FeedPostForm />
             </div>
 
             {/* Scout for builders */}
