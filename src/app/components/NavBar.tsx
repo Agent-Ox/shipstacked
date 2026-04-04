@@ -29,6 +29,7 @@ export default function NavBar() {
   const isHomepage = pathname === '/'
 
   const getMenuLinks = () => {
+    // ---- Unauthenticated homepage ----
     if (isHomepage && !navUser) {
       return [
         { label: 'How it works', href: '#how' },
@@ -36,26 +37,64 @@ export default function NavBar() {
         { label: 'Pricing', href: '#pricing' },
       ]
     }
-    if (isHomepage && navUser?.role === 'employer') {
+
+    // ---- Admin ----
+    if (isAdmin) {
+      return [{ label: 'Admin dashboard', href: '/admin' }]
+    }
+
+    // ---- Employer routes ----
+    if (navUser?.role === 'employer') {
+      if (pathname.startsWith('/employer')) {
+        return [
+          { label: 'Browse talent', href: '/talent' },
+          { label: 'Post a job', href: '/post-job' },
+        ]
+      }
+      if (pathname.startsWith('/talent') || pathname.startsWith('/post-job')) {
+        return [{ label: 'Dashboard', href: '/employer' }]
+      }
+      // All other employer pages
       return [
         { label: 'Browse talent', href: '/talent' },
-        { label: 'Post a job', href: '/post-job' },
+        { label: 'Dashboard', href: '/employer' },
       ]
     }
-    if (pathname.startsWith('/dashboard/edit')) return [{ label: 'Back to dashboard', href: '/dashboard' }]
-    if (pathname.startsWith('/dashboard')) return [{ label: 'Build Feed', href: '/feed' }, { label: 'Edit profile', href: '/dashboard/edit' }]
-    if (pathname.startsWith('/employer')) return [
-      { label: 'Browse talent', href: '/talent' },
-      { label: 'Post a job', href: '/post-job' },
-    ]
-    if (pathname.startsWith('/talent')) return []
-    if (pathname.startsWith('/post-job')) return []
-    if (pathname.startsWith('/feed')) return [{ label: 'Post a build', href: '/dashboard' }]
-    if (pathname.startsWith('/u/') || pathname.startsWith('/jobs') || pathname.startsWith('/company/')) {
-      if (isAdmin) return [{ label: 'Admin', href: '/admin' }]
-      return []
+
+    // ---- Builder routes ----
+    if (pathname.startsWith('/dashboard/edit')) {
+      return [{ label: '← Dashboard', href: '/dashboard' }]
     }
-    return []
+    if (pathname.startsWith('/dashboard')) {
+      return [
+        { label: 'Build Feed', href: '/feed' },
+        { label: 'Edit profile', href: '/dashboard/edit' },
+      ]
+    }
+    if (pathname.startsWith('/feed')) {
+      return [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Build Feed', href: '/feed' },
+      ]
+    }
+    if (pathname.startsWith('/jobs')) {
+      return [{ label: 'Dashboard', href: '/dashboard' }]
+    }
+    if (pathname.startsWith('/u/') || pathname.startsWith('/company/')) {
+      return [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Build Feed', href: '/feed' },
+      ]
+    }
+    // Homepage logged in as builder
+    if (isHomepage && navUser?.role === 'builder') {
+      return [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Build Feed', href: '/feed' },
+      ]
+    }
+    // Fallback for any other page
+    return [{ label: 'Dashboard', href: dashboardLink }]
   }
 
   useEffect(() => {
@@ -128,12 +167,7 @@ export default function NavBar() {
                     style={{ fontSize: 15, color: accentColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, fontWeight: 500 }}>
                     Admin dashboard
                   </a>
-                ) : menuLinks.some(l => l.href === dashboardLink || l.href === '/dashboard') ? null : (
-                  <a href={dashboardLink} onClick={() => setMenuOpen(false)}
-                    style={{ fontSize: 15, color: accentColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, fontWeight: 500 }}>
-                    {navUser.role === 'employer' ? 'Employer dashboard' : 'Dashboard'}
-                  </a>
-                )}
+                ) : null}
                 <span style={{ fontSize: 13, color: '#aeaeb2', padding: '0.5rem 0 0.25rem' }}>{navUser.email}</span>
                 <a href="/api/logout"
                   style={{ fontSize: 15, color: '#ef4444', textDecoration: 'none', padding: '0.5rem 0', fontWeight: 500 }}>
