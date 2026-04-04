@@ -39,7 +39,7 @@ export async function GET() {
     if (profile) {
       const { data } = await admin
         .from('conversations')
-        .select('*, jobs(role_title, company_name)')
+        .select('*, jobs(role_title, company_name), employer_profiles!employer_email(company_name, logo_url)')
         .eq('builder_profile_id', profile.id)
         .order('last_message_at', { ascending: false })
       conversations = data || []

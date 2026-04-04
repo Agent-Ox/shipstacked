@@ -20,6 +20,7 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedRef = useRef<any>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -27,7 +28,41 @@ export default function MessagesPage() {
       if (session) setUserEmail(session.user.email || '')
     })
     loadConversations()
+
+    // Supabase Realtime — subscribe to new messages
+    const channel = supabase
+      .channel('builder-messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      }, (payload) => {
+        const newMsg = payload.new as any
+        // If this message belongs to the open conversation, add it
+        if (selectedRef.current && newMsg.conversation_id === selectedRef.current.id) {
+          setMessages(prev => {
+            // Avoid duplicates
+            if (prev.some(m => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+          // Mark as read
+          fetch(`/api/messages/${selectedRef.current.id}`, { method: 'GET' }).catch(() => {})
+        }
+        // Update conversation list preview
+        setConversations(prev => prev.map(c =>
+          c.id === newMsg.conversation_id
+            ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
+            : c
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
+
+  useEffect(() => {
+    selectedRef.current = selected
+  }, [selected])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,7 +84,6 @@ export default function MessagesPage() {
     if (res.ok) {
       const { messages } = await res.json()
       setMessages(messages)
-      // Mark as read in local state
       setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c))
     }
   }
@@ -57,24 +91,32 @@ export default function MessagesPage() {
   const sendMessage = async () => {
     if (!input.trim() || !selected || sending) return
     setSending(true)
+    // Optimistic update
+    const optimistic = { id: `temp-${Date.now()}`, conversation_id: selected.id, sender_email: userEmail, content: input.trim(), created_at: new Date().toISOString(), read: false }
+    setMessages(prev => [...prev, optimistic])
+    const text = input.trim()
+    setInput('')
+
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversation_id: selected.id, content: input.trim() }),
+      body: JSON.stringify({ conversation_id: selected.id, content: text }),
     })
     if (res.ok) {
       const { message } = await res.json()
-      setMessages(prev => [...prev, message])
-      setInput('')
-      setConversations(prev => prev.map(c => c.id === selected.id
-        ? { ...c, last_message: message, last_message_at: message.created_at }
-        : c
-      ))
+      // Replace optimistic with real
+      setMessages(prev => prev.map(m => m.id === optimistic.id ? message : m))
+    } else {
+      // Rollback on error
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id))
     }
     setSending(false)
   }
 
-  const otherPartyName = (conv: any) => conv.employer_email || 'Employer'
+  const getConvName = (conv: any) => {
+    const company = conv.employer_profiles?.company_name
+    return company || conv.employer_email?.split('@')[0] || 'Employer'
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
@@ -100,22 +142,17 @@ export default function MessagesPage() {
               <div style={{ overflowY: 'auto', flex: 1 }}>
                 {conversations.map(conv => (
                   <div key={conv.id} onClick={() => openConversation(conv)}
-                    style={{
-                      padding: '1rem 1.25rem', cursor: 'pointer',
-                      borderBottom: '0.5px solid #f0f0f5',
-                      background: selected?.id === conv.id ? '#f0f5ff' : 'white',
-                      transition: 'background 0.15s',
-                    }}
+                    style={{ padding: '1rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white', transition: 'background 0.15s' }}
                     onMouseEnter={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = '#fafafa' }}
                     onMouseLeave={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = 'white' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.15rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {otherPartyName(conv)}
+                          {getConvName(conv)}
                         </p>
                         {conv.jobs?.role_title && (
-                          <p style={{ fontSize: 11, color: '#0071e3', fontWeight: 500, marginBottom: '0.2rem' }}>{conv.jobs.role_title}</p>
+                          <p style={{ fontSize: 11, color: '#0071e3', fontWeight: 500, marginBottom: '0.2rem' }}>Re: {conv.jobs.role_title}</p>
                         )}
                         {conv.last_message && (
                           <p style={{ fontSize: 12, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -124,9 +161,7 @@ export default function MessagesPage() {
                         )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem', flexShrink: 0 }}>
-                        {conv.last_message && (
-                          <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>
-                        )}
+                        {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
                         {conv.unread_count > 0 && (
                           <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {conv.unread_count}
@@ -149,31 +184,16 @@ export default function MessagesPage() {
               </div>
             ) : (
               <>
-                {/* Thread header */}
-                <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #e0e0e5', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{otherPartyName(selected)}</p>
-                    {selected.jobs?.role_title && (
-                      <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>
-                    )}
-                  </div>
+                <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #e0e0e5' }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{getConvName(selected)}</p>
+                  {selected.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>}
                 </div>
-
-                {/* Messages */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {messages.map(msg => {
                     const isMe = msg.sender_email === userEmail
                     return (
                       <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                        <div style={{
-                          maxWidth: '75%',
-                          background: isMe ? '#0071e3' : '#f5f5f7',
-                          color: isMe ? 'white' : '#1d1d1f',
-                          borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          padding: '0.65rem 1rem',
-                          fontSize: 14,
-                          lineHeight: 1.5,
-                        }}>
+                        <div style={{ maxWidth: '75%', background: isMe ? '#0071e3' : '#f5f5f7', color: isMe ? 'white' : '#1d1d1f', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', padding: '0.65rem 1rem', fontSize: 14, lineHeight: 1.5 }}>
                           <p>{msg.content}</p>
                           <p style={{ fontSize: 11, opacity: 0.6, marginTop: '0.25rem', textAlign: isMe ? 'right' : 'left' }}>{timeAgo(msg.created_at)}</p>
                         </div>
@@ -182,23 +202,17 @@ export default function MessagesPage() {
                   })}
                   <div ref={messagesEndRef} />
                 </div>
-
-                {/* Input */}
                 <div style={{ padding: '0.875rem', borderTop: '0.5px solid #e0e0e5', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  <textarea
-                    value={input}
+                  <textarea value={input}
                     onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                    placeholder="Write a message..."
+                    placeholder="Write a message... (Enter to send)"
                     rows={1}
                     style={{ flex: 1, padding: '0.6rem 0.875rem', border: '1px solid #d2d2d7', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 40, maxHeight: 120 }}
                   />
                   <button onClick={sendMessage} disabled={!input.trim() || sending}
                     style={{ width: 38, height: 38, borderRadius: 10, background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                      <path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                 </div>
               </>

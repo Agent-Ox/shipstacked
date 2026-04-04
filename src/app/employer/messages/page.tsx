@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
-import Link from 'next/link'
 
 function timeAgo(date: string) {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
@@ -21,6 +20,7 @@ export default function EmployerMessagesPage() {
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const selectedRef = useRef<any>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -28,11 +28,36 @@ export default function EmployerMessagesPage() {
       if (session) setUserEmail(session.user.email || '')
     })
     loadConversations()
+
+    // Supabase Realtime
+    const channel = supabase
+      .channel('employer-messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+      }, (payload) => {
+        const newMsg = payload.new as any
+        if (selectedRef.current && newMsg.conversation_id === selectedRef.current.id) {
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
+          fetch(`/api/messages/${selectedRef.current.id}`, { method: 'GET' }).catch(() => {})
+        }
+        setConversations(prev => prev.map(c =>
+          c.id === newMsg.conversation_id
+            ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
+            : c
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  useEffect(() => { selectedRef.current = selected }, [selected])
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   const loadConversations = async () => {
     setLoading(true)
@@ -57,20 +82,26 @@ export default function EmployerMessagesPage() {
   const sendMessage = async () => {
     if (!input.trim() || !selected || sending) return
     setSending(true)
+    const optimistic = { id: `temp-${Date.now()}`, conversation_id: selected.id, sender_email: userEmail, content: input.trim(), created_at: new Date().toISOString(), read: false }
+    setMessages(prev => [...prev, optimistic])
+    const text = input.trim()
+    setInput('')
+
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ conversation_id: selected.id, content: input.trim() }),
+      body: JSON.stringify({ conversation_id: selected.id, content: text }),
     })
     if (res.ok) {
       const { message } = await res.json()
-      setMessages(prev => [...prev, message])
-      setInput('')
+      setMessages(prev => prev.map(m => m.id === optimistic.id ? message : m))
+    } else {
+      setMessages(prev => prev.filter(m => m.id !== optimistic.id))
     }
     setSending(false)
   }
 
-  const builderInfo = (conv: any) => conv.profiles || {}
+  const builder = (conv: any) => conv.profiles || {}
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
@@ -93,52 +124,36 @@ export default function EmployerMessagesPage() {
               <div style={{ padding: '2rem', textAlign: 'center' }}>
                 <p style={{ fontSize: 28, marginBottom: '0.75rem' }}>💬</p>
                 <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>No conversations yet</p>
-                <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Start by browsing talent and messaging builders you're interested in.</p>
+                <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Browse talent and message builders you're interested in.</p>
                 <a href="/talent" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse talent</a>
               </div>
             ) : (
               <div style={{ overflowY: 'auto', flex: 1 }}>
                 {conversations.map(conv => {
-                  const builder = builderInfo(conv)
-                  const initials = builder.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
+                  const b = builder(conv)
+                  const initials = b.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
                   return (
                     <div key={conv.id} onClick={() => openConversation(conv)}
-                      style={{
-                        padding: '1rem 1.25rem', cursor: 'pointer',
-                        borderBottom: '0.5px solid #f0f0f5',
-                        background: selected?.id === conv.id ? '#f0f5ff' : 'white',
-                        transition: 'background 0.15s',
-                      }}
+                      style={{ padding: '1rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white', transition: 'background 0.15s' }}
                       onMouseEnter={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = '#fafafa' }}
                       onMouseLeave={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = 'white' }}
                     >
                       <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start' }}>
                         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden' }}>
-                          {builder.avatar_url
-                            ? <img src={builder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            : <span style={{ fontSize: 12, fontWeight: 700, color: '#0071e3' }}>{initials}</span>
-                          }
+                          {b.avatar_url ? <img src={b.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12, fontWeight: 700, color: '#0071e3' }}>{initials}</span>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {builder.full_name || 'Builder'}
-                            </p>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.full_name || 'Builder'}</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
                               {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
                               {conv.unread_count > 0 && (
-                                <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  {conv.unread_count}
-                                </span>
+                                <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{conv.unread_count}</span>
                               )}
                             </div>
                           </div>
                           {conv.jobs?.role_title && <p style={{ fontSize: 11, color: '#0071e3', fontWeight: 500 }}>Re: {conv.jobs.role_title}</p>}
-                          {conv.last_message && (
-                            <p style={{ fontSize: 12, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.1rem' }}>
-                              {conv.last_message.content}
-                            </p>
-                          )}
+                          {conv.last_message && <p style={{ fontSize: 12, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '0.1rem' }}>{conv.last_message.content}</p>}
                         </div>
                       </div>
                     </div>
@@ -157,51 +172,36 @@ export default function EmployerMessagesPage() {
               </div>
             ) : (
               <>
-                {/* Thread header */}
                 <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #e0e0e5', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    {(() => {
-                      const builder = builderInfo(selected)
-                      const initials = builder.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
-                      return (
-                        <>
-                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                            {builder.avatar_url
-                              ? <img src={builder.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              : <span style={{ fontSize: 12, fontWeight: 700, color: '#0071e3' }}>{initials}</span>
-                            }
-                          </div>
-                          <div>
-                            <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{builder.full_name}</p>
-                            {selected.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>}
-                          </div>
-                        </>
-                      )
-                    })()}
-                  </div>
-                  {builderInfo(selected).username && (
-                    <a href={`/u/${builderInfo(selected).username}`} target="_blank"
+                  {(() => {
+                    const b = builder(selected)
+                    const initials = b.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                          {b.avatar_url ? <img src={b.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, fontWeight: 700, color: '#0071e3' }}>{initials}</span>}
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{b.full_name}</p>
+                          {selected.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                  {builder(selected).username && (
+                    <a href={`/u/${builder(selected).username}`} target="_blank"
                       style={{ fontSize: 12, padding: '0.3rem 0.75rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
                       View profile →
                     </a>
                   )}
                 </div>
 
-                {/* Messages */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {messages.map(msg => {
                     const isMe = msg.sender_email === userEmail
                     return (
                       <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                        <div style={{
-                          maxWidth: '75%',
-                          background: isMe ? '#0071e3' : '#f5f5f7',
-                          color: isMe ? 'white' : '#1d1d1f',
-                          borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                          padding: '0.65rem 1rem',
-                          fontSize: 14,
-                          lineHeight: 1.5,
-                        }}>
+                        <div style={{ maxWidth: '75%', background: isMe ? '#0071e3' : '#f5f5f7', color: isMe ? 'white' : '#1d1d1f', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', padding: '0.65rem 1rem', fontSize: 14, lineHeight: 1.5 }}>
                           <p>{msg.content}</p>
                           <p style={{ fontSize: 11, opacity: 0.6, marginTop: '0.25rem', textAlign: isMe ? 'right' : 'left' }}>{timeAgo(msg.created_at)}</p>
                         </div>
@@ -211,22 +211,17 @@ export default function EmployerMessagesPage() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Input */}
                 <div style={{ padding: '0.875rem', borderTop: '0.5px solid #e0e0e5', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                  <textarea
-                    value={input}
+                  <textarea value={input}
                     onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                    placeholder="Write a message..."
+                    placeholder="Write a message... (Enter to send)"
                     rows={1}
                     style={{ flex: 1, padding: '0.6rem 0.875rem', border: '1px solid #d2d2d7', borderRadius: 12, fontSize: 14, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 40, maxHeight: 120 }}
                   />
                   <button onClick={sendMessage} disabled={!input.trim() || sending}
                     style={{ width: 38, height: 38, borderRadius: 10, background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                      <path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </button>
                 </div>
               </>
