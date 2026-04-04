@@ -31,11 +31,12 @@ export default function NavBar() {
 
   const getMenuLinks = () => {
     // ---- Unauthenticated homepage ----
+    // Builder-first nav — no $199 pricing link visible to a browsing builder
     if (isHomepage && !navUser) {
       return [
         { label: 'How it works', href: '#how' },
-        { label: 'Talent', href: '#talent' },
-        { label: 'Pricing', href: '#pricing' },
+        { label: 'Build Feed', href: '/feed' },
+        { label: 'Hire talent', href: '#hire' },
       ]
     }
 

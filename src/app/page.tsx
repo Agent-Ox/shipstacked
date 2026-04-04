@@ -377,7 +377,7 @@ export default function Home() {
       </section>
 
       {/* ── EMPLOYER PAYOFF ── */}
-      <section className="employer-section" id="pricing">
+      <section className="employer-section" id="hire">
         <div className="employer-inner">
           <p className="eyebrow">For founders and hiring teams</p>
           <h2 className="section-title">The right people are already watching.</h2>
