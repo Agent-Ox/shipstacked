@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Routes that require auth
-  const authRequired = ['/dashboard', '/post-job', '/talent', '/admin', '/employer', '/messages']
+  const authRequired = ['/dashboard', '/post-job', '/admin', '/employer', '/messages']
   const isProtected = authRequired.some(route => pathname.startsWith(route))
 
   if (isProtected && !session) {
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Employer-only routes — if builder tries to access, redirect to dashboard
-  const employerOnly = ['/employer', '/talent', '/post-job']
+  const employerOnly = ['/employer', '/post-job']
   if (session && employerOnly.some(route => pathname.startsWith(route))) {
     const metaRole = session.user.user_metadata?.role
     // Only redirect if explicitly a builder (not employer)
