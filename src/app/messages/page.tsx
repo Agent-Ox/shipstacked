@@ -11,37 +11,6 @@ function timeAgo(date: string) {
   return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-// iOS Safari keyboard fix — Telegram --vh approach
-// visualViewport.height shrinks when keyboard opens; window.innerHeight does NOT.
-// We set --vh on every resize so calc(var(--vh,1vh)*100) tracks the true visible height.
-function useViewportHeight() {
-  useEffect(() => {
-    function setVh() {
-      const h = window.visualViewport ? window.visualViewport.height : window.innerHeight
-      document.documentElement.style.setProperty('--vh', h * 0.01 + 'px')
-    }
-    setVh()
-    let debounce: ReturnType<typeof setTimeout>
-    function onResize() {
-      clearTimeout(debounce)
-      debounce = setTimeout(setVh, 16)
-    }
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', onResize)
-      window.visualViewport.addEventListener('scroll', onResize)
-    }
-    window.addEventListener('resize', onResize)
-    return () => {
-      clearTimeout(debounce)
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', onResize)
-        window.visualViewport.removeEventListener('scroll', onResize)
-      }
-      window.removeEventListener('resize', onResize)
-    }
-  }, [])
-}
-
 export default function MessagesPage() {
   const [conversations, setConversations] = useState<any[]>([])
   const [selected, setSelected] = useState<any>(null)
@@ -56,13 +25,13 @@ export default function MessagesPage() {
   const userEmailRef = useRef<string>('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Apply --vh fix
-  useViewportHeight()
-
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) { setUserEmail(session.user.email || ''); userEmailRef.current = session.user.email || '' }
+      if (session) {
+        setUserEmail(session.user.email || '')
+        userEmailRef.current = session.user.email || ''
+      }
     })
     loadConversations()
     const channel = supabase
@@ -83,9 +52,16 @@ export default function MessagesPage() {
 
   useEffect(() => { selectedRef.current = selected }, [selected])
   useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
+
   useEffect(() => {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }, [messages])
+
+  useEffect(() => {
+    if (view === 'thread') {
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
+    }
+  }, [view])
 
   const loadConversations = async () => {
     setLoading(true)
@@ -112,7 +88,7 @@ export default function MessagesPage() {
     setMessages(prev => [...prev, optimistic])
     const text = input.trim()
     setInput('')
-    if (textareaRef.current) { textareaRef.current.style.height = 'auto' }
+    if (textareaRef.current) textareaRef.current.style.height = 'auto'
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -127,7 +103,8 @@ export default function MessagesPage() {
     setSending(false)
   }
 
-  const getConvName = (conv: any) => conv.employer_profile?.company_name || conv.jobs?.company_name || conv.employer_email?.split('@')[0] || 'Employer'
+  const getConvName = (conv: any) =>
+    conv.employer_profile?.company_name || conv.jobs?.company_name || conv.employer_email?.split('@')[0] || 'Employer'
 
   const msgBubble = (msg: any) => {
     const isMe = msg.sender_email === userEmail
@@ -141,121 +118,93 @@ export default function MessagesPage() {
     )
   }
 
-  const convList = (onSelect: (c: any) => void) => (
-    <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {loading ? <div style={{ padding: '2rem', textAlign: 'center', color: '#aeaeb2' }}>Loading...</div>
-      : conversations.length === 0 ? (
-        <div style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
-          <p style={{ fontSize: 26, marginBottom: '0.75rem' }}>💬</p>
-          <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>No messages yet</p>
-          <p style={{ fontSize: 13, color: '#6e6e73' }}>Employers will message you when interested.</p>
-        </div>
-      ) : (
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {conversations.map(conv => (
-            <div key={conv.id} onClick={() => onSelect(conv)}
-              style={{ padding: '0.875rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.1rem' }}>{getConvName(conv)}</p>
-                  {conv.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500, marginBottom: '0.1rem' }}>Re: {conv.jobs.role_title}</p>}
-                  {conv.last_message && <p style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.last_message.content}</p>}
-                </div>
-                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                  {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
-                  {conv.unread_count > 0 && <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{conv.unread_count}</span>}
-                </div>
+  const convListItems = (
+    <>
+      {loading
+        ? <div style={{ padding: '2rem', textAlign: 'center', color: '#aeaeb2' }}>Loading...</div>
+        : conversations.length === 0
+        ? (
+          <div style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: 26, marginBottom: '0.75rem' }}>💬</p>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>No messages yet</p>
+            <p style={{ fontSize: 13, color: '#6e6e73' }}>Employers will message you when interested.</p>
+          </div>
+        )
+        : conversations.map(conv => (
+          <div key={conv.id} onClick={() => openConversation(conv)}
+            style={{ padding: '0.875rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.1rem' }}>{getConvName(conv)}</p>
+                {conv.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500, marginBottom: '0.1rem' }}>Re: {conv.jobs.role_title}</p>}
+                {conv.last_message && <p style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.last_message.content}</p>}
+              </div>
+              <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
+                {conv.unread_count > 0 && <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{conv.unread_count}</span>}
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))
+      }
+    </>
+  )
+
+  // Sticky input — works on all browsers. font-size 16px prevents iOS auto-zoom.
+  const inputBar = (
+    <div style={{ position: 'sticky', bottom: 0, background: 'white', borderTop: '0.5px solid #e0e0e5', padding: '0.625rem 0.875rem', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', zIndex: 10 }}>
+      <textarea
+        ref={textareaRef}
+        value={input}
+        onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px' }}
+        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+        placeholder="Message..."
+        rows={1}
+        style={{ flex: 1, padding: '0.55rem 0.875rem', border: 'none', borderRadius: 20, fontSize: 16, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 36, maxHeight: 96, background: '#f0f0f5' }}
+      />
+      <button onClick={sendMessage} disabled={!input.trim() || sending}
+        style={{ width: 36, height: 36, borderRadius: '50%', background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+      </button>
     </div>
   )
 
   return (
     <>
       <style>{`
-        @media (max-width: 640px) {
-          .msgs-desktop { display: none !important; }
-          .msgs-mobile { display: flex !important; }
-        }
-        @media (min-width: 641px) {
-          .msgs-mobile { display: none !important; }
-          .msgs-desktop { display: block !important; }
-        }
+        @media (max-width: 640px) { .msgs-desktop { display: none !important; } }
+        @media (min-width: 641px) { .msgs-mobile { display: none !important; } }
       `}</style>
 
-      {/* ── MOBILE ──
-          Key fix: use calc(var(--vh,1vh)*100 - 52px) for height, position:fixed.
-          --vh is set by useViewportHeight() and tracks visualViewport.height on iOS.
-          This means when the keyboard opens and visual viewport shrinks, --vh updates
-          and the container shrinks with it, keeping the input bar above the keyboard.
-          position:fixed (not absolute) anchors to the visual viewport, not layout viewport.
-      */}
-      <div className="msgs-mobile" style={{
-        position: 'fixed',
-        top: 52,
-        left: 0,
-        right: 0,
-        height: 'calc(var(--vh, 1vh) * 100 - 52px)',
-        background: '#fbfbfd',
-        display: 'flex',
-        flexDirection: 'column',
-        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        overflow: 'hidden',
-      }}>
+      {/* MOBILE — natural scroll + sticky input. No fixed/absolute/vh hacks. */}
+      <div className="msgs-mobile" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         {view === 'list' ? (
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '1rem' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Messages</p>
-              <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Your inbox</h1>
+          <div style={{ background: '#fbfbfd', minHeight: '100svh', padding: '1.25rem 1rem' }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Messages</p>
+            <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '1rem' }}>Your inbox</h1>
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden' }}>
+              {convListItems}
             </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>{convList(openConversation)}</div>
           </div>
         ) : selected ? (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
-            {/* Header */}
-            <div style={{ background: 'white', borderBottom: '0.5px solid #e0e0e5', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          <div style={{ background: 'white', minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ position: 'sticky', top: 52, background: 'white', borderBottom: '0.5px solid #e0e0e5', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 10 }}>
               <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0071e3', fontSize: 20, padding: '0 0.25rem', lineHeight: 1 }}>←</button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getConvName(selected)}</p>
                 {selected.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>}
               </div>
             </div>
-            {/* Messages — flex-1 scrollable */}
-            <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' } as any}>
+            <div style={{ flex: 1, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               {messages.map(msg => msgBubble(msg))}
-              <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} style={{ height: 1 }} />
             </div>
-            {/* Input bar — flexShrink:0 so it never gets squashed, sits above keyboard */}
-            <div style={{
-              background: 'white',
-              borderTop: '0.5px solid #e0e0e5',
-              padding: '0.625rem 0.875rem',
-              paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))',
-              display: 'flex',
-              gap: '0.5rem',
-              alignItems: 'flex-end',
-              flexShrink: 0,
-            }}>
-              <textarea ref={textareaRef} value={input}
-                onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px' }}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                placeholder="Message..."
-                rows={1}
-                style={{ flex: 1, padding: '0.55rem 0.875rem', border: 'none', borderRadius: 20, fontSize: 15, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 36, maxHeight: 96, background: '#f0f0f5' }}
-              />
-              <button onClick={sendMessage} disabled={!input.trim() || sending}
-                style={{ width: 36, height: 36, borderRadius: '50%', background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              </button>
-            </div>
+            {inputBar}
           </div>
         ) : null}
       </div>
 
-      {/* ── DESKTOP ── unchanged, works correctly */}
+      {/* DESKTOP — split pane, fixed height, unchanged */}
       <div className="msgs-desktop" style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '4rem 1.5rem 2rem' }}>
           <div style={{ marginBottom: '1.5rem' }}>
@@ -263,8 +212,9 @@ export default function MessagesPage() {
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Your inbox</h1>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1rem', height: 'calc(100vh - 220px)', minHeight: 500 }}>
-            {convList(openConversation)}
-            {/* Desktop thread */}
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ overflowY: 'auto', flex: 1 }}>{convListItems}</div>
+            </div>
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {!selected ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#aeaeb2' }}>
@@ -282,7 +232,8 @@ export default function MessagesPage() {
                     <div ref={messagesEndRef} />
                   </div>
                   <div style={{ borderTop: '0.5px solid #e0e0e5', padding: '0.875rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                    <textarea ref={textareaRef} value={input}
+                    <textarea
+                      value={input}
                       onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                       placeholder="Write a message... (Enter to send)"
