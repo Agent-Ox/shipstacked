@@ -10,22 +10,18 @@ async function fetchGitHubData(accessToken: string) {
     'X-GitHub-Api-Version': '2022-11-28',
   }
 
-  // Fetch user profile
   const userRes = await fetch('https://api.github.com/user', { headers })
-  if (!userRes.ok) throw new Error('Failed to fetch GitHub user')
+  if (!userRes.ok) throw new Error(`GitHub user fetch failed: ${userRes.status}`)
   const user = await userRes.json()
 
-  // Fetch repos (up to 100, sorted by updated)
   const reposRes = await fetch(
     'https://api.github.com/user/repos?per_page=100&sort=updated&type=owner',
     { headers }
   )
   const repos = reposRes.ok ? await reposRes.json() : []
 
-  // Count public repos
   const reposCount = user.public_repos || 0
 
-  // Extract top languages from repos
   const langCounts: Record<string, number> = {}
   for (const repo of repos) {
     if (repo.language) {
@@ -37,37 +33,32 @@ async function fetchGitHubData(accessToken: string) {
     .slice(0, 5)
     .map(([lang]) => lang)
 
-  // Fetch commit activity — contributions in last 90 days
-  // Use the events API as a proxy (public events, last 300)
   const eventsRes = await fetch(
     `https://api.github.com/users/${user.login}/events?per_page=100`,
     { headers }
   )
-  let commits90d = 0
-  if (eventsRes.ok) {
-    const events = await eventsRes.json()
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - 90)
-    for (const event of events) {
-      if (
-        event.type === 'PushEvent' &&
-        new Date(event.created_at) > cutoff
-      ) {
-        commits90d += event.payload?.commits?.length || 0
-      }
-    }
-  }
 
-  // Build contribution data for display (last 12 weeks of push events)
+  let commits90d = 0
   const contributionData: Record<string, number> = {}
+
   if (eventsRes.ok) {
     const events = await eventsRes.json()
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - 84) // 12 weeks
+    const cutoff90 = new Date()
+    cutoff90.setDate(cutoff90.getDate() - 90)
+    const cutoff84 = new Date()
+    cutoff84.setDate(cutoff84.getDate() - 84)
+
     for (const event of events) {
-      if (event.type === 'PushEvent' && new Date(event.created_at) > cutoff) {
+      if (event.type !== 'PushEvent') continue
+      const eventDate = new Date(event.created_at)
+      const commitCount = event.payload?.commits?.length || 0
+
+      if (eventDate > cutoff90) {
+        commits90d += commitCount
+      }
+      if (eventDate > cutoff84) {
         const week = new Date(event.created_at).toISOString().slice(0, 10)
-        contributionData[week] = (contributionData[week] || 0) + (event.payload?.commits?.length || 0)
+        contributionData[week] = (contributionData[week] || 0) + commitCount
       }
     }
   }
@@ -88,6 +79,7 @@ export async function GET(req: Request) {
   const state = searchParams.get('state')
 
   if (!code || !state) {
+    console.error('GitHub callback: missing code or state')
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
@@ -95,37 +87,45 @@ export async function GET(req: Request) {
   let email: string
   try {
     email = Buffer.from(state, 'base64').toString('utf-8')
-  } catch {
+    if (!email || !email.includes('@')) throw new Error('Invalid email decoded')
+  } catch (e) {
+    console.error('GitHub callback: state decode failed', e)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
   // Exchange code for access token
-  const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({
-      client_id: process.env.GITHUB_CLIENT_ID!,
-      client_secret: process.env.GITHUB_CLIENT_SECRET!,
-      code,
-      redirect_uri: `${siteUrl}/api/github/callback`,
-    }),
-  })
-
-  const tokenData = await tokenRes.json()
-  if (!tokenData.access_token) {
+  let accessToken: string
+  try {
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: process.env.GITHUB_CLIENT_ID!,
+        client_secret: process.env.GITHUB_CLIENT_SECRET!,
+        code,
+        redirect_uri: `${siteUrl}/api/github/callback`,
+      }),
+    })
+    const tokenData = await tokenRes.json()
+    if (!tokenData.access_token) {
+      console.error('GitHub callback: no access token returned', tokenData)
+      return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
+    }
+    accessToken = tokenData.access_token
+  } catch (e) {
+    console.error('GitHub callback: token exchange failed', e)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
-
-  const accessToken = tokenData.access_token
 
   // Fetch GitHub data
   let githubData
   try {
     githubData = await fetchGitHubData(accessToken)
-  } catch {
+  } catch (e) {
+    console.error('GitHub callback: fetchGitHubData failed', e)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
@@ -136,18 +136,26 @@ export async function GET(req: Request) {
   )
 
   // Get profile by email
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, avatar_url')
     .eq('email', email)
     .maybeSingle()
 
-  if (!profile) {
+  if (profileError) {
+    console.error('GitHub callback: profile lookup error', profileError)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
+  if (!profile) {
+    console.error('GitHub callback: no profile found for email', email)
+    // No builder profile yet — still save github_data linked to auth user
+    // Try to find by auth user instead — redirect to connect GitHub after creating profile
+    return NextResponse.redirect(`${siteUrl}/join?github=connected&gh_user=${githubData.github_username}`)
+  }
+
   // Upsert github_data
-  await supabase.from('github_data').upsert({
+  const { error: upsertError } = await supabase.from('github_data').upsert({
     profile_id: profile.id,
     github_username: githubData.github_username,
     repos_count: githubData.repos_count,
@@ -157,8 +165,12 @@ export async function GET(req: Request) {
     last_synced: new Date().toISOString(),
   }, { onConflict: 'profile_id' })
 
-  // Update profile: mark github connected, save username
-  // Also update avatar from GitHub if they don't have one yet
+  if (upsertError) {
+    console.error('GitHub callback: github_data upsert error', upsertError)
+    return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
+  }
+
+  // Update profile
   const profileUpdate: Record<string, unknown> = {
     github_connected: true,
     github_username: githubData.github_username,
@@ -168,7 +180,15 @@ export async function GET(req: Request) {
     profileUpdate.avatar_url = githubData.avatar_url
   }
 
-  await supabase.from('profiles').update(profileUpdate).eq('id', profile.id)
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update(profileUpdate)
+    .eq('id', profile.id)
+
+  if (updateError) {
+    console.error('GitHub callback: profile update error', updateError)
+    return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
+  }
 
   return NextResponse.redirect(`${siteUrl}/dashboard?github=connected`)
 }
