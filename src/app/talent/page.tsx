@@ -201,7 +201,6 @@ export default async function TalentPage() {
                         {profile.availability || 'open'}
                       </span>
                       <a href={`/employer/messages?new=${profile.id}`}
-                        onClick={e => e.stopPropagation()}
                         style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
                         Message →
                       </a>
