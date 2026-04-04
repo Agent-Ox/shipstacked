@@ -210,11 +210,9 @@ export default async function TalentPage() {
                         <Link href={`/u/${profile.username}`} style={{ fontSize: 12, padding: '0.4rem 0.85rem', background: '#f0f0f5', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
                           Profile
                         </Link>
-                        {profile.email && (
-                          <a href={`mailto:${profile.email}?subject=Opportunity via ShipStacked`} style={{ fontSize: 12, padding: '0.4rem 0.85rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
-                            Contact
-                          </a>
-                        )}
+                        <a href={`/employer/messages?new=${profile.id}`} style={{ fontSize: 12, padding: '0.4rem 0.85rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>
+                          Message
+                        </a>
                       </div>
                     </div>
                   </div>

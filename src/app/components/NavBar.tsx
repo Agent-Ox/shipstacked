@@ -14,6 +14,7 @@ export default function NavBar() {
   const [navUser, setNavUser] = useState<NavUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const pathname = usePathname()
 
   const isDark = pathname.startsWith('/u/')
@@ -71,6 +72,9 @@ export default function NavBar() {
         { label: 'Edit profile', href: '/dashboard/edit' },
       ]
     }
+    if (pathname.startsWith('/messages')) {
+      return [{ label: 'Dashboard', href: '/dashboard' }]
+    }
     if (pathname.startsWith('/feed')) {
       return [
         { label: 'Dashboard', href: '/dashboard' },
@@ -105,6 +109,8 @@ export default function NavBar() {
       const metaRole = user.user_metadata?.role as 'employer' | 'builder' | 'admin' | null
       setNavUser({ email: user.email || '', role: metaRole })
       setLoading(false)
+      // Fetch unread count
+      fetch('/api/messages/unread').then(r => r.json()).then(({ unread }) => setUnreadCount(unread || 0)).catch(() => {})
     })
   }, [])
 
@@ -168,6 +174,16 @@ export default function NavBar() {
                     Admin dashboard
                   </a>
                 ) : null}
+                <a href={navUser.role === 'employer' ? '/employer/messages' : '/messages'}
+                  onClick={() => setMenuOpen(false)}
+                  style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  Messages
+                  {unreadCount > 0 && (
+                    <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {unreadCount}
+                    </span>
+                  )}
+                </a>
                 <span style={{ fontSize: 13, color: '#aeaeb2', padding: '0.5rem 0 0.25rem' }}>{navUser.email}</span>
                 <a href="/api/logout"
                   style={{ fontSize: 15, color: '#ef4444', textDecoration: 'none', padding: '0.5rem 0', fontWeight: 500 }}>

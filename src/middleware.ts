@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Routes that require auth
-  const authRequired = ['/dashboard', '/post-job', '/talent', '/admin', '/employer']
+  const authRequired = ['/dashboard', '/post-job', '/talent', '/admin', '/employer', '/messages']
   const isProtected = authRequired.some(route => pathname.startsWith(route))
 
   if (isProtected && !session) {

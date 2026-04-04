@@ -446,9 +446,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               </p>
               
               <a
-                href={`mailto:${profile.email}?subject=Opportunity via ShipStacked`}
+                href={`/employer/messages?new=${profile.id}`}
                 style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: 'var(--accent)', color: 'white', borderRadius: 20, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-                Contact {profile.full_name.split(' ')[0]}
+                Message {profile.full_name.split(' ')[0]}
               </a>
             </div>
           ) : !resolvedUser ? (
