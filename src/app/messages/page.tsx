@@ -53,13 +53,23 @@ export default function MessagesPage() {
   useEffect(() => { selectedRef.current = selected }, [selected])
   useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
 
+  // Mobile: natural document flow — scroll the window.
+  // Desktop: messages div is overflow:auto — scrollIntoView works.
+  const scrollToBottom = (instant?: boolean) => {
+    if (window.innerWidth <= 640) {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: instant ? ('instant' as ScrollBehavior) : 'smooth' })
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: instant ? ('instant' as ScrollBehavior) : 'smooth' })
+    }
+  }
+
   useEffect(() => {
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    setTimeout(() => scrollToBottom(), 50)
   }, [messages])
 
   useEffect(() => {
     if (view === 'thread') {
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 150)
+      setTimeout(() => scrollToBottom(true), 150)
     }
   }, [view])
 
