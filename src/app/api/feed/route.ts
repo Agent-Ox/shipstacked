@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const body = await req.json()
-  const { title, what_built, problem_solved, tools_used, time_taken, url } = body
+  const { title, what_built, problem_solved, outcome, tools_used, time_taken, url } = body
 
   if (!title?.trim()) {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -64,6 +64,7 @@ export async function POST(req: Request) {
       title: title.trim(),
       what_built: what_built?.trim() || null,
       problem_solved: problem_solved?.trim() || null,
+      outcome: outcome?.trim() || null,
       tools_used: tools_used?.trim() || null,
       time_taken: time_taken?.trim() || null,
       url: url?.trim() || null,
@@ -114,4 +115,37 @@ export async function PATCH(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ reactions })
+}
+
+// DELETE — remove own post
+export async function DELETE(req: Request) {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const { post_id } = await req.json()
+  if (!post_id) return NextResponse.json({ error: 'post_id required' }, { status: 400 })
+
+  const adminSupabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Verify ownership via profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', user.email)
+    .maybeSingle()
+
+  if (!profile) return NextResponse.json({ error: 'No profile' }, { status: 400 })
+
+  const { error } = await adminSupabase
+    .from('posts')
+    .delete()
+    .eq('id', post_id)
+    .eq('profile_id', profile.id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ success: true })
 }

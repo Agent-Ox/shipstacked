@@ -16,13 +16,23 @@ export const metadata: Metadata = {
 export default async function FeedPage() {
   const supabase = await createServerSupabaseClient()
 
-  const { data: posts, error } = await supabase
+  const { data: posts } = await supabase
     .from('posts')
     .select('*, profiles(username, full_name, avatar_url, verified, github_connected)')
     .order('created_at', { ascending: false })
     .limit(20)
 
-  if (error) console.error('Feed fetch error:', error)
+  // Get current user's profile_id for delete ownership check
+  const { data: { user } } = await supabase.auth.getUser()
+  let currentUserProfileId: string | undefined
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', user.email)
+      .maybeSingle()
+    currentUserProfileId = profile?.id
+  }
 
-  return <FeedClient initialPosts={posts || []} />
+  return <FeedClient initialPosts={posts || []} currentUserProfileId={currentUserProfileId} />
 }

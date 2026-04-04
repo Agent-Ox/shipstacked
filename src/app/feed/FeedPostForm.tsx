@@ -21,6 +21,7 @@ export default function FeedPostForm({ onSuccess }: { onSuccess?: () => void }) 
   const [problemSolved, setProblemSolved] = useState('')
   const [toolsUsed, setToolsUsed] = useState('')
   const [timeTaken, setTimeTaken] = useState('')
+  const [outcome, setOutcome] = useState('')
   const [url, setUrl] = useState('')
 
   const handleSubmit = async () => {
@@ -31,12 +32,12 @@ export default function FeedPostForm({ onSuccess }: { onSuccess?: () => void }) 
       const res = await fetch('/api/feed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, what_built: whatBuilt, problem_solved: problemSolved, tools_used: toolsUsed, time_taken: timeTaken, url }),
+        body: JSON.stringify({ title, problem_solved: problemSolved, outcome, tools_used: toolsUsed, time_taken: timeTaken, url }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Something went wrong')
       setDone(true)
-      setTitle(''); setWhatBuilt(''); setProblemSolved(''); setToolsUsed(''); setTimeTaken(''); setUrl('')
+      setTitle(''); setProblemSolved(''); setOutcome(''); setToolsUsed(''); setTimeTaken(''); setUrl('')
       if (onSuccess) onSuccess()
     } catch (e: any) {
       setError(e.message)
@@ -166,13 +167,13 @@ export default function FeedPostForm({ onSuccess }: { onSuccess?: () => void }) 
 
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>
-            Describe what you built <span style={{ fontWeight: 400, color: '#aeaeb2' }}>(optional)</span>
+            Outcome <span style={{ fontWeight: 400, color: '#aeaeb2' }}>(optional but powerful)</span>
           </label>
-          <textarea
-            placeholder="More detail about the build, how it works, outcomes..."
-            value={whatBuilt}
-            onChange={e => setWhatBuilt(e.target.value)}
-            rows={2}
+          <input
+            type="text"
+            placeholder="e.g. 200 signups in 48hrs · saved client 10hrs/week · $2k MRR in month 1"
+            value={outcome}
+            onChange={e => setOutcome(e.target.value)}
             style={inputStyle}
           />
         </div>

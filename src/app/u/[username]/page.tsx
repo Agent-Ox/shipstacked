@@ -59,6 +59,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
     .eq('profile_id', profile.id)
     .maybeSingle()
 
+  const { data: feedPosts } = await supabase
+    .from('posts')
+    .select('id, title, problem_solved, outcome, tools_used, time_taken, url, reactions, created_at')
+    .eq('profile_id', profile.id)
+    .order('created_at', { ascending: false })
+    .limit(5)
+
 
   const byCategory = (cat: string) => skills?.filter(s => s.category === cat).map(s => s.name) || []
   const initials = profile.full_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -381,6 +388,35 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                       {items.map((s: string) => <span key={s} className="tag-skill">{s}</span>)}
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Build Feed */}
+          {feedPosts && feedPosts.length > 0 && (
+            <div className="fade-up" style={{ marginBottom: '1.5rem', animationDelay: '0.33s' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p className="section-label" style={{ margin: 0 }}>Build Feed <span style={{ color: 'var(--text3)', fontWeight: 400 }}>({feedPosts.length})</span></p>
+                <a href="/feed" style={{ fontSize: 12, color: 'var(--accent2)', textDecoration: 'none', fontWeight: 500 }}>View all →</a>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {feedPosts.map((post: any) => (
+                  <a key={post.id} href={`/feed/${post.id}`} style={{ textDecoration: 'none' }}>
+                    <div className="card" style={{ padding: '1.25rem', transition: 'border-color 0.2s' }}>
+                      <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em', marginBottom: '0.4rem', lineHeight: 1.3 }}>
+                        {post.title}
+                        {post.url && <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 13 }}> ↗</span>}
+                      </p>
+                      {post.outcome && (
+                        <p style={{ fontSize: 13, color: 'var(--green)', fontWeight: 500, marginBottom: '0.3rem' }}>→ {post.outcome}</p>
+                      )}
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        {post.tools_used && <span style={{ fontSize: 12, color: 'var(--text3)' }}>🛠 {post.tools_used}</span>}
+                        {post.time_taken && <span style={{ fontSize: 12, color: 'var(--text3)' }}>⏱ {post.time_taken}</span>}
+                      </div>
+                    </div>
+                  </a>
                 ))}
               </div>
             </div>
