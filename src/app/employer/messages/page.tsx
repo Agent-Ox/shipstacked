@@ -21,6 +21,7 @@ function EmployerMessagesInner() {
   const [loading, setLoading] = useState(true)
   const [userEmail, setUserEmail] = useState('')
   const [view, setView] = useState<'list' | 'thread'>('list')
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<any>(null)
   const userEmailRef = useRef<string>('')
@@ -51,6 +52,22 @@ function EmployerMessagesInner() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // Visual Viewport API — adjusts layout when iOS keyboard appears
+  useEffect(() => {
+    const vv = (window as any).visualViewport
+    if (!vv) return
+    const onResize = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop
+      setKeyboardOffset(Math.max(0, offset))
+    }
+    vv.addEventListener('resize', onResize)
+    vv.addEventListener('scroll', onResize)
+    return () => {
+      vv.removeEventListener('resize', onResize)
+      vv.removeEventListener('scroll', onResize)
+    }
   }, [])
 
   useEffect(() => { selectedRef.current = selected }, [selected])
@@ -179,7 +196,7 @@ function EmployerMessagesInner() {
       `}</style>
 
       {/* ── MOBILE ── */}
-      <div className="emp-mobile" style={{ position: 'fixed', top: 52, left: 0, right: 0, bottom: 0, flexDirection: 'column', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div className="emp-mobile" style={{ position: 'fixed', top: 52, left: 0, right: 0, bottom: keyboardOffset, flexDirection: 'column', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         {view === 'list' ? (
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '1rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
