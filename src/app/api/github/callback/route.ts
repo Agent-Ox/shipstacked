@@ -10,18 +10,20 @@ async function fetchGitHubData(accessToken: string) {
     'X-GitHub-Api-Version': '2022-11-28',
   }
 
+  // Fetch authenticated user profile
   const userRes = await fetch('https://api.github.com/user', { headers })
   if (!userRes.ok) throw new Error(`GitHub user fetch failed: ${userRes.status}`)
   const user = await userRes.json()
 
+  // Fetch repos (owner only, sorted by updated)
   const reposRes = await fetch(
     'https://api.github.com/user/repos?per_page=100&sort=updated&type=owner',
     { headers }
   )
   const repos = reposRes.ok ? await reposRes.json() : []
-
   const reposCount = user.public_repos || 0
 
+  // Top languages from repos
   const langCounts: Record<string, number> = {}
   for (const repo of repos) {
     if (repo.language) {
@@ -33,34 +35,81 @@ async function fetchGitHubData(accessToken: string) {
     .slice(0, 5)
     .map(([lang]) => lang)
 
-  const eventsRes = await fetch(
-    `https://api.github.com/user/events?per_page=100`,
-    { headers }
-  )
+  // Use GraphQL contributionsCollection for accurate commit count (includes private repos)
+  const now = new Date()
+  const from = new Date()
+  from.setDate(from.getDate() - 90)
+
+  const graphqlQuery = {
+    query: `query {
+      viewer {
+        contributionsCollection(from: "${from.toISOString()}", to: "${now.toISOString()}") {
+          totalCommitContributions
+          contributionCalendar {
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }`
+  }
 
   let commits90d = 0
   const contributionData: Record<string, number> = {}
 
-  if (eventsRes.ok) {
-    const events = await eventsRes.json()
-    const cutoff90 = new Date()
-    cutoff90.setDate(cutoff90.getDate() - 90)
-    const cutoff84 = new Date()
-    cutoff84.setDate(cutoff84.getDate() - 84)
+  try {
+    const graphqlRes = await fetch('https://api.github.com/graphql', {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(graphqlQuery),
+    })
 
-    for (const event of events) {
-      if (event.type !== 'PushEvent') continue
-      const eventDate = new Date(event.created_at)
-      const commitCount = event.payload?.commits?.length || 0
+    if (graphqlRes.ok) {
+      const graphqlData = await graphqlRes.json()
+      const collection = graphqlData?.data?.viewer?.contributionsCollection
 
-      if (eventDate > cutoff90) {
-        commits90d += commitCount
+      if (collection) {
+        commits90d = collection.totalCommitContributions || 0
+
+        // Build contribution data from calendar (last 12 weeks)
+        const weeks = collection.contributionCalendar?.weeks || []
+        const cutoff = new Date()
+        cutoff.setDate(cutoff.getDate() - 84)
+
+        for (const week of weeks) {
+          for (const day of week.contributionDays || []) {
+            if (day.contributionCount > 0 && new Date(day.date) > cutoff) {
+              contributionData[day.date] = day.contributionCount
+            }
+          }
+        }
       }
-      if (eventDate > cutoff84) {
-        const week = new Date(event.created_at).toISOString().slice(0, 10)
-        contributionData[week] = (contributionData[week] || 0) + commitCount
+    } else {
+      console.error('GraphQL failed, falling back to events API')
+      // Fallback to events API
+      const eventsRes = await fetch(
+        'https://api.github.com/user/events?per_page=100',
+        { headers }
+      )
+      if (eventsRes.ok) {
+        const events = await eventsRes.json()
+        const cutoff90 = new Date()
+        cutoff90.setDate(cutoff90.getDate() - 90)
+        for (const event of events) {
+          if (event.type === 'PushEvent' && new Date(event.created_at) > cutoff90) {
+            commits90d += event.payload?.commits?.length || 0
+            const date = event.created_at.slice(0, 10)
+            contributionData[date] = (contributionData[date] || 0) + (event.payload?.commits?.length || 0)
+          }
+        }
       }
     }
+  } catch (e) {
+    console.error('Contribution fetch error:', e)
   }
 
   return {
@@ -83,7 +132,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  // Decode email from state
   let email: string
   try {
     email = Buffer.from(state, 'base64').toString('utf-8')
@@ -93,15 +141,11 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  // Exchange code for access token
   let accessToken: string
   try {
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
         client_id: process.env.GITHUB_CLIENT_ID!,
         client_secret: process.env.GITHUB_CLIENT_SECRET!,
@@ -111,7 +155,7 @@ export async function GET(req: Request) {
     })
     const tokenData = await tokenRes.json()
     if (!tokenData.access_token) {
-      console.error('GitHub callback: no access token returned', tokenData)
+      console.error('GitHub callback: no access token', tokenData)
       return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
     }
     accessToken = tokenData.access_token
@@ -120,7 +164,6 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  // Fetch GitHub data
   let githubData
   try {
     githubData = await fetchGitHubData(accessToken)
@@ -129,32 +172,22 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  // Save to Supabase using service role
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Get profile by email
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, avatar_url')
     .eq('email', email)
     .maybeSingle()
 
-  if (profileError) {
-    console.error('GitHub callback: profile lookup error', profileError)
+  if (profileError || !profile) {
+    console.error('GitHub callback: profile lookup failed', profileError, 'email:', email)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  if (!profile) {
-    console.error('GitHub callback: no profile found for email', email)
-    // No builder profile yet — still save github_data linked to auth user
-    // Try to find by auth user instead — redirect to connect GitHub after creating profile
-    return NextResponse.redirect(`${siteUrl}/join?github=connected&gh_user=${githubData.github_username}`)
-  }
-
-  // Upsert github_data
   const { error: upsertError } = await supabase.from('github_data').upsert({
     profile_id: profile.id,
     github_username: githubData.github_username,
@@ -166,11 +199,10 @@ export async function GET(req: Request) {
   }, { onConflict: 'profile_id' })
 
   if (upsertError) {
-    console.error('GitHub callback: github_data upsert error', upsertError)
+    console.error('GitHub callback: upsert error', upsertError)
     return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
   }
 
-  // Update profile
   const profileUpdate: Record<string, unknown> = {
     github_connected: true,
     github_username: githubData.github_username,
@@ -180,15 +212,7 @@ export async function GET(req: Request) {
     profileUpdate.avatar_url = githubData.avatar_url
   }
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update(profileUpdate)
-    .eq('id', profile.id)
-
-  if (updateError) {
-    console.error('GitHub callback: profile update error', updateError)
-    return NextResponse.redirect(`${siteUrl}/dashboard?github=error`)
-  }
+  await supabase.from('profiles').update(profileUpdate).eq('id', profile.id)
 
   return NextResponse.redirect(`${siteUrl}/dashboard?github=connected`)
 }
