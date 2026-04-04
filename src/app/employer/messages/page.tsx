@@ -21,6 +21,7 @@ export default function EmployerMessagesPage() {
   const [userEmail, setUserEmail] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<any>(null)
+  const userEmailRef = useRef<string>('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -38,6 +39,9 @@ export default function EmployerMessagesPage() {
         table: 'messages',
       }, (payload) => {
         const newMsg = payload.new as any
+        // Skip own messages — handled by optimistic update
+        if (newMsg.sender_email === userEmailRef.current) return
+
         if (selectedRef.current && newMsg.conversation_id === selectedRef.current.id) {
           setMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev
@@ -45,11 +49,17 @@ export default function EmployerMessagesPage() {
           })
           fetch(`/api/messages/${selectedRef.current.id}`, { method: 'GET' }).catch(() => {})
         }
-        setConversations(prev => prev.map(c =>
-          c.id === newMsg.conversation_id
-            ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
-            : c
-        ))
+        setConversations(prev => {
+          const updated = prev.map(c =>
+            c.id === newMsg.conversation_id
+              ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
+              : c
+          )
+          if (!updated.some(c => c.id === newMsg.conversation_id)) {
+            fetch('/api/messages').then(r => r.json()).then(({ conversations }) => setConversations(conversations)).catch(() => {})
+          }
+          return updated
+        })
       })
       .subscribe()
 
@@ -57,6 +67,7 @@ export default function EmployerMessagesPage() {
   }, [])
 
   useEffect(() => { selectedRef.current = selected }, [selected])
+  useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   const loadConversations = async () => {

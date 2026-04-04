@@ -21,6 +21,7 @@ export default function MessagesPage() {
   const [userEmail, setUserEmail] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const selectedRef = useRef<any>(null)
+  const userEmailRef = useRef<string>('')
 
   useEffect(() => {
     const supabase = createClient()
@@ -38,31 +39,37 @@ export default function MessagesPage() {
         table: 'messages',
       }, (payload) => {
         const newMsg = payload.new as any
-        // If this message belongs to the open conversation, add it
+        // Skip messages sent by current user — handled by optimistic update
+        const currentEmail = userEmailRef.current
+        if (newMsg.sender_email === currentEmail) return
+
         if (selectedRef.current && newMsg.conversation_id === selectedRef.current.id) {
           setMessages(prev => {
-            // Avoid duplicates
             if (prev.some(m => m.id === newMsg.id)) return prev
             return [...prev, newMsg]
           })
-          // Mark as read
           fetch(`/api/messages/${selectedRef.current.id}`, { method: 'GET' }).catch(() => {})
         }
-        // Update conversation list preview
-        setConversations(prev => prev.map(c =>
-          c.id === newMsg.conversation_id
-            ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
-            : c
-        ))
+        setConversations(prev => {
+          const updated = prev.map(c =>
+            c.id === newMsg.conversation_id
+              ? { ...c, last_message: newMsg, unread_count: selectedRef.current?.id === c.id ? 0 : (c.unread_count || 0) + 1 }
+              : c
+          )
+          // If conversation not in list yet, reload
+          if (!updated.some(c => c.id === newMsg.conversation_id)) {
+            fetch('/api/messages').then(r => r.json()).then(({ conversations }) => setConversations(conversations)).catch(() => {})
+          }
+          return updated
+        })
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  useEffect(() => {
-    selectedRef.current = selected
-  }, [selected])
+  useEffect(() => { selectedRef.current = selected }, [selected])
+  useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -114,7 +121,7 @@ export default function MessagesPage() {
   }
 
   const getConvName = (conv: any) => {
-    const company = conv.employer_profiles?.company_name
+    const company = conv.employer_profile?.company_name || conv.jobs?.company_name
     return company || conv.employer_email?.split('@')[0] || 'Employer'
   }
 

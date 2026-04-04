@@ -39,10 +39,21 @@ export async function GET() {
     if (profile) {
       const { data } = await admin
         .from('conversations')
-        .select('*, jobs(role_title, company_name), employer_profiles!employer_email(company_name, logo_url)')
+        .select('*, jobs(role_title, company_name)')
         .eq('builder_profile_id', profile.id)
         .order('last_message_at', { ascending: false })
-      conversations = data || []
+
+      // Enrich with company name from employer_profiles
+      const convs = data || []
+      const enrichedWithCompany = await Promise.all(convs.map(async (conv: any) => {
+        const { data: emp } = await admin
+          .from('employer_profiles')
+          .select('company_name, logo_url')
+          .eq('email', conv.employer_email)
+          .maybeSingle()
+        return { ...conv, employer_profile: emp }
+      }))
+      conversations = enrichedWithCompany
     }
   }
 
