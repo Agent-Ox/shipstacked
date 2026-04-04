@@ -171,8 +171,8 @@ export default function MessagesPage() {
 
       {/* ── MOBILE ── full height flex column, keyboard-safe */}
       <div className="msgs-mobile" style={{
-        minHeight: '100vh', background: '#fbfbfd',
-        flexDirection: 'column', background: '#fbfbfd',
+        minHeight: '100vh', background: '#fbfbfd', display: 'flex',
+        flexDirection: 'column',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
       }}>
         {view === 'list' ? (
