@@ -180,7 +180,7 @@ function EmployerMessagesInner() {
       `}</style>
 
       {/* ── MOBILE ── */}
-      <div className="emp-mobile" style={{ minHeight: '100vh', background: '#fbfbfd', flexDirection: 'column', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <div className="emp-mobile" style={{ minHeight: '100vh', background: '#fbfbfd', display: 'flex', flexDirection: 'column', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         {view === 'list' ? (
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '1rem' }}>
             <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
