@@ -121,17 +121,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'employer_email and builder_profile_id required for new conversation' }, { status: 400 })
     }
 
-    // Upsert conversation
-    const { data: conv, error: convError } = await admin
-      .from('conversations')
-      .upsert({
-        employer_email,
-        builder_profile_id,
-        job_id: job_id || null,
-        last_message_at: new Date().toISOString(),
-      }, { onConflict: 'employer_email,builder_profile_id,job_id' })
-      .select()
-      .single()
+    // Find or create conversation
+    // Note: NULL != NULL in SQL unique constraints, so we handle null job_id separately
+    let conv: any = null
+    let convError: any = null
+
+    if (!job_id) {
+      // Check for existing conversation without a job
+      const { data: existing } = await admin
+        .from('conversations')
+        .select()
+        .eq('employer_email', employer_email)
+        .eq('builder_profile_id', builder_profile_id)
+        .is('job_id', null)
+        .maybeSingle()
+
+      if (existing) {
+        conv = existing
+        await admin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', existing.id)
+      } else {
+        const { data: newConv, error } = await admin
+          .from('conversations')
+          .insert([{ employer_email, builder_profile_id, job_id: null, last_message_at: new Date().toISOString() }])
+          .select().single()
+        conv = newConv
+        convError = error
+      }
+    } else {
+      const { data: newConv, error } = await admin
+        .from('conversations')
+        .upsert({ employer_email, builder_profile_id, job_id, last_message_at: new Date().toISOString() },
+          { onConflict: 'employer_email,builder_profile_id,job_id' })
+        .select().single()
+      conv = newConv
+      convError = error
+    }
 
     if (convError || !conv) {
       return NextResponse.json({ error: convError?.message || 'Failed to create conversation' }, { status: 500 })
