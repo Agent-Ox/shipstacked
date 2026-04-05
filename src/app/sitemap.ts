@@ -28,5 +28,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...profilePages]
+  // Active job pages
+  const { data: jobs } = await supabase
+    .from('jobs')
+    .select('id, created_at')
+    .eq('status', 'active')
+    .gt('expires_at', new Date().toISOString())
+
+  const jobPages: MetadataRoute.Sitemap = (jobs || []).map(job => ({
+    url: `${base}/jobs/${job.id}`,
+    lastModified: new Date(job.created_at),
+    changeFrequency: 'weekly' as const,
+    priority: 0.6,
+  }))
+
+  return [...staticPages, ...profilePages, ...jobPages]
 }

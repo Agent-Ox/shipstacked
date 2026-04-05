@@ -36,6 +36,7 @@ export default function NavBar() {
       return [
         { label: 'How it works', href: '#how' },
         { label: 'Build Feed', href: '/feed' },
+        { label: 'Jobs', href: '/jobs' },
         { label: 'Hire talent', href: '#hire' },
       ]
     }
@@ -50,12 +51,14 @@ export default function NavBar() {
       if (pathname.startsWith('/employer')) {
         return [
           { label: 'Browse talent', href: '/talent' },
+          { label: 'Jobs', href: '/jobs' },
           { label: 'Leaderboard', href: '/leaderboard' },
           { label: 'Post a job', href: '/post-job' },
         ]
       }
       if (pathname.startsWith('/talent') || pathname.startsWith('/post-job')) {
         return [
+          { label: 'Jobs', href: '/jobs' },
           { label: 'Leaderboard', href: '/leaderboard' },
           { label: 'Dashboard', href: '/employer' },
         ]
@@ -63,6 +66,7 @@ export default function NavBar() {
       // All other employer pages (including /leaderboard)
       return [
         { label: 'Browse talent', href: '/talent' },
+        { label: 'Jobs', href: '/jobs' },
         { label: 'Leaderboard', href: '/leaderboard' },
         { label: 'Dashboard', href: '/employer' },
       ]
@@ -75,6 +79,7 @@ export default function NavBar() {
     if (pathname.startsWith('/dashboard')) {
       return [
         { label: 'Build Feed', href: '/feed' },
+        { label: 'Jobs', href: '/jobs' },
         { label: 'Leaderboard', href: '/leaderboard' },
         { label: 'Edit profile', href: '/dashboard/edit' },
       ]
@@ -102,6 +107,7 @@ export default function NavBar() {
       return [
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Build Feed', href: '/feed' },
+        { label: 'Jobs', href: '/jobs' },
       ]
     }
     // Fallback for any other page

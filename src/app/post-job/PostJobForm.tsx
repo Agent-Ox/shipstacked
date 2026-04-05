@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
-import Link from 'next/link'
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem 1rem',
@@ -55,6 +54,8 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
 }) {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [newJobId, setNewJobId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
   // Core fields
@@ -110,9 +111,11 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
       } else {
         const expires = new Date()
         expires.setDate(expires.getDate() + 30)
-        const { error: insertError } = await supabase
+        const { data: inserted, error: insertError } = await supabase
           .from('jobs').insert([{ employer_email: employerEmail, ...payload, status: 'active', expires_at: expires.toISOString() }])
+          .select('id').single()
         if (insertError) throw insertError
+        if (inserted?.id) setNewJobId(inserted.id)
       }
       setDone(true)
     } catch (e: any) {
@@ -123,6 +126,7 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
   }
 
   if (done) {
+    const shareUrl = newJobId ? `https://shipstacked.com/jobs/${newJobId}` : null
     return (
       <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ maxWidth: 480, padding: '2rem', textAlign: 'center' }}>
@@ -130,12 +134,32 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
           <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>
             {jobId ? 'Job updated.' : 'Job posted.'}
           </h1>
-          <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '2rem', lineHeight: 1.6 }}>
+          <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '1.5rem', lineHeight: 1.6 }}>
             {jobId ? 'Your listing has been updated.' : 'Your listing is live for 30 days. Verified ShipStacked builders can now find and apply.'}
           </p>
+
+          {shareUrl && (
+            <div style={{ background: '#f5f5f7', border: '1px solid #e0e0e5', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: '1.5rem', textAlign: 'left' }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Share this listing</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, color: '#3d3d3f', fontFamily: 'monospace', background: 'white', border: '1px solid #e0e0e5', borderRadius: 8, padding: '0.3rem 0.6rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {shareUrl}
+                </span>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(shareUrl); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+                  style={{ padding: '0.4rem 0.875rem', background: copied ? '#e3f3e3' : 'white', color: copied ? '#1a7f37' : '#3d3d3f', borderRadius: 8, border: '1px solid', borderColor: copied ? '#b3e0b3' : '#e0e0e5', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0 }}
+                >
+                  {copied ? '✓ Copied' : 'Copy link'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
             <a href="/employer" style={{ padding: '0.75rem 1.5rem', background: '#0071e3', color: 'white', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>View on dashboard →</a>
-            <Link href="/jobs" style={{ padding: '0.75rem 1.5rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>See public jobs board</Link>
+            {shareUrl && (
+              <a href={shareUrl} style={{ padding: '0.75rem 1.5rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>View listing →</a>
+            )}
           </div>
         </div>
       </div>

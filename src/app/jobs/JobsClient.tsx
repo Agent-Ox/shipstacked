@@ -40,7 +40,7 @@ function JobCard({ job, isBuilder, isLoggedOut, alreadyApplied }: {
     <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.75rem' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.75rem' }}>
         <div>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.02em', margin: '0 0 0.2rem' }}>{job.role_title}</h2>
+          <a href={"/jobs/" + job.id} style={{ fontSize: 17, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.02em', margin: '0 0 0.2rem', textDecoration: 'none', display: 'block' }}>{job.role_title}</a>
           <p style={{ fontSize: 14, color: '#6e6e73', margin: 0 }}>{job.company_name} · {job.location} · {job.employment_type}</p>
         </div>
         {job.salary_range && (
