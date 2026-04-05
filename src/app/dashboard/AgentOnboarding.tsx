@@ -18,6 +18,7 @@ Keep my profile current. Every time I ship something new, post it to /builds.`
 
 export default function AgentOnboarding() {
   const [apiKeys, setApiKeys] = useState<any[]>([])
+  const [fullName, setFullName] = useState('')
   const [newKeyName, setNewKeyName] = useState('')
   const [generatedKey, setGeneratedKey] = useState<string | null>(null)
   const [keysLoading, setKeysLoading] = useState(false)
@@ -69,15 +70,29 @@ export default function AgentOnboarding() {
           </div>
 
           {!keysLoaded ? (
-            <button onClick={async () => {
-              setKeysLoading(true)
-              const res = await fetch('/api/keys')
-              if (res.ok) { const { keys } = await res.json(); setApiKeys(keys) }
-              setKeysLoaded(true)
-              setKeysLoading(false)
-            }} style={{ padding: '0.6rem 1.5rem', background: '#6c63ff', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-              {keysLoading ? 'Loading...' : 'Get started'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <p style={{ fontSize: 12, color: 'rgba(167,139,250,0.7)', fontWeight: 500 }}>Your name — used to create your profile URL</p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <input
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && fullName.trim()) { (document.getElementById('get-started-btn') as HTMLButtonElement)?.click() } }}
+                  placeholder="Maya Okonkwo"
+                  style={{ flex: 1, minWidth: 200, padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 980, fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#f0f0f5' }}
+                />
+                <button id="get-started-btn" disabled={!fullName.trim() || keysLoading} onClick={async () => {
+                  if (!fullName.trim()) return
+                  setKeysLoading(true)
+                  const res = await fetch('/api/keys')
+                  if (res.ok) { const { keys } = await res.json(); setApiKeys(keys) }
+                  setKeysLoaded(true)
+                  setKeysLoading(false)
+                }} style={{ padding: '0.6rem 1.5rem', background: !fullName.trim() ? 'rgba(108,99,255,0.4)' : '#6c63ff', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 600, cursor: !fullName.trim() ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                  {keysLoading ? 'Loading...' : 'Get started'}
+                </button>
+              </div>
+              <p style={{ fontSize: 11, color: 'rgba(240,240,245,0.25)' }}>Your agent fills in everything else.</p>
+            </div>
           ) : (
             <>
               {/* Show generated key once */}
@@ -135,7 +150,7 @@ export default function AgentOnboarding() {
                     const res = await fetch('/api/keys', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ name: newKeyName.trim() })
+                      body: JSON.stringify({ name: newKeyName.trim(), full_name: fullName.trim() })
                     })
                     if (res.ok) {
                       const data = await res.json()

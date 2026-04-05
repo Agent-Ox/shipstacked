@@ -49,15 +49,19 @@ export async function POST(req: Request) {
 
   // Agent mode: no profile yet — create a minimal one so the key has something to attach to
   if (!profile) {
-    const emailPart = user.email!.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20)
-    const username = emailPart + Math.floor(Math.random() * 999)
+    // Use provided name for username, fall back to email prefix
+    const nameForSlug = (body.full_name || '').trim()
+    const slugBase = nameForSlug
+      ? nameForSlug.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20)
+      : user.email!.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20)
+    const username = slugBase + Math.floor(Math.random() * 999)
     const { data: newProfile, error: profileError } = await db
       .from('profiles')
       .insert({
         user_id: user.id,
         email: user.email,
         username,
-        full_name: '',
+        full_name: nameForSlug,
         published: false,
       })
       .select('id')
