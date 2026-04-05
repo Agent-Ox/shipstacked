@@ -14,7 +14,13 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://shipstacked.com/talent' },
 }
 
-export default async function TalentPage() {
+export default async function TalentPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
+  const params = await searchParams
+  const filterProfession = params.profession || ''
+  const filterAvailability = params.availability || ''
+  const filterVerified = params.verified === 'true'
+  const filterSort = params.sort || 'velocity'
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -38,19 +44,42 @@ export default async function TalentPage() {
     isPaidEmployer = !!sub
   }
 
-  // Fetch all published profiles
-  const { data: allProfiles } = await admin
+  // Build filtered query
+  let query = admin
     .from('profiles')
-    .select('id, username, full_name, role, location, bio, avatar_url, verified, availability, velocity_score, skills(*)')
+    .select('id, username, full_name, role, location, bio, avatar_url, verified, availability, velocity_score, primary_profession, skills(*)')
     .eq('published', true)
-    .order('verified', { ascending: false })
-    .order('velocity_score', { ascending: false })
-    .order('created_at', { ascending: false })
+
+  if (filterVerified) query = query.eq('verified', true)
+  if (filterProfession) query = query.eq('primary_profession', filterProfession)
+  if (filterAvailability) query = query.eq('availability', filterAvailability)
+
+  // Sort: always verified first, then by chosen sort
+  query = query.order('verified', { ascending: false })
+  if (filterSort === 'newest') {
+    query = query.order('created_at', { ascending: false })
+  } else {
+    // default: velocity
+    query = query.order('velocity_score', { ascending: false }).order('created_at', { ascending: false })
+  }
+
+  const { data: allProfiles } = await query
 
   const profiles = allProfiles || []
   const verifiedCount = profiles.filter((p: any) => p.verified).length
   const displayProfiles = isPaidEmployer ? profiles : profiles.slice(0, 6)
   const isTeaser = !isPaidEmployer
+
+  // Total unfiltered count for the header (only when filters are active)
+  let totalUnfilteredCount = profiles.length
+  const hasFilters = !!(filterProfession || filterAvailability || filterVerified)
+  if (hasFilters) {
+    const { count } = await admin
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('published', true)
+    totalUnfilteredCount = count || profiles.length
+  }
 
   // Fetch employer profile to check if they have set up their company
   let hasEmployerProfile = false
@@ -83,8 +112,10 @@ export default async function TalentPage() {
           isTeaser={isTeaser}
           verifiedCount={verifiedCount}
           totalCount={profiles.length}
+          totalUnfilteredCount={totalUnfilteredCount}
           user={user}
           hasEmployerProfile={hasEmployerProfile}
+          filters={{ profession: filterProfession, availability: filterAvailability, verified: filterVerified, sort: filterSort }}
         />
       </div>
     </div>
