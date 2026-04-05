@@ -43,6 +43,10 @@ export async function POST(req: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
+  // Parse body early — needed for full_name before profile creation
+  let body: any = {}
+  try { body = await req.json() } catch {}
+
   const db = admin()
   let { data: profile } = await db
     .from('profiles').select('id').eq('email', user.email).maybeSingle()
@@ -81,8 +85,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Maximum 5 API keys per profile. Revoke an existing key first.' }, { status: 400 })
   }
 
-  let body: any = {}
-  try { body = await req.json() } catch {}
   const name = body.name?.trim() || 'My agent'
 
   const { raw, hash, prefix } = generateKey()
