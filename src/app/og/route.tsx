@@ -49,8 +49,10 @@ export async function GET(req: Request) {
           </div>
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 48 }}>
-            <div style={{ display: 'flex', background: 'rgba(26,127,55,0.2)', border: '1px solid rgba(26,127,55,0.4)', borderRadius: 12, padding: '8px 20px', marginBottom: 28 }}>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#34d399', letterSpacing: '0.05em' }}>NOW HIRING</span>
+            <div style={{ display: 'flex', marginBottom: 28 }}>
+              <div style={{ display: 'flex', background: 'rgba(26,127,55,0.2)', border: '1px solid rgba(26,127,55,0.4)', borderRadius: 12, padding: '8px 20px' }}>
+                <span style={{ fontSize: 16, fontWeight: 600, color: '#34d399', letterSpacing: '0.05em' }}>NOW HIRING</span>
+              </div>
             </div>
             <span style={{ fontSize: 48, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: '1.1' }}>{name || 'Open Role'}</span>
             {location && <span style={{ fontSize: 26, color: 'rgba(240,240,245,0.5)' }}>{location}</span>}
