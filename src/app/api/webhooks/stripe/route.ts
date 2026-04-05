@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         email,
         email_confirm: true,
         password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12),
-        user_metadata: { role: 'employer' }
+        user_metadata: { role: 'employer', password_set: false }
       })
     }
 
@@ -51,19 +51,10 @@ export async function POST(req: Request) {
     const { data: linkData } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email,
-      options: { redirectTo: `${siteUrl}/auth/callback` }
+      options: { redirectTo: `${siteUrl}/set-password` }
     })
 
     const magicLink = linkData?.properties?.action_link || null
-
-    // Generate password reset link for welcome email
-    const { data: resetLinkData } = await supabase.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo: `${siteUrl}/api/auth/confirm?next=/update-password` }
-    })
-
-    const resetLink = resetLinkData?.properties?.action_link || `${siteUrl}/reset-password`
 
     // Write subscription row
     let expiresAt = null
@@ -93,20 +84,20 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: 'ShipStacked <hello@shipstacked.com>',
         to: email,
-        subject: 'Welcome to ShipStacked — set your password',
+        subject: 'Welcome to ShipStacked — access your account',
         html: `
           <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
             <h1 style="font-size: 24px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em;">Welcome to ShipStacked.</h1>
-            <p style="color: #6e6e73; font-size: 15px; line-height: 1.6;">Your Full Access subscription is active. You can now search and contact verified AI-native builders.</p>
-            <a href="${siteUrl}/talent"
-              style="display: inline-block; margin: 1.5rem 0; padding: 0.75rem 1.5rem; background: #0071e3; color: white; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 500;">
-              Access talent directory
+            <p style="color: #6e6e73; font-size: 15px; line-height: 1.6;">
+              Your Full Access subscription is confirmed. Click below to set your password and access the builder directory.
+            </p>
+            <a href="${magicLink || siteUrl + '/login'}"
+              style="display: inline-block; margin: 1.5rem 0 1rem; padding: 0.875rem 2rem; background: #0071e3; color: white; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 600;">
+              Set password and access ShipStacked →
             </a>
-            <p style="color: #6e6e73; font-size: 14px; line-height: 1.6;">Set a password so you can sign in any time:</p>
-            <a href="${resetLink}"
-              style="display: inline-block; margin: 1rem 0; padding: 0.75rem 1.5rem; background: #f5f5f7; color: #1d1d1f; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 500;">
-              Set your password
-            </a>
+            <p style="color: #aeaeb2; font-size: 13px; line-height: 1.6;">
+              This link expires in 24 hours. After setting your password, sign in anytime at shipstacked.com/login.
+            </p>
             <hr style="border: none; border-top: 1px solid #e0e0e5; margin: 1.5rem 0;" />
             <p style="color: #aeaeb2; font-size: 12px;">Questions? Reply to this email or contact hello@shipstacked.com</p>
             <p style="color: #aeaeb2; font-size: 12px;">ShipStacked — The hiring platform for AI-native talent.</p>

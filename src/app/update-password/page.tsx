@@ -43,12 +43,15 @@ export default function UpdatePasswordPage() {
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { error } = await supabase.auth.updateUser({ password })
+    const { error } = await supabase.auth.updateUser({ 
+      password,
+      data: { password_set: true }
+    })
     if (error) {
       setError(error.message)
       setLoading(false)
     } else {
-      window.location.href = '/talent'
+      window.location.href = '/employer'
     }
   }
 

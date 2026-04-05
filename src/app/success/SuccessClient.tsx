@@ -110,16 +110,16 @@ export default function SuccessClient({ sessionId }: { sessionId: string | null 
         {loading ? (
           <div>
             <p style={{ color: '#6e6e73', fontSize: 14, marginBottom: '1.5rem' }}>
-              Setting up your account...
+              Confirming your payment...
             </p>
             <div style={{ width: 32, height: 32, border: '3px solid #e0e0e5', borderTop: '3px solid #0071e3', borderRadius: '50%', margin: '0 auto', animation: 'spin 0.8s linear infinite' }} />
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
         ) : magicLink ? (
           <div>
-            <a href={magicLink} style={btnStyle}>Access ShipStacked</a>
+            <a href={magicLink} style={btnStyle}>Access your account →</a>
             <p style={{ color: '#aeaeb2', fontSize: 12, marginTop: '1rem' }}>
-              One click and you are in. No password needed right now.
+              One click to access your account and set your password.
             </p>
           </div>
         ) : (

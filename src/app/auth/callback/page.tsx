@@ -20,7 +20,10 @@ export default function AuthCallbackPage() {
             const metaRole = user.user_metadata?.role
 
             if (metaRole === 'employer') {
-              window.location.href = '/employer'
+              // Check if employer has set a password yet
+              // If account was created by Stripe webhook, password_set meta will be absent
+              const hasPassword = user.user_metadata?.password_set === true
+              window.location.href = hasPassword ? '/employer' : '/update-password'
               return
             }
 
