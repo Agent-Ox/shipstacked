@@ -217,6 +217,7 @@ export default function TalentClient({
                   <ProfileCard
                     profile={profile}
                     isPaidEmployer={isPaidEmployer}
+                    hasEmployerProfile={hasEmployerProfile}
                     isSaved={savedIds.includes(profile.id)}
                     onToggleSave={handleToggleSave}
                   />
