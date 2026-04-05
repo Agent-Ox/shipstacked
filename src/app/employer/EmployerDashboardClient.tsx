@@ -311,9 +311,6 @@ export default function EmployerDashboardClient({
           )}
 
           {error && <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14, color: '#c00' }}>{error}</div>}
-          {saved && <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1rem', fontSize: 14, color: '#1a7f37' }}>
-            ✓ Profile saved.{profile.public && profile.slug ? ` Live at shipstacked.com/company/${profile.slug}` : ' Toggle public when ready to go live.'}
-          </div>}
 
           <div id="company-form" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem' }}>
 
@@ -417,6 +414,12 @@ export default function EmployerDashboardClient({
               style={{ padding: '0.75rem', background: saving ? '#d2d2d7' : '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', width: '100%' }}>
               {saving ? 'Saving...' : isPublic ? 'Save and publish profile' : 'Save profile privately'}
             </button>
+            {saved && (
+              <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.875rem 1rem', marginTop: '0.75rem', fontSize: 14, color: '#1a7f37', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 700 }}>✓</span>
+                <span>Profile saved.{profile.public && profile.slug ? ` Live at shipstacked.com/company/${profile.slug}` : ' Toggle public when ready to go live.'}</span>
+              </div>
+            )}
           </div>
         </div>
 

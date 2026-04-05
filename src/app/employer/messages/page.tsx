@@ -190,7 +190,10 @@ function EmployerMessagesInner() {
                 <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Messages</p>
                 <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Conversations</h1>
               </div>
-              <a href="/talent" style={{ fontSize: 12, padding: '0.4rem 0.75rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse →</a>
+<div style={{ display: 'flex', gap: '0.4rem' }}>
+                <a href="/employer" style={{ fontSize: 12, padding: '0.4rem 0.75rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>← Back</a>
+                <a href="/talent" style={{ fontSize: 12, padding: '0.4rem 0.75rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse →</a>
+              </div>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>{convList(openConversation)}</div>
           </div>
@@ -240,7 +243,10 @@ function EmployerMessagesInner() {
               <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Messages</p>
               <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Conversations</h1>
             </div>
-            <a href="/talent" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse talent →</a>
+<div style={{ display: 'flex', gap: '0.5rem' }}>
+              <a href="/employer" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>← Dashboard</a>
+              <a href="/talent" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse talent →</a>
+            </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1rem', height: 'calc(100vh - 220px)', minHeight: 500 }}>
             {convList(openConversation)}
