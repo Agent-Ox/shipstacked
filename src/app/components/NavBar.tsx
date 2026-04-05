@@ -50,15 +50,20 @@ export default function NavBar() {
       if (pathname.startsWith('/employer')) {
         return [
           { label: 'Browse talent', href: '/talent' },
+          { label: 'Leaderboard', href: '/leaderboard' },
           { label: 'Post a job', href: '/post-job' },
         ]
       }
       if (pathname.startsWith('/talent') || pathname.startsWith('/post-job')) {
-        return [{ label: 'Dashboard', href: '/employer' }]
+        return [
+          { label: 'Leaderboard', href: '/leaderboard' },
+          { label: 'Dashboard', href: '/employer' },
+        ]
       }
-      // All other employer pages
+      // All other employer pages (including /leaderboard)
       return [
         { label: 'Browse talent', href: '/talent' },
+        { label: 'Leaderboard', href: '/leaderboard' },
         { label: 'Dashboard', href: '/employer' },
       ]
     }
