@@ -294,7 +294,7 @@ export default function BuilderDashboardClient({
                     <p style={{ fontSize: 12, color: '#a16207', lineHeight: 1.5 }}>Profiles with photos get more employer attention. Takes 10 seconds.</p>
                   </div>
                 </div>
-                <a href=/dashboard/edit style={{ fontSize: 13, padding: '0.4rem 0.875rem', background: '#f59e0b', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                <a href="/dashboard/edit" style={{ fontSize: 13, padding: '0.4rem 0.875rem', background: '#f59e0b', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>
                   Add photo →
                 </a>
               </div>
