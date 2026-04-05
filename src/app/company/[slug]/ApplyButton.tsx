@@ -9,8 +9,11 @@ export default function ApplyButton({ jobId, jobTitle, companyName, alreadyAppli
   companyName: string
   alreadyApplied?: boolean
 }) {
-  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error' | 'duplicate'>(alreadyApplied ? 'duplicate' : 'idle')
-  const justApplied = state === 'done'
+  // 'prior' = applied before this session (show green badge, no message)
+  // 'done'  = just applied now (show green badge + full message)
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'prior' | 'error'>(
+    alreadyApplied ? 'prior' : 'idle'
+  )
 
   const apply = async () => {
     setState('loading')
@@ -20,7 +23,8 @@ export default function ApplyButton({ jobId, jobTitle, companyName, alreadyAppli
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ job_id: jobId })
       })
-      if (res.status === 409) { setState('duplicate'); return }
+      // 409 = already applied (race condition or double-click) — treat same as prior
+      if (res.status === 409) { setState('prior'); return }
       if (res.ok) { setState('done'); return }
       setState('error')
     } catch {
@@ -28,17 +32,18 @@ export default function ApplyButton({ jobId, jobTitle, companyName, alreadyAppli
     }
   }
 
-  if (state === 'duplicate') {
+  // Both 'prior' and 'done' show the green Applied badge
+  if (state === 'prior') {
     return (
-      <div style={{ display: 'inline-flex', alignItems: 'center', padding: '0.5rem 1.25rem', background: '#f0f0f5', borderRadius: 980, fontSize: 13, fontWeight: 500, color: '#6e6e73' }}>
-        Already applied
-      </div>
+      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0.5rem 1.25rem', background: '#e3f3e3', borderRadius: 980, fontSize: 13, fontWeight: 600, color: '#1a7f37' }}>
+        Applied ✓
+      </span>
     )
   }
 
   return (
     <div>
-      {/* Button */}
+      {/* Show button until successfully applied */}
       {state !== 'done' && (
         <button
           onClick={apply}
@@ -55,9 +60,9 @@ export default function ApplyButton({ jobId, jobTitle, companyName, alreadyAppli
         </button>
       )}
 
-      {/* Success notification — same pattern as /jobs page */}
-      {justApplied && (
-        <div style={{ marginTop: '0.75rem', padding: '0.875rem 1rem', background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+      {/* Full success notification — only shown immediately after applying */}
+      {state === 'done' && (
+        <div style={{ padding: '0.875rem 1rem', background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
           <p style={{ fontSize: 13, color: '#1a7f37', fontWeight: 500, margin: 0 }}>
             ✓ Application sent — {companyName} will see your message in their ShipStacked inbox.
           </p>
