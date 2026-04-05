@@ -70,6 +70,7 @@ export default function NavBar() {
     if (pathname.startsWith('/dashboard')) {
       return [
         { label: 'Build Feed', href: '/feed' },
+        { label: 'Leaderboard', href: '/leaderboard' },
         { label: 'Edit profile', href: '/dashboard/edit' },
       ]
     }
