@@ -74,38 +74,60 @@ export async function GET(req: Request) {
         .eq('builder_profile_id', profile.id)
         .order('last_message_at', { ascending: false })
 
-      // Enrich with company name from employer_profiles
       const convs = data || []
-      const enrichedWithCompany = await Promise.all(convs.map(async (conv: any) => {
-        const { data: emp } = await admin
-          .from('employer_profiles')
-          .select('company_name, logo_url')
-          .eq('email', conv.employer_email)
-          .maybeSingle()
-        return { ...conv, employer_profile: emp }
-      }))
-      conversations = enrichedWithCompany
+
+      // Single bulk query for all employer profiles instead of N queries
+      const employerEmails = [...new Set(convs.map((c: any) => c.employer_email))]
+      const { data: empProfiles } = employerEmails.length > 0
+        ? await admin
+            .from('employer_profiles')
+            .select('email, company_name, logo_url')
+            .in('email', employerEmails)
+        : { data: [] }
+
+      const empMap = Object.fromEntries((empProfiles || []).map((e: any) => [e.email, e]))
+      conversations = convs.map((conv: any) => ({ ...conv, employer_profile: empMap[conv.employer_email] || null }))
     }
   }
 
-  // For each conversation, get the last message and unread count
-  const enriched = await Promise.all(conversations.map(async (conv) => {
-    const { data: lastMsg } = await admin
-      .from('messages')
-      .select('content, sender_email, created_at')
-      .eq('conversation_id', conv.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+  // Bulk fetch last messages and unread counts — 2 queries total instead of 2N
+  const convIds = conversations.map((c: any) => c.id)
 
-    const { count: unreadCount } = await admin
+  let lastMsgMap: Record<string, any> = {}
+  let unreadMap: Record<string, number> = {}
+
+  if (convIds.length > 0) {
+    // Last message per conversation: fetch all recent messages and pick the latest per conv
+    const { data: recentMsgs } = await admin
       .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('conversation_id', conv.id)
+      .select('conversation_id, content, sender_email, created_at')
+      .in('conversation_id', convIds)
+      .order('created_at', { ascending: false })
+
+    // Keep only the first (most recent) message seen per conversation_id
+    for (const msg of (recentMsgs || [])) {
+      if (!lastMsgMap[msg.conversation_id]) {
+        lastMsgMap[msg.conversation_id] = msg
+      }
+    }
+
+    // Unread counts: fetch all unread messages not sent by current user, group by conv
+    const { data: unreadMsgs } = await admin
+      .from('messages')
+      .select('conversation_id')
+      .in('conversation_id', convIds)
       .eq('read', false)
       .neq('sender_email', user.email!)
 
-    return { ...conv, last_message: lastMsg, unread_count: unreadCount || 0 }
+    for (const msg of (unreadMsgs || [])) {
+      unreadMap[msg.conversation_id] = (unreadMap[msg.conversation_id] || 0) + 1
+    }
+  }
+
+  const enriched = conversations.map((conv: any) => ({
+    ...conv,
+    last_message: lastMsgMap[conv.id] || null,
+    unread_count: unreadMap[conv.id] || 0,
   }))
 
   return NextResponse.json({ conversations: enriched })
