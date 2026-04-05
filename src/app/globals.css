@@ -18,6 +18,3 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* --vh CSS variable is set by JS in messages pages via visualViewport API.
-   This is the iOS Safari keyboard fix (Telegram approach).
-   Usage: calc(var(--vh, 1vh) * 100) tracks true visible height even when keyboard is open. */
