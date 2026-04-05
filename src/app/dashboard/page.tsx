@@ -1,11 +1,19 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import BuilderDashboardClient from './BuilderDashboardClient'
+import AgentOnboarding from './AgentOnboarding'
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ agent?: string }>
+}) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const params = await searchParams
+  const agentMode = params.agent === '1'
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -13,12 +21,19 @@ export default async function DashboardPage() {
     .eq('email', user.email)
     .maybeSingle()
 
-  const { data: applications } = profile ? await supabase
+  // Agent mode: show onboarding screen regardless of profile state
+  // No profile + not agent mode: redirect to join
+  if (agentMode || !profile) {
+    return <AgentOnboarding />
+  }
+
+  // Normal dashboard
+  const { data: applications } = await supabase
     .from('applications')
     .select('*, jobs(*)')
     .eq('builder_email', user.email)
     .order('created_at', { ascending: false })
-    .limit(5) : { data: [] }
+    .limit(5)
 
   const { data: employers } = await supabase
     .from('employer_profiles')
@@ -27,21 +42,20 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(6)
 
-  const { data: githubData } = profile ? await supabase
+  const { data: githubData } = await supabase
     .from('github_data')
     .select('*')
     .eq('profile_id', profile.id)
-    .maybeSingle() : { data: null }
+    .maybeSingle()
 
-  // Count Build Feed posts with outcome + url (for auto-verify progress)
-  const { count: provenPostCount } = profile ? await supabase
+  const { count: provenPostCount } = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
     .eq('profile_id', profile.id)
     .not('outcome', 'is', null)
     .neq('outcome', '')
     .not('url', 'is', null)
-    .neq('url', '') : { count: 0 }
+    .neq('url', '')
 
   return (
     <BuilderDashboardClient
