@@ -234,6 +234,18 @@ export default function PostJobForm({ employerEmail, jobId, initialData }: {
 
         <Section title="Skills needed">
           <div>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <button type="button" onClick={() => setSelectedSkills([...SKILLS])}
+                style={{ fontSize: 12, padding: '0.3rem 0.75rem', background: selectedSkills.length === SKILLS.length ? '#e8f1fd' : '#f5f5f7', color: selectedSkills.length === SKILLS.length ? '#0071e3' : '#6e6e73', border: '1px solid', borderColor: selectedSkills.length === SKILLS.length ? '#b8d9f8' : '#e0e0e5', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                {selectedSkills.length === SKILLS.length ? '✓ All selected' : 'Select all'}
+              </button>
+              {selectedSkills.length > 0 && (
+                <button type="button" onClick={() => setSelectedSkills([])}
+                  style={{ fontSize: 12, padding: '0.3rem 0.75rem', background: '#f5f5f7', color: '#6e6e73', border: '1px solid #e0e0e5', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>
+                  Clear ({selectedSkills.length})
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {SKILLS.map(s => <Tag key={s} label={s} selected={selectedSkills.includes(s)} onClick={() => toggle(s)} />)}
             </div>

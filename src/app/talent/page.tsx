@@ -52,6 +52,17 @@ export default async function TalentPage() {
   const displayProfiles = isPaidEmployer ? profiles : profiles.slice(0, 6)
   const isTeaser = !isPaidEmployer
 
+  // Fetch employer profile to check if they have set up their company
+  let hasEmployerProfile = false
+  if (isPaidEmployer && user) {
+    const { data: empProfile } = await admin
+      .from('employer_profiles')
+      .select('id, company_name')
+      .eq('email', user.email)
+      .maybeSingle()
+    hasEmployerProfile = !!(empProfile?.company_name)
+  }
+
   // Fetch saved profile IDs for this employer
   let savedIds: string[] = []
   if (isPaidEmployer && user) {
@@ -73,6 +84,7 @@ export default async function TalentPage() {
           verifiedCount={verifiedCount}
           totalCount={profiles.length}
           user={user}
+          hasEmployerProfile={hasEmployerProfile}
         />
       </div>
     </div>

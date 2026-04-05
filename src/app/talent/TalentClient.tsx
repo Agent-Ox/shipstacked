@@ -7,9 +7,10 @@ function vColor(score: number) {
   return score >= 75 ? '#1a7f37' : score >= 50 ? '#0071e3' : score >= 25 ? '#bf7e00' : '#6e6e73'
 }
 
-function ProfileCard({ profile, isPaidEmployer, isSaved, onToggleSave }: {
+function ProfileCard({ profile, isPaidEmployer, hasEmployerProfile, isSaved, onToggleSave }: {
   profile: any
   isPaidEmployer: boolean
+  hasEmployerProfile: boolean
   isSaved: boolean
   onToggleSave: (profileId: string, saved: boolean) => void
 }) {
@@ -66,11 +67,20 @@ function ProfileCard({ profile, isPaidEmployer, isSaved, onToggleSave }: {
           {profile.availability || 'open'}
         </span>
         {isPaidEmployer && (
-          <a href={`/employer/messages?new=${profile.id}`}
-            onClick={e => e.stopPropagation()}
-            style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500, flexShrink: 0 }}>
-            Message →
-          </a>
+          hasEmployerProfile ? (
+            <a href={'/employer/messages?new=' + profile.id}
+              onClick={e => e.stopPropagation()}
+              style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500, flexShrink: 0 }}>
+              Message →
+            </a>
+          ) : (
+            <a href="/employer#company-form"
+              onClick={e => e.stopPropagation()}
+              title="Set up your company profile to message builders"
+              style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#f5f5f7', color: '#6e6e73', borderRadius: 980, textDecoration: 'none', fontWeight: 500, flexShrink: 0, border: '1px solid #e0e0e5' }}>
+              Set up profile first
+            </a>
+          )
         )}
       </div>
     </a>
@@ -85,6 +95,7 @@ export default function TalentClient({
   verifiedCount,
   totalCount,
   user,
+  hasEmployerProfile = false,
 }: {
   profiles: any[]
   savedIds: string[]
@@ -93,6 +104,7 @@ export default function TalentClient({
   verifiedCount: number
   totalCount: number
   user: any
+  hasEmployerProfile?: boolean
 }) {
   const [tab, setTab] = useState<'all' | 'shortlist'>('all')
   // savedIds lives in state so toggling a heart updates the shortlist tab instantly

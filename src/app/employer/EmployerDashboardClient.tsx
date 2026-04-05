@@ -185,7 +185,18 @@ export default function EmployerDashboardClient({
           </div>
         )}
 
-                <a href="/talent" style={{ display: 'block', background: '#0071e3', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
+                {!hasProfile && (
+          <div style={{ background: '#fff8f0', border: '1px solid #fde68a', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: '0.2rem' }}>Set up your company profile before messaging builders</p>
+              <p style={{ fontSize: 13, color: '#a16207', lineHeight: 1.5 }}>Builders need to know who is reaching out. Add your company name and what you are building — takes 2 minutes.</p>
+            </div>
+            <a href="#company-form" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#f59e0b', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0 }}>Set up now →</a>
+          </div>
+        )}
+
+        <a href={hasProfile ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>Core product</p>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'white', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>Search talent</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Browse and contact verified AI-native builders directly.</p>
@@ -198,21 +209,29 @@ export default function EmployerDashboardClient({
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Browse talent</h3>
             <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Find verified AI-native builders and message them directly.</p>
           </a>
-          <a href="/employer/messages" style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
+          <a href={hasProfile ? "/employer/messages" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile ? 1 : 0.5 }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Conversations</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Messages</h3>
-            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Your conversations with builders.</p>
+            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
           </a>
           <a href="/post-job" style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Hiring</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Post a job</h3>
             <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>List a role and let builders apply directly.</p>
           </a>
-          <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem' }}>
-            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Active listings</p>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>{jobList.length} job{jobList.length !== 1 ? 's' : ''}</h3>
-            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{jobList.length > 0 ? jobList[0].role_title : 'No active listings yet.'}</p>
-          </div>
+          {jobList.length > 0 ? (
+            <a href={`/jobs`} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Active listings</p>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>{jobList.length} job{jobList.length !== 1 ? 's' : ''}</h3>
+              <p style={{ fontSize: 13, color: '#0071e3', lineHeight: 1.5, fontWeight: 500 }}>{jobList[0].role_title} →</p>
+            </a>
+          ) : (
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Active listings</p>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>0 jobs</h3>
+              <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>No active listings yet.</p>
+            </div>
+          )}
         </div>
 
         {jobList.length > 0 && (
@@ -394,20 +413,45 @@ export default function EmployerDashboardClient({
               </div>
             </div>
 
-            <div
-              onClick={() => setProfile(p => ({ ...p, public: !p.public }))}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: isPublic ? '#f0f7ff' : '#f9f9f9', borderRadius: 10, border: '1px solid', borderColor: isPublic ? '#dce8fb' : '#e0e0e5', cursor: 'pointer' }}>
-              <div>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.2rem' }}>
-                  {isPublic ? 'Public profile' : 'Private profile'}
-                </p>
-                <p style={{ fontSize: 12, color: '#6e6e73' }}>
-                  {isPublic ? 'Builders can find and apply to your company.' : 'Browse talent anonymously — builders cannot see your company.'}
-                </p>
+            {/* Public/private toggle */}
+            <div style={{ border: '1px solid #e0e0e5', borderRadius: 12, overflow: 'hidden' }}>
+              <div style={{ padding: '0.75rem 1rem', background: '#f5f5f7', borderBottom: '1px solid #e0e0e5' }}>
+                <p style={{ fontSize: 12, fontWeight: 700, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Company profile visibility</p>
               </div>
-              <div style={{ width: 44, height: 26, borderRadius: 13, background: isPublic ? '#1a7f37' : '#d2d2d7', position: 'relative', transition: 'background 0.2s', flexShrink: 0, marginLeft: '1rem' }}>
-                <div style={{ position: 'absolute', top: 3, left: isPublic ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div
+                  onClick={() => setProfile(p => ({ ...p, public: false }))}
+                  style={{ padding: '1rem', cursor: 'pointer', background: !isPublic ? '#fff8f0' : 'white', borderRight: '1px solid #e0e0e5', transition: 'background 0.15s' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', border: !isPublic ? '5px solid #bf7e00' : '2px solid #d2d2d7', background: 'white', flexShrink: 0, transition: 'all 0.15s' }} />
+                    <p style={{ fontSize: 14, fontWeight: 700, color: !isPublic ? '#bf7e00' : '#6e6e73' }}>Private</p>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#6e6e73', lineHeight: 1.5 }}>Only you can see your company. Browse builders without revealing who you are.</p>
+                </div>
+                <div
+                  onClick={() => setProfile(p => ({ ...p, public: true }))}
+                  style={{ padding: '1rem', cursor: 'pointer', background: isPublic ? '#f0faf0' : 'white', transition: 'background 0.15s' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', border: isPublic ? '5px solid #1a7f37' : '2px solid #d2d2d7', background: 'white', flexShrink: 0, transition: 'all 0.15s' }} />
+                    <p style={{ fontSize: 14, fontWeight: 700, color: isPublic ? '#1a7f37' : '#6e6e73' }}>Public</p>
+                  </div>
+                  <p style={{ fontSize: 12, color: '#6e6e73', lineHeight: 1.5 }}>Your company page is live. Builders can see who is reaching out and apply to your jobs.</p>
+                </div>
               </div>
+              {isPublic && (
+                <div style={{ padding: '0.625rem 1rem', background: '#f0faf0', borderTop: '1px solid #b3e0b3' }}>
+                  <p style={{ fontSize: 12, color: '#1a7f37', fontWeight: 500 }}>
+                    ✓ Builders can see your company profile. Messages you send will show your company name.
+                  </p>
+                </div>
+              )}
+              {!isPublic && (
+                <div style={{ padding: '0.625rem 1rem', background: '#fff8f0', borderTop: '1px solid #fde68a' }}>
+                  <p style={{ fontSize: 12, color: '#92400e', fontWeight: 500 }}>
+                    Builders who receive your messages will not see your company name until you go public.
+                  </p>
+                </div>
+              )}
             </div>
 
             <button onClick={handleSave} disabled={saving}
