@@ -4,11 +4,23 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 
 function timeAgo(date: string) {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  const now = new Date()
+  const d = new Date(date)
+  const seconds = Math.floor((now.getTime() - d.getTime()) / 1000)
   if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago'
+  // Same day — show clock time in local timezone
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  // Yesterday
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  // Older — show date + time
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 export default function MessagesPage() {
@@ -26,12 +38,14 @@ export default function MessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
+    document.documentElement.classList.add('msgs-open')
+    return () => { document.documentElement.classList.remove('msgs-open') }
+  }, [])
+
+  useEffect(() => {
     const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setUserEmail(session.user.email || '')
-        userEmailRef.current = session.user.email || ''
-      }
+      if (session) { setUserEmail(session.user.email || ''); userEmailRef.current = session.user.email || '' }
     })
     loadConversations()
     const channel = supabase
@@ -50,28 +64,12 @@ export default function MessagesPage() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+
   useEffect(() => { selectedRef.current = selected }, [selected])
   useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
-
-  // Mobile: natural document flow — scroll the window.
-  // Desktop: messages div is overflow:auto — scrollIntoView works.
-  const scrollToBottom = (instant?: boolean) => {
-    if (window.innerWidth <= 640) {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: instant ? ('instant' as ScrollBehavior) : 'smooth' })
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: instant ? ('instant' as ScrollBehavior) : 'smooth' })
-    }
-  }
-
   useEffect(() => {
-    setTimeout(() => scrollToBottom(), 50)
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }, [messages])
-
-  useEffect(() => {
-    if (view === 'thread') {
-      setTimeout(() => scrollToBottom(true), 150)
-    }
-  }, [view])
 
   const loadConversations = async () => {
     setLoading(true)
@@ -98,7 +96,7 @@ export default function MessagesPage() {
     setMessages(prev => [...prev, optimistic])
     const text = input.trim()
     setInput('')
-    if (textareaRef.current) textareaRef.current.style.height = 'auto'
+    if (textareaRef.current) { textareaRef.current.style.height = 'auto' }
     const res = await fetch('/api/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -113,8 +111,7 @@ export default function MessagesPage() {
     setSending(false)
   }
 
-  const getConvName = (conv: any) =>
-    conv.employer_profile?.company_name || conv.jobs?.company_name || conv.employer_email?.split('@')[0] || 'Employer'
+  const getConvName = (conv: any) => conv.employer_profile?.company_name || conv.jobs?.company_name || conv.employer_email?.split('@')[0] || 'Employer'
 
   const msgBubble = (msg: any) => {
     const isMe = msg.sender_email === userEmail
@@ -122,99 +119,124 @@ export default function MessagesPage() {
       <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
         <div style={{ maxWidth: '78%', background: isMe ? '#0071e3' : '#f0f0f5', color: isMe ? 'white' : '#1d1d1f', borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '0.6rem 0.875rem', fontSize: 15, lineHeight: 1.45 }}>
           <p style={{ margin: 0 }}>{msg.content}</p>
-          <p style={{ fontSize: 11, opacity: 0.5, marginTop: '0.2rem', textAlign: isMe ? 'right' : 'left', marginBottom: 0 }}>{timeAgo(msg.created_at)}</p>
+          <p style={{ fontSize: 11, opacity: 0.5, marginTop: '0.2rem', textAlign: isMe ? 'right' : 'left', marginBottom: 0 }}>
+            {timeAgo(msg.created_at)}{isMe && msg.read ? ' · Read' : ''}
+          </p>
         </div>
       </div>
     )
   }
 
-  const convListItems = (
-    <>
-      {loading
-        ? <div style={{ padding: '2rem', textAlign: 'center', color: '#aeaeb2' }}>Loading...</div>
-        : conversations.length === 0
-        ? (
-          <div style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
-            <p style={{ fontSize: 26, marginBottom: '0.75rem' }}>💬</p>
-            <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>No messages yet</p>
-            <p style={{ fontSize: 13, color: '#6e6e73' }}>Employers will message you when interested.</p>
-          </div>
-        )
-        : conversations.map(conv => (
-          <div key={conv.id} onClick={() => openConversation(conv)}
-            style={{ padding: '0.875rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.1rem' }}>{getConvName(conv)}</p>
-                {conv.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500, marginBottom: '0.1rem' }}>Re: {conv.jobs.role_title}</p>}
-                {conv.last_message && <p style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.last_message.content}</p>}
-              </div>
-              <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
-                {conv.unread_count > 0 && <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{conv.unread_count}</span>}
-              </div>
-            </div>
-          </div>
-        ))
-      }
-    </>
-  )
-
-  // Sticky input — works on all browsers. font-size 16px prevents iOS auto-zoom.
   const inputBar = (
-    <div style={{ position: 'sticky', bottom: 0, background: 'white', borderTop: '0.5px solid #e0e0e5', padding: '0.625rem 0.875rem', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', zIndex: 10 }}>
-      <textarea
-        ref={textareaRef}
-        value={input}
+    <div style={{ borderTop: '0.5px solid #e0e0e5', background: 'white', padding: '0.625rem 0.875rem', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+      <textarea ref={textareaRef} value={input}
         onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px' }}
         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
         placeholder="Message..."
         rows={1}
-        style={{ flex: 1, padding: '0.55rem 0.875rem', border: 'none', borderRadius: 20, fontSize: 16, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 36, maxHeight: 96, background: '#f0f0f5' }}
+        style={{ flex: 1, padding: '0.55rem 0.875rem', border: 'none', borderRadius: 20, fontSize: 15, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 36, maxHeight: 96, background: '#f0f0f5' }}
       />
       <button onClick={sendMessage} disabled={!input.trim() || sending}
-        style={{ width: 36, height: 36, borderRadius: '50%', background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        style={{ width: 36, height: 36, borderRadius: '50%', background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginRight: 4 }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
+    </div>
+  )
+
+  const convList = (onSelect: (c: any) => void) => (
+    <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {loading ? <div style={{ padding: '2rem', textAlign: 'center', color: '#aeaeb2' }}>Loading...</div>
+      : conversations.length === 0 ? (
+        <div style={{ padding: '3rem 1.5rem', textAlign: 'center' }}>
+          <p style={{ fontSize: 26, marginBottom: '0.75rem' }}>💬</p>
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.3rem' }}>No messages yet</p>
+          <p style={{ fontSize: 13, color: '#6e6e73' }}>Employers will message you when interested.</p>
+        </div>
+      ) : (
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {conversations.map(conv => (
+            <div key={conv.id} onClick={() => onSelect(conv)}
+              style={{ padding: '0.875rem 1.25rem', cursor: 'pointer', borderBottom: '0.5px solid #f0f0f5', background: selected?.id === conv.id ? '#f0f5ff' : 'white' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.1rem' }}>{getConvName(conv)}</p>
+                  {conv.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500, marginBottom: '0.1rem' }}>Re: {conv.jobs.role_title}</p>}
+                  {conv.last_message && <p style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{conv.last_message.content}</p>}
+                </div>
+                <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                  {conv.last_message && <p style={{ fontSize: 11, color: '#aeaeb2' }}>{timeAgo(conv.last_message.created_at)}</p>}
+                  {conv.unread_count > 0 && <span style={{ fontSize: 11, fontWeight: 700, background: '#0071e3', color: 'white', borderRadius: '50%', width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{conv.unread_count}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 
   return (
     <>
       <style>{`
-        @media (max-width: 640px) { .msgs-desktop { display: none !important; } }
-        @media (min-width: 641px) { .msgs-mobile { display: none !important; } }
+        @media (max-width: 640px) {
+          .msgs-desktop { display: none !important; }
+          .msgs-mobile { display: flex !important; }
+        }
+        @media (min-width: 641px) {
+          .msgs-mobile { display: none !important; }
+          .msgs-desktop { display: block !important; }
+        }
       `}</style>
 
-      {/* MOBILE — natural scroll + sticky input. No fixed/absolute/vh hacks. */}
-      <div className="msgs-mobile" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
+      {/* ── MOBILE ── full height flex column, keyboard-safe */}
+      <div className="msgs-mobile" style={{
+        position: 'absolute', top: 52, left: 0, right: 0, bottom: 0,
+        background: '#fbfbfd', display: 'flex', flexDirection: 'column',
+        fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+        overflow: 'hidden',
+      }}>
         {view === 'list' ? (
-          <div style={{ background: '#fbfbfd', minHeight: '100svh', padding: '1.25rem 1rem' }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Messages</p>
-            <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '1rem' }}>Your inbox</h1>
-            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden' }}>
-              {convListItems}
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '1rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Messages</p>
+              <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Your inbox</h1>
             </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>{convList(openConversation)}</div>
           </div>
         ) : selected ? (
-          <div style={{ background: 'white', minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ position: 'sticky', top: 52, background: 'white', borderBottom: '0.5px solid #e0e0e5', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', zIndex: 10 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'white' }}>
+            {/* Header */}
+            <div style={{ background: 'white', borderBottom: '0.5px solid #e0e0e5', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
               <button onClick={() => setView('list')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0071e3', fontSize: 20, padding: '0 0.25rem', lineHeight: 1 }}>←</button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{getConvName(selected)}</p>
                 {selected.jobs?.role_title && <p style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>Re: {selected.jobs.role_title}</p>}
               </div>
             </div>
-            <div style={{ flex: 1, padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {/* Messages — scrollable flex-1 */}
+            <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' } as any}>
               {messages.map(msg => msgBubble(msg))}
-              <div ref={messagesEndRef} style={{ height: 1 }} />
+              <div ref={messagesEndRef} />
             </div>
-            {inputBar}
+            {/* Input — at bottom of flex column, keyboard pushes it up via the absolute container shrinking */}
+            <div style={{ background: 'white', borderTop: '0.5px solid #e0e0e5', padding: '0.625rem 0.875rem', paddingBottom: 'max(0.625rem, env(safe-area-inset-bottom))', display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexShrink: 0 }}>
+              <textarea ref={textareaRef} value={input}
+                onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 96) + 'px' }}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
+                placeholder="Message..."
+                rows={1}
+                style={{ flex: 1, padding: '0.55rem 0.875rem', border: 'none', borderRadius: 20, fontSize: 15, fontFamily: 'inherit', outline: 'none', resize: 'none', minHeight: 36, maxHeight: 96, background: '#f0f0f5' }}
+              />
+              <button onClick={sendMessage} disabled={!input.trim() || sending}
+                style={{ width: 36, height: 36, borderRadius: '50%', background: !input.trim() || sending ? '#d2d2d7' : '#0071e3', border: 'none', cursor: !input.trim() || sending ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
 
-      {/* DESKTOP — split pane, fixed height, unchanged */}
+      {/* ── DESKTOP ── normal scrolling layout with split pane */}
       <div className="msgs-desktop" style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '4rem 1.5rem 2rem' }}>
           <div style={{ marginBottom: '1.5rem' }}>
@@ -222,9 +244,8 @@ export default function MessagesPage() {
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f' }}>Your inbox</h1>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1rem', height: 'calc(100vh - 220px)', minHeight: 500 }}>
-            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ overflowY: 'auto', flex: 1 }}>{convListItems}</div>
-            </div>
+            {convList(openConversation)}
+            {/* Desktop thread */}
             <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {!selected ? (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#aeaeb2' }}>
@@ -242,8 +263,7 @@ export default function MessagesPage() {
                     <div ref={messagesEndRef} />
                   </div>
                   <div style={{ borderTop: '0.5px solid #e0e0e5', padding: '0.875rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                    <textarea
-                      value={input}
+                    <textarea ref={textareaRef} value={input}
                       onChange={e => { setInput(e.target.value); e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px' }}
                       onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                       placeholder="Write a message... (Enter to send)"

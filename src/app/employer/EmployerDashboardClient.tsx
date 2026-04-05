@@ -62,6 +62,7 @@ export default function EmployerDashboardClient({
 
   const isPublic = profile.public || false
   const hasProfile = !!initial?.id
+  const [profileSaved, setProfileSaved] = useState(false)
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '0.7rem 1rem', border: '1px solid #d2d2d7', borderRadius: 10,
@@ -123,6 +124,7 @@ export default function EmployerDashboardClient({
       }
       setProfile(p => ({ ...p, slug }))
       setSaved(true)
+      setProfileSaved(true)
     } catch (e: any) {
       setError(e.message || 'Something went wrong')
     } finally {
@@ -185,7 +187,7 @@ export default function EmployerDashboardClient({
           </div>
         )}
 
-                {!hasProfile && (
+                {!hasProfile && !profileSaved && (
           <div style={{ background: '#fff8f0', border: '1px solid #fde68a', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
             <div style={{ flex: 1 }}>
@@ -196,7 +198,7 @@ export default function EmployerDashboardClient({
           </div>
         )}
 
-        <a href={hasProfile ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
+        <a href={hasProfile || profileSaved ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile || profileSaved ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>Core product</p>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'white', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>Search talent</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Browse and contact verified AI-native builders directly.</p>
@@ -209,10 +211,10 @@ export default function EmployerDashboardClient({
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Browse talent</h3>
             <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Find verified AI-native builders and message them directly.</p>
           </a>
-          <a href={hasProfile ? "/employer/messages" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile ? 1 : 0.5 }}>
+          <a href={hasProfile || profileSaved ? "/employer/messages" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile || profileSaved ? 1 : 0.5 }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Conversations</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Messages</h3>
-            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
+            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile || profileSaved ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
           </a>
           <a href="/post-job" style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Hiring</p>

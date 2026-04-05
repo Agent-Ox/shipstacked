@@ -5,11 +5,23 @@ import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 function timeAgo(date: string) {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  const now = new Date()
+  const d = new Date(date)
+  const seconds = Math.floor((now.getTime() - d.getTime()) / 1000)
   if (seconds < 60) return 'just now'
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago'
+  // Same day — show clock time in local timezone
+  if (d.toDateString() === now.toDateString()) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  // Yesterday
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (d.toDateString() === yesterday.toDateString()) {
+    return 'Yesterday ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+  // Older — show date + time
+  return d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
 function EmployerMessagesInner() {
@@ -126,7 +138,9 @@ function EmployerMessagesInner() {
       <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
         <div style={{ maxWidth: '78%', background: isMe ? '#0071e3' : '#f0f0f5', color: isMe ? 'white' : '#1d1d1f', borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', padding: '0.6rem 0.875rem', fontSize: 15, lineHeight: 1.45 }}>
           <p style={{ margin: 0 }}>{msg.content}</p>
-          <p style={{ fontSize: 11, opacity: 0.5, marginTop: '0.2rem', textAlign: isMe ? 'right' : 'left', marginBottom: 0 }}>{timeAgo(msg.created_at)}</p>
+          <p style={{ fontSize: 11, opacity: 0.5, marginTop: '0.2rem', textAlign: isMe ? 'right' : 'left', marginBottom: 0 }}>
+            {timeAgo(msg.created_at)}{isMe && msg.read ? ' · Read' : ''}
+          </p>
         </div>
       </div>
     )

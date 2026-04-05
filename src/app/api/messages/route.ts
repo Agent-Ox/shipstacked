@@ -19,16 +19,30 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Handle ?new=profileId — upsert conversation and return it
+  // Handle ?new=profileId — find existing or create new conversation
   if (newProfileId) {
+    // Check for existing conversation first (NULL job_id breaks upsert unique constraint)
+    const { data: existing } = await admin
+      .from('conversations')
+      .select('*, profiles!builder_profile_id(username, full_name, avatar_url, verified, velocity_score), jobs(role_title, company_name)')
+      .eq('employer_email', user.email!)
+      .eq('builder_profile_id', newProfileId)
+      .is('job_id', null)
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.json({ conversation: existing })
+    }
+
+    // Create new conversation
     const { data: conv } = await admin
       .from('conversations')
-      .upsert({
+      .insert({
         employer_email: user.email!,
         builder_profile_id: newProfileId,
         job_id: null,
         last_message_at: new Date().toISOString(),
-      }, { onConflict: 'employer_email,builder_profile_id,job_id' })
+      })
       .select('*, profiles!builder_profile_id(username, full_name, avatar_url, verified, velocity_score), jobs(role_title, company_name)')
       .single()
     return NextResponse.json({ conversation: conv })
@@ -190,6 +204,18 @@ export async function POST(req: Request) {
     .eq('id', convId)
     .maybeSingle()
 
+  // Fetch employer profile for company name in notification email
+  let empProfile: any = null
+  if (conv) {
+    const { data: ep } = await admin
+      .from('employer_profiles')
+      .select('company_name')
+      .eq('email', conv.employer_email)
+      .maybeSingle()
+    empProfile = ep
+    ;(conv as any).employer_profile = empProfile
+  }
+
   if (conv) {
     const builderEmail = (conv.profiles as any)?.email
     const builderName = (conv.profiles as any)?.full_name
@@ -213,7 +239,7 @@ export async function POST(req: Request) {
           from: 'ShipStacked <hello@shipstacked.com>',
           to: recipientEmail,
           subject: isEmployerSending
-            ? `New message from ${conv.employer_email} about your ShipStacked profile`
+            ? `New message about your ShipStacked profile`
             : `New message from ${builderName} on ShipStacked`,
           html: `
             <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
@@ -221,7 +247,7 @@ export async function POST(req: Request) {
                 New message on ShipStacked
               </h2>
               <p style="color: #6e6e73; font-size: 14px; line-height: 1.6; margin-bottom: 1rem;">
-                ${isEmployerSending ? conv.employer_email : builderName} sent you a message:
+                ${isEmployerSending ? (conv.employer_profile?.company_name || 'An employer on ShipStacked') : builderName} sent you a message:
               </p>
               <div style="background: #f5f5f7; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 14px; color: #3d3d3f; line-height: 1.6;">
                 ${content.trim()}
