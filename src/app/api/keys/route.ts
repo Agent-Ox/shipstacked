@@ -25,7 +25,8 @@ export async function GET() {
   const db = admin()
   const { data: profile } = await db
     .from('profiles').select('id').eq('email', user.email).maybeSingle()
-  if (!profile) return NextResponse.json({ error: 'No profile found' }, { status: 404 })
+  // No profile yet (agent mode) — return empty keys list rather than 404
+  if (!profile) return NextResponse.json({ keys: [] })
 
   const { data: keys } = await db
     .from('api_keys')
@@ -43,9 +44,29 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
 
   const db = admin()
-  const { data: profile } = await db
+  let { data: profile } = await db
     .from('profiles').select('id').eq('email', user.email).maybeSingle()
-  if (!profile) return NextResponse.json({ error: 'No profile found — complete your profile first' }, { status: 404 })
+
+  // Agent mode: no profile yet — create a minimal one so the key has something to attach to
+  if (!profile) {
+    const emailPart = user.email!.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20)
+    const username = emailPart + Math.floor(Math.random() * 999)
+    const { data: newProfile, error: profileError } = await db
+      .from('profiles')
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        username,
+        full_name: '',
+        published: false,
+      })
+      .select('id')
+      .single()
+    if (profileError || !newProfile) {
+      return NextResponse.json({ error: 'Failed to initialise profile' }, { status: 500 })
+    }
+    profile = newProfile
+  }
 
   // Max 5 keys per profile
   const { count } = await db
