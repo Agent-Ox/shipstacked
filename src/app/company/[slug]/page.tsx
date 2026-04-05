@@ -37,7 +37,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
   if (!company) notFound()
 
   const { role, user: resolvedUser, profile: builderProfile } = await getResolvedUser()
-  const showBuilderCTA = role !== 'employer'
+  const showBuilderCTA = role === 'visitor'
   const isBuilder = role === 'builder'
   const isVisitor = role === 'visitor'
 
@@ -165,10 +165,16 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                   )}
                   {isBuilder && <ApplyButton jobId={job.id} jobTitle={job.role_title} companyName={company.company_name} />}
                   {isVisitor && (
-                    <a href={'/signup?next=/company/' + slug}
-                      style={{ display: 'inline-block', padding: '0.5rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
-                      Create profile to apply
-                    </a>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <a href={'/login?next=/company/' + slug}
+                        style={{ display: 'inline-block', padding: '0.5rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                        Sign in to apply →
+                      </a>
+                      <a href={'/join'}
+                        style={{ display: 'inline-block', padding: '0.5rem 1.25rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                        Create free profile
+                      </a>
+                    </div>
                   )}
                 </div>
               ))}
