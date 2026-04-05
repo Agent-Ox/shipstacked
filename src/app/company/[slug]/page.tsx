@@ -163,7 +163,7 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
                       ))}
                     </div>
                   )}
-                  {isBuilder && <ApplyButton jobId={job.id} jobTitle={job.role_title} />}
+                  {isBuilder && <ApplyButton jobId={job.id} jobTitle={job.role_title} companyName={company.company_name} />}
                   {isVisitor && (
                     <a href={'/signup?next=/company/' + slug}
                       style={{ display: 'inline-block', padding: '0.5rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
