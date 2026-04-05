@@ -104,6 +104,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
   const [error, setError] = useState('')
   const [avatarUrl, setAvatarUrl] = useState(profile.avatar_url || '')
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarSaved, setAvatarSaved] = useState(false)
 
   const byCategory = (cat: string) => skills.filter(s => s.category === cat).map(s => s.name)
 
@@ -156,6 +157,8 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
       const data = await res.json()
       if (data.url) {
         setAvatarUrl(data.url)
+        setAvatarSaved(true)
+        setTimeout(() => setAvatarSaved(false), 3000)
       } else {
         setError(data.error || 'Upload failed')
       }
@@ -311,6 +314,11 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
               <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} disabled={avatarUploading} />
             </label>
             <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '0.4rem' }}>JPG, PNG or WebP. Max 5MB.</p>
+            {avatarSaved && (
+              <p style={{ fontSize: 13, color: '#1a7f37', fontWeight: 600, marginTop: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                ✓ Photo saved
+              </p>
+            )}
           </div>
         </div>
 
