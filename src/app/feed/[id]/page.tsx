@@ -211,7 +211,6 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
           <FeedPostCTA
             role={role}
             isOwnPost={isOwnPost}
-            builderName={profile?.full_name || ''}
             builderFirstName={profile?.full_name?.split(' ')[0] || ''}
             builderUsername={profile?.username || ''}
             builderProfileId={profile?.id || ''}
