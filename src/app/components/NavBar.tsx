@@ -210,7 +210,7 @@ export default function NavBar() {
                     Admin dashboard
                   </a>
                 ) : null}
-                <a href={navUser.role === 'employer' ? '/employer/messages' : navUser.role === 'client' ? '/client/inbox' : '/messages'}
+                {navUser.role !== 'client' && <a href={navUser.role === 'employer' ? '/employer/messages' : '/messages'}
                   onClick={() => setMenuOpen(false)}
                   style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   Messages
@@ -219,7 +219,7 @@ export default function NavBar() {
                       {unreadCount}
                     </span>
                   )}
-                </a>
+                </a>}
                 <span style={{ fontSize: 13, color: '#aeaeb2', padding: '0.5rem 0 0.25rem' }}>{navUser.email}</span>
                 <a href="/api/logout"
                   style={{ fontSize: 15, color: '#ef4444', textDecoration: 'none', padding: '0.5rem 0', fontWeight: 500 }}>

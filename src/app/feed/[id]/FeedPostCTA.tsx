@@ -90,6 +90,9 @@ export default function FeedPostCTA({
                 onChange={e => setEmail(e.target.value)}
                 style={{ width: '100%', padding: '0.65rem 0.875rem', borderRadius: 10, border: '1px solid #e0e0e5', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
               />
+              <p style={{ fontSize: 12, color: '#aeaeb2', margin: '0.1rem 0 0.3rem', lineHeight: 1.5 }}>
+                Your message goes straight to the builder. You will receive an email confirmation with a link to check their reply — no account needed.
+              </p>
               <textarea
                 placeholder="What do you need built?"
                 value={message}
