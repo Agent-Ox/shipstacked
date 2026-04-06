@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 
 type NavUser = {
   email: string
-  role: 'employer' | 'builder' | 'admin' | null
+  role: 'employer' | 'builder' | 'admin' | 'client' | null
 }
 
 export default function NavBar() {
@@ -39,6 +39,11 @@ export default function NavBar() {
         { label: 'Jobs', href: '/jobs' },
         { label: 'Hire talent', href: '#hire' },
       ]
+    }
+
+    // ---- Client ----
+    if (navUser?.role === 'client') {
+      return []
     }
 
     // ---- Admin ----
@@ -177,6 +182,24 @@ export default function NavBar() {
             </a>
           ))}
 
+          {/* Client nav links */}
+          {navUser?.role === 'client' && (
+            <>
+              <a href="/client/inbox" onClick={() => setMenuOpen(false)}
+                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
+                My inbox
+              </a>
+              <a href="/join" onClick={() => setMenuOpen(false)}
+                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
+                Showcase your work
+              </a>
+              <a href="/#pricing" onClick={() => setMenuOpen(false)}
+                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
+                Hire talent
+              </a>
+            </>
+          )}
+
           {/* Auth links */}
           {!loading && (
             navUser ? (
@@ -187,7 +210,7 @@ export default function NavBar() {
                     Admin dashboard
                   </a>
                 ) : null}
-                <a href={navUser.role === 'employer' ? '/employer/messages' : '/messages'}
+                <a href={navUser.role === 'employer' ? '/employer/messages' : navUser.role === 'client' ? '/client/inbox' : '/messages'}
                   onClick={() => setMenuOpen(false)}
                   style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}`, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   Messages

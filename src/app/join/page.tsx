@@ -175,6 +175,12 @@ export default function JoinPage() {
         await supabase.from('skills').insert(skills)
       }
 
+      // Upgrade client role to builder if needed
+      const { data: { user: currentUser } } = await supabase.auth.getUser()
+      if (currentUser?.user_metadata?.role === 'client') {
+        await supabase.auth.updateUser({ data: { role: 'builder' } })
+      }
+
       await fetch('/api/welcome', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

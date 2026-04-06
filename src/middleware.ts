@@ -23,7 +23,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Routes that require auth — /talent is PUBLIC (handles its own access tiers server-side)
-  const authRequired = ['/dashboard', '/post-job', '/admin', '/employer', '/messages']
+  const authRequired = ['/dashboard', '/post-job', '/admin', '/employer', '/messages', '/client']
   const isProtected = authRequired.some(route => pathname.startsWith(route))
 
   if (isProtected && !session) {
@@ -50,6 +50,15 @@ export async function middleware(request: NextRequest) {
     if (metaRole === 'employer') {
       const url = request.nextUrl.clone()
       url.pathname = '/employer'
+      return NextResponse.redirect(url)
+    }
+  }
+
+  // Client-only routes — redirect clients away from builder/employer routes
+  if (session && session.user.user_metadata?.role === 'client') {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/messages')) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/client/inbox'
       return NextResponse.redirect(url)
     }
   }
