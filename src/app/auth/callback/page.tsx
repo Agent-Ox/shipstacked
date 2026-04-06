@@ -7,6 +7,10 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const supabase = createClient()
 
+    // Check for redirect_to in query params (set by magic link)
+    const searchParams = new URLSearchParams(window.location.search)
+    const redirectTo = searchParams.get('redirect_to')
+
     const hash = window.location.hash
     if (hash) {
       const params = new URLSearchParams(hash.substring(1))
@@ -19,11 +23,20 @@ export default function AuthCallbackPage() {
             const user = data.session.user
             const metaRole = user.user_metadata?.role
 
+            // If magic link specified a redirect, honour it
+            if (redirectTo && redirectTo.startsWith('/')) {
+              window.location.href = redirectTo
+              return
+            }
+
             if (metaRole === 'employer') {
-              // Check if employer has set a password yet
-              // If account was created by Stripe webhook, password_set meta will be absent
               const hasPassword = user.user_metadata?.password_set === true
               window.location.href = hasPassword ? '/employer' : '/update-password'
+              return
+            }
+
+            if (metaRole === 'client') {
+              window.location.href = '/client/inbox'
               return
             }
 
@@ -50,7 +63,17 @@ export default function AuthCallbackPage() {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
           const metaRole = session.user.user_metadata?.role
-          window.location.href = metaRole === 'employer' ? '/employer' : '/dashboard'
+          if (redirectTo && redirectTo.startsWith('/')) {
+            window.location.href = redirectTo
+            return
+          }
+          if (metaRole === 'employer') {
+            window.location.href = '/employer'
+          } else if (metaRole === 'client') {
+            window.location.href = '/client/inbox'
+          } else {
+            window.location.href = '/dashboard'
+          }
         } else {
           window.location.href = '/login?error=auth'
         }
