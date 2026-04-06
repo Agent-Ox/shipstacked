@@ -70,7 +70,7 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
   const { role, user: resolvedUser } = await getResolvedUser()
   const profile = post.profiles as any
   const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
-  const isOwnPost = resolvedUser?.email === profile?.email
+  const isOwnPost = !!resolvedUser?.email && resolvedUser?.email === profile?.email
   console.log("[FeedPost debug] role:", role, "resolvedUser email:", resolvedUser?.email, "profile email:", profile?.email, "isOwnPost:", isOwnPost)
 
   const xShareText = [
