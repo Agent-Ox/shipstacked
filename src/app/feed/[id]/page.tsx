@@ -215,7 +215,6 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
             builderUsername={profile?.username || ''}
             builderProfileId={profile?.id || ''}
             postId={id}
-            postTitle={post.title}
             acceptsInquiries={profile?.accepts_project_inquiries !== false}
           />
 
