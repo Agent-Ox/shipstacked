@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from './supabase-server'
 
-export type UserRole = 'employer' | 'builder' | 'visitor'
+export type UserRole = 'employer' | 'builder' | 'client' | 'visitor'
 
 export type ResolvedUser = {
   user: any | null
@@ -52,10 +52,11 @@ export async function getResolvedUser(): Promise<ResolvedUser> {
 
     if (metaRole === 'employer' || hasSubscription) {
       role = 'employer'
+    } else if (metaRole === 'client') {
+      role = 'client'
     } else if (metaRole === 'builder' || hasProfile) {
       role = 'builder'
     } else {
-      // Newly signed up, no profile yet
       role = 'builder'
     }
 

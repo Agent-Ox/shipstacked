@@ -62,6 +62,12 @@ export default function MessagesPage() {
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }, [messages])
 
+  const getConvLabel = (conv: any) => {
+    if (conv.conversation_type === 'project_inquiry') return { label: 'Project enquiry', color: '#6c63ff', bg: '#f0f0ff' }
+    if (conv.conversation_type === 'job_application') return { label: 'Application', color: '#0071e3', bg: '#e8f1fd' }
+    return null
+  }
+
   const loadConversations = async () => {
     setLoading(true)
     const res = await fetch('/api/messages')

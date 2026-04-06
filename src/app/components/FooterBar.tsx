@@ -16,6 +16,7 @@ const NO_FOOTER = [
   '/update-password',
   '/auth',
   '/admin',
+  '/client',
 ]
 
 export default function FooterBar() {

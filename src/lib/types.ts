@@ -123,3 +123,17 @@ export type GitHubData = {
   last_synced?: string
   created_at?: string
 }
+
+export type ProjectInquiry = {
+  id?: string
+  conversation_id?: string
+  client_email: string
+  client_name: string
+  builder_profile_id: string
+  post_id: string
+  message: string
+  status?: 'pending' | 'replied' | 'closed'
+  quoted_price?: number | null
+  transaction_id?: string | null
+  created_at?: string
+}
