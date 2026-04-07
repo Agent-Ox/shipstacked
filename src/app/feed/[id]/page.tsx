@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import NativeShareDetailButton from './NativeShareButton'
 import FeedPostCTA from './FeedPostCTA'
+import PostComments from './PostComments'
 import { getResolvedUser } from '@/lib/user'
 
 export const dynamic = 'force-dynamic'
@@ -219,6 +220,8 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
             postId={id}
             acceptsInquiries={profile?.accepts_project_inquiries !== false}
           />
+
+          <PostComments postId={id} isLoggedIn={!!resolvedUser} />
 
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
             <Link href="/feed" style={{ fontSize: 13, color: '#aeaeb2', textDecoration: 'none' }}>
