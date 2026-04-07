@@ -19,6 +19,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [replyTo, setReplyTo] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/comments?post_id=' + postId)
@@ -32,7 +33,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
       .channel('post-comments-' + postId)
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'post_comments',
-        filter: 'post_id=eq.' + postId,
+        filter: `post_id=eq.${postId}`,
       }, (payload) => {
         const c = payload.new as any
         setComments(prev => prev.some(x => x.id === c.id) ? prev : [...prev, c])
@@ -53,7 +54,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
         body: JSON.stringify({ post_id: postId, content: input.trim() }),
       })
       if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed') }
-      else setInput('')
+      else { setInput(''); setReplyTo(null) }
     } catch { setError('Something went wrong.') }
     finally { setSending(false) }
   }
@@ -90,9 +91,13 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{c.author_name}</span>
+                    {c.author_username
+                      ? <a href={'/u/' + c.author_username} style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', textDecoration: 'none' }}>{c.author_name}</a>
+                      : <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{c.author_name}</span>
+                    }
                     {rl && <span style={{ fontSize: 10, fontWeight: 600, color: rl.color, background: rl.bg, padding: '0.1rem 0.4rem', borderRadius: 980 }}>{rl.label}</span>}
                     <span style={{ fontSize: 12, color: '#aeaeb2' }}>{timeAgo(c.created_at)}</span>
+                    {isLoggedIn && <button onClick={() => { setReplyTo(c.author_name); setInput('@' + c.author_name + ' ') }} style={{ fontSize: 11, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, fontWeight: 500 }}>Reply</button>}
                   </div>
                   <p style={{ fontSize: 14, color: '#3d3d3f', lineHeight: 1.6 }}>{c.content}</p>
                 </div>
@@ -108,7 +113,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-            placeholder="Add a comment..."
+            placeholder={replyTo ? 'Replying to @' + replyTo + '...' : 'Add a comment...'}
             rows={2}
             style={{ flex: 1, border: '1px solid #e0e0e5', borderRadius: 10, padding: '0.5rem 0.75rem', fontSize: 14, fontFamily: 'inherit', resize: 'none', outline: 'none', color: '#1d1d1f' }}
           />

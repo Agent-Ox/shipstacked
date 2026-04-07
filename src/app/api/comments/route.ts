@@ -24,9 +24,9 @@ export async function POST(req: Request) {
   const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const metaRole = user.user_metadata?.role || 'builder'
   let authorName = user.user_metadata?.full_name || user.email || 'Anonymous'
-  const { data: profile } = await admin.from('profiles').select('full_name, role').eq('email', user.email).maybeSingle()
+  const { data: profile } = await admin.from('profiles').select('full_name, role, username').eq('email', user.email).maybeSingle()
   if (profile?.full_name) authorName = profile.full_name
-  const { data: comment, error } = await admin.from('post_comments').insert({ post_id, author_email: user.email, author_name: authorName, author_role: profile?.role || metaRole, content: content.trim() }).select().single()
+  const { data: comment, error } = await admin.from('post_comments').insert({ post_id, author_email: user.email, author_name: authorName, author_username: profile?.username || null, author_role: profile?.role || metaRole, content: content.trim() }).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   try {
     const { data: post } = await admin.from('posts').select('title, profiles(email, full_name)').eq('id', post_id).maybeSingle()
