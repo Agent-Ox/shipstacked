@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
   let query = admin
     .from('jobs')
-    .select('id, role_title, company_name, location, job_type, employment_type, day_rate, salary_range, anonymous, created_at, status')
+    .select('id, role_title, company_name, location, employment_type, day_rate, salary_range, anonymous, created_at, status')
     .eq('status', 'active')
     .order('created_at', { ascending: false })
     .limit(50)
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     title: j.role_title,
     company: j.anonymous ? null : j.company_name,
     location: j.location || 'Remote',
-    jobType: j.employment_type || j.job_type || 'contract',
+    jobType: j.employment_type || 'contract',
     dayRate: j.day_rate || j.salary_range || null,
     postedAt: j.created_at,
     url: `https://shipstacked.com/jobs/${j.id}`,
