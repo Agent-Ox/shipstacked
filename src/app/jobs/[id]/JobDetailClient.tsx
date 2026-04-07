@@ -95,9 +95,9 @@ export default function JobDetailClient({
                 <span style={{ fontSize: 15, color: '#6e6e73', textTransform: 'capitalize' }}>{job.employment_type}</span>
               </div>
             </div>
-            {job.salary_range && (
+            {(job.day_rate || job.salary_range) && (
               <span style={{ fontSize: 14, fontWeight: 600, color: '#1a7f37', background: '#e3f3e3', padding: '0.4rem 0.875rem', borderRadius: 980, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {job.salary_range}
+                {job.day_rate || job.salary_range}
               </span>
             )}
           </div>
