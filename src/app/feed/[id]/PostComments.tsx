@@ -94,28 +94,28 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
               </button>
             )}
             {displayComments.map((c: any) => {
-            const rl = getRoleLabel(c.author_role)
-            const initials = c.author_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
-            return (
-              <div key={c.id} style={{ padding: '0.75rem 0', borderBottom: '0.5px solid #f5f5f7', display: 'flex', gap: '0.75rem' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#0071e3', flexShrink: 0 }}>
-                  {initials}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
-                    {c.author_username
-                      ? <a href={'/u/' + c.author_username} style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', textDecoration: 'none' }}>{c.author_name}</a>
-                      : <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{c.author_name}</span>
-                    }
-                    {rl && <span style={{ fontSize: 10, fontWeight: 600, color: rl.color, background: rl.bg, padding: '0.1rem 0.4rem', borderRadius: 980 }}>{rl.label}</span>}
-                    <span style={{ fontSize: 12, color: '#aeaeb2' }}>{timeAgo(c.created_at)}</span>
-                    {isLoggedIn && <button onClick={() => { setReplyTo(c.author_name); setInput('@' + c.author_name + ' ') }} style={{ fontSize: 11, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, fontWeight: 500 }}>Reply</button>}
+              const rl = getRoleLabel(c.author_role)
+              const initials = c.author_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
+              return (
+                <div key={c.id} style={{ padding: '0.75rem 0', borderBottom: '0.5px solid #f5f5f7', display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#0071e3', flexShrink: 0 }}>
+                    {initials}
                   </div>
-                  <p style={{ fontSize: 14, color: '#3d3d3f', lineHeight: 1.6 }}>{c.content}</p>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem', flexWrap: 'wrap' }}>
+                      {c.author_username
+                        ? <a href={'/u/' + c.author_username} style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', textDecoration: 'none' }}>{c.author_name}</a>
+                        : <span style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>{c.author_name}</span>
+                      }
+                      {rl && <span style={{ fontSize: 10, fontWeight: 600, color: rl.color, background: rl.bg, padding: '0.1rem 0.4rem', borderRadius: 980 }}>{rl.label}</span>}
+                      <span style={{ fontSize: 12, color: '#aeaeb2' }}>{timeAgo(c.created_at)}</span>
+                      {isLoggedIn && <button onClick={() => { setReplyTo(c.author_name); setInput('@' + c.author_name + ' ') }} style={{ fontSize: 11, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0, fontWeight: 500 }}>Reply</button>}
+                    </div>
+                    <p style={{ fontSize: 14, color: '#3d3d3f', lineHeight: 1.6 }}>{c.content}</p>
+                  </div>
                 </div>
-              </div>
-            )
-          })
+              )
+            })}
           </>
         )}
       </div>
