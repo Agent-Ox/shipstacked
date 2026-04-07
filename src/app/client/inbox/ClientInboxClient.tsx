@@ -212,7 +212,7 @@ export default function ClientInboxClient({ userEmail, userName }: { userEmail: 
               <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.2rem' }}>Looking for more builders?</p>
               <p style={{ fontSize: 13, color: '#6e6e73' }}>Browse 500+ verified AI-native builders and message anyone directly.</p>
             </div>
-            <Link href="/signup?role=employer"
+            <Link href="/employers"
               style={{ fontSize: 13, padding: '0.5rem 1.25rem', background: '#6c63ff', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap' }}>
               Get full access — $199/mo
             </Link>
