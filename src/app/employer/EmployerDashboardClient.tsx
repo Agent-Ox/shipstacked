@@ -94,7 +94,7 @@ export default function EmployerDashboardClient({
       const res = await fetch('/api/employer-logo', { method: 'POST', body: formData })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
-      setProfile(p => ({ ...p, logo_url: data.url }))
+      setProfile(p => ({ ...p, logo_url: data.url + '?t=' + Date.now() }))
     } catch (e: any) {
       setError('Logo upload failed: ' + e.message)
     } finally {
