@@ -209,9 +209,9 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
                 })}
               </div>
             )}
-          </div>
 
-          <PostComments postId={id} isLoggedIn={!!resolvedUser} />
+            <PostComments postId={id} isLoggedIn={!!resolvedUser} />
+          </div>
 
           <FeedPostCTA
             role={role}
