@@ -32,6 +32,8 @@ export async function login(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  await supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('email', user.email!)
+
   // Role-based redirect
   const metaRole = user.user_metadata?.role
 
