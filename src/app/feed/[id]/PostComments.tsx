@@ -65,8 +65,8 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
   }
 
   return (
-    <div style={{ marginTop: '1.5rem', background: 'white', border: '1px solid #e0e0e5', borderRadius: 16, overflow: 'hidden' }}>
-      <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #e0e0e5' }}>
+    <div style={{ marginTop: '1.5rem', borderTop: '0.5px solid #e0e0e5', paddingTop: '1.25rem' }}>
+      <div style={{ marginBottom: '1rem' }}>
         <p style={{ fontSize: 13, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
           Comments {comments.length > 0 && <span style={{ color: '#0071e3' }}>{comments.length}</span>}
         </p>
@@ -74,9 +74,9 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
 
       <div>
         {loading ? (
-          <p style={{ fontSize: 13, color: '#aeaeb2', padding: '1rem 1.25rem' }}>Loading...</p>
+          <p style={{ fontSize: 13, color: '#aeaeb2' }}>Loading...</p>
         ) : comments.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#aeaeb2', padding: '1rem 1.25rem' }}>
+          <p style={{ fontSize: 13, color: '#aeaeb2' }}>
             No comments yet. {isLoggedIn ? 'Be the first.' : 'Sign in to comment.'}
           </p>
         ) : (
@@ -84,7 +84,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
             const rl = getRoleLabel(c.author_role)
             const initials = c.author_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?'
             return (
-              <div key={c.id} style={{ padding: '0.875rem 1.25rem', borderBottom: '0.5px solid #f5f5f7', display: 'flex', gap: '0.75rem' }}>
+              <div key={c.id} style={{ padding: '0.75rem 0', borderBottom: '0.5px solid #f5f5f7', display: 'flex', gap: '0.75rem' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#0071e3', flexShrink: 0 }}>
                   {initials}
                 </div>
@@ -103,7 +103,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
       </div>
 
       {isLoggedIn ? (
-        <div style={{ padding: '0.875rem 1.25rem', borderTop: '0.5px solid #e0e0e5', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+        <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -118,7 +118,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
           </button>
         </div>
       ) : (
-        <div style={{ padding: '0.875rem 1.25rem', borderTop: '0.5px solid #e0e0e5', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
           <p style={{ fontSize: 13, color: '#6e6e73' }}>Sign in to join the conversation.</p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <a href="/login" style={{ fontSize: 13, padding: '0.4rem 0.875rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Sign in</a>
@@ -127,7 +127,7 @@ export default function PostComments({ postId, isLoggedIn }: { postId: string, i
         </div>
       )}
 
-      {error && <p style={{ fontSize: 13, color: '#c00', padding: '0 1.25rem 0.75rem' }}>{error}</p>}
+      {error && <p style={{ fontSize: 13, color: '#c00', marginTop: '0.5rem' }}>{error}</p>}
     </div>
   )
 }

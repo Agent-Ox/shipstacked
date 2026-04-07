@@ -211,6 +211,8 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
             )}
           </div>
 
+          <PostComments postId={id} isLoggedIn={!!resolvedUser} />
+
           <FeedPostCTA
             role={role}
             isOwnPost={isOwnPost}
@@ -220,8 +222,6 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
             postId={id}
             acceptsInquiries={profile?.accepts_project_inquiries !== false}
           />
-
-          <PostComments postId={id} isLoggedIn={!!resolvedUser} />
 
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>
             <Link href="/feed" style={{ fontSize: 13, color: '#aeaeb2', textDecoration: 'none' }}>
