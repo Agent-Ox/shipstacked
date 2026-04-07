@@ -43,9 +43,23 @@ export async function GET(req: Request) {
     return new ImageResponse(
       (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#0a0a0f', padding: '60px', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'rgba(26,127,55,0.15)', display: 'flex' }} />
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span style={{ fontSize: 28, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.02em' }}>ShipStacked<span style={{ color: '#6c63ff' }}>.</span></span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ width: 72, height: 72, background: '#0f0f18', borderRadius: 14, border: '1.5px solid #1e1e2e', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <div style={{ background: '#161622', height: 18, display: 'flex', alignItems: 'center', paddingLeft: 8, gap: 5 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#ff5f57' }} />
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#febc2e' }} />
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#28c840' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', padding: '8px 8px', flex: 1 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#6c63ff' }}>~/</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#0071e3' }}>ship</span>
+                <div style={{ width: 6, height: 18, background: '#0071e3', borderRadius: 2, marginLeft: 2, opacity: 0.9 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <span style={{ fontSize: 36, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.02em' }}>ShipStacked</span>
+              <span style={{ fontSize: 36, fontWeight: 700, color: '#0071e3' }}>.</span>
+            </div>
           </div>
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 48 }}>
@@ -54,12 +68,12 @@ export async function GET(req: Request) {
                 <span style={{ fontSize: 16, fontWeight: 600, color: '#34d399', letterSpacing: '0.05em' }}>NOW HIRING</span>
               </div>
             </div>
-            <span style={{ fontSize: 48, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: '1.1' }}>{name || 'Open Role'}</span>
-            {location && <span style={{ fontSize: 26, color: 'rgba(240,240,245,0.5)' }}>{location}</span>}
+            <span style={{ fontSize: 56, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.03em', marginBottom: 16, lineHeight: '1.1' }}>{name || 'Open Role'}</span>
+            {location && <span style={{ fontSize: 28, color: 'rgba(240,240,245,0.4)', fontWeight: 400 }}>{location}</span>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 24 }}>
-            <span style={{ fontSize: 18, color: 'rgba(167,139,250,0.8)' }}>shipstacked.com/jobs</span>
-            <span style={{ fontSize: 16, color: 'rgba(240,240,245,0.3)' }}>AI-native roles</span>
+            <span style={{ fontSize: 18, color: 'rgba(108,99,255,0.8)', fontFamily: 'monospace' }}>~/ship → shipstacked.com/jobs</span>
+            <span style={{ fontSize: 16, color: 'rgba(240,240,245,0.25)' }}>proof-of-work hiring</span>
           </div>
         </div>
       ),
