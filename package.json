@@ -13,6 +13,7 @@
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.100.1",
+    "@upstash/redis": "^1.37.0",
     "@vercel/og": "^0.11.1",
     "dotenv": "^17.4.0",
     "next": "16.2.1",
