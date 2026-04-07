@@ -17,6 +17,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: `${job.role_title} at ${company}`,
       description: job.description?.slice(0, 160) || '',
       url: `https://shipstacked.com/jobs/${id}`,
+      images: [{
+        url: `https://shipstacked.com/og?type=job&name=${encodeURIComponent(job.role_title)}&location=${encodeURIComponent(job.anonymous ? '' : (job.company_name || ''))}`,
+        width: 1200,
+        height: 630,
+        alt: `${job.role_title} at ${company} — ShipStacked`,
+      }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${job.role_title} at ${company}`,
+      description: job.description?.slice(0, 160) || '',
+      images: [`https://shipstacked.com/og?type=job&name=${encodeURIComponent(job.role_title)}&location=${encodeURIComponent(job.anonymous ? '' : (job.company_name || ''))}`],
     },
     alternates: { canonical: `https://shipstacked.com/jobs/${id}` },
   }
