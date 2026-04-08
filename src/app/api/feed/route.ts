@@ -30,6 +30,12 @@ export async function GET(req: Request) {
   return NextResponse.json({ posts: data })
 }
 
+// Sanitize text — remove Unicode replacement characters from broken emoji
+function sanitize(text: string | null | undefined): string | null {
+  if (!text) return null
+  return text.replace(/�/g, '').replace(/\s+/g, ' ').trim() || null
+}
+
 // POST — create a new post
 export async function POST(req: Request) {
   const supabase = await createServerSupabaseClient()
@@ -62,12 +68,12 @@ export async function POST(req: Request) {
     .from('posts')
     .insert([{
       profile_id: profile.id,
-      title: title.trim(),
-      what_built: what_built?.trim() || null,
-      problem_solved: problem_solved?.trim() || null,
-      outcome: outcome?.trim() || null,
-      tools_used: tools_used?.trim() || null,
-      time_taken: time_taken?.trim() || null,
+      title: sanitize(title) || title.trim(),
+      what_built: sanitize(what_built),
+      problem_solved: sanitize(problem_solved),
+      outcome: sanitize(outcome),
+      tools_used: sanitize(tools_used),
+      time_taken: sanitize(time_taken),
       url: url?.trim() || null,
       reactions: {},
     }])
