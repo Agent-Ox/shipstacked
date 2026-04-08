@@ -10,7 +10,7 @@ export async function generateMetadata(
   const { username } = await params
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, bio, about, location, verified, username')
+    .select('full_name, role, bio, about, location, verified, username, velocity_score, primary_profession')
     .eq('username', username)
     .eq('published', true)
     .single()
@@ -24,8 +24,8 @@ export async function generateMetadata(
   return {
     title, description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?username=${username}`, width: 1200, height: 630, alt: title }] },
-    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?username=${username}`] },
+    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?v=2&username=${username}`, width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?v=2&username=${username}`] },
   }
 }
 
@@ -431,7 +431,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           {/* Share */}
           <div className="fade-up card" style={{ padding: '1.75rem', marginBottom: '1.5rem', animationDelay: '0.35s' }}>
             <p className="section-label">Share this profile</p>
-            <ShareButtons name={profile.full_name} url={profileUrl} />
+            <ShareButtons name={profile.full_name} url={profileUrl} role={profile.primary_profession || profile.role} verified={profile.verified} velocityScore={profile.velocity_score} />
           </div>
 
           {/* Role-aware CTA */}

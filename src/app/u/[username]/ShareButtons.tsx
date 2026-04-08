@@ -15,11 +15,21 @@ const btnStyle = {
   fontFamily: 'inherit',
 } as const
 
-export default function ShareButtons({ name, url }: { name: string, url: string }) {
+export default function ShareButtons({ name, url, role, verified, velocityScore }: { name: string, url: string, role?: string, verified?: boolean, velocityScore?: number }) {
   const [copied, setCopied] = useState(false)
 
-  const xShareUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent('Check out ' + name + ' on ShipStacked') + '&url=' + encodeURIComponent(url)
-  const waShareUrl = 'https://wa.me/?text=' + encodeURIComponent('Check out ' + name + ' on ShipStacked: ' + url)
+  const tweetText = [
+    `~/ship → ${name}${verified ? ' ✓' : ''}`,
+    role ? role : 'AI-native builder',
+    velocityScore ? `⚡ ${velocityScore}/100 velocity` : '',
+    '',
+    'Proof-of-work hiring for the vibe coding generation.',
+    '',
+    `#shipstacked #vibecoding #AIjobs #hiring`,
+  ].filter(Boolean).join('\n')
+
+  const xShareUrl = 'https://x.com/intent/tweet?text=' + encodeURIComponent(tweetText) + '&url=' + encodeURIComponent(url)
+  const waShareUrl = 'https://wa.me/?text=' + encodeURIComponent(name + ' is an AI-native builder on ShipStacked: ' + url)
 
   const handleShareAll = () => {
     if (navigator.share) {
