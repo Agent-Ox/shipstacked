@@ -24,8 +24,8 @@ export async function generateMetadata(
   return {
     title, description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?v=2&username=${username}`, width: 1200, height: 630, alt: title }] },
-    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?v=2&username=${username}`] },
+    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}`, width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}`] },
   }
 }
 
