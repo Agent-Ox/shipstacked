@@ -4,48 +4,6 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
-// Dummy feed posts — fall away automatically when real posts exist
-const DUMMY_POSTS = [
-  {
-    id: 'd1', title: 'AI contract review tool for a 3-person law firm',
-    problem_solved: 'Contract reviews were taking 4 hours each. Partner time was being wasted on routine checks.',
-    outcome: 'Review time cut from 4 hours to 20 minutes. Client is now productising it for other firms.',
-    tools_used: 'Claude API, n8n, Supabase', time_taken: '2 weekends',
-    profiles: { full_name: 'Sara R.', verified: true, avatar_url: null }
-  },
-  {
-    id: 'd2', title: 'Full social content pipeline — brief in, 30 posts out',
-    problem_solved: 'Client was paying a content agency £4k/month for inconsistent output.',
-    outcome: 'Brief goes in Monday morning, 30 posts scheduled by Monday afternoon. They cancelled the agency.',
-    tools_used: 'Claude Code, Make, Airtable', time_taken: '4 days',
-    profiles: { full_name: 'James M.', verified: true, avatar_url: null }
-  },
-  {
-    id: 'd3', title: 'Full SaaS MVP — auth, payments, AI insights layer',
-    problem_solved: 'Fintech client had a validated idea but no technical co-founder and no budget for an agency.',
-    outcome: 'Live with paying customers in 3 weeks. Client raised a pre-seed round off the back of it.',
-    tools_used: 'Lovable, Supabase, Stripe', time_taken: '3 weeks',
-    profiles: { full_name: 'Ana L.', verified: true, avatar_url: null }
-  },
-  {
-    id: 'd4', title: 'Outreach agent running 24/7 — books calls while I sleep',
-    problem_solved: 'Client was spending 3 hours a day on manual outreach with inconsistent results.',
-    outcome: '$40k in new business closed last month. Agent qualifies, personalises, books. Zero human input.',
-    tools_used: 'Claude Code, n8n, Apollo', time_taken: '5 days',
-    profiles: { full_name: 'Maya P.', verified: false, avatar_url: null }
-  },
-]
-
-// Dummy profiles — fall away when 6+ real profiles exist
-const DUMMY_PROFILES = [
-  { initials: 'SR', av: 'av1', name: 'Sara R.', role: 'AI Automation · Barcelona', bio: 'Builds end-to-end automation pipelines. Cut client reporting time by 80% across 3 healthcare orgs.', tags: ['n8n workflows', 'Claude API', 'healthcare'] },
-  { initials: 'JM', av: 'av2', name: 'James M.', role: 'Prompt Engineer · London', bio: 'RAG systems for legal and financial document processing. Built internal research tools for 2 top-10 law firms.', tags: ['RAG systems', 'legal tech', 'document AI'] },
-  { initials: 'AL', av: 'av3', name: 'Ana L.', role: 'Vibe Coder · Remote', bio: 'Ships full SaaS MVPs using Claude Code and Supabase. Launched 4 products in 2025, two with paying customers in 30 days.', tags: ['Claude Code', 'SaaS MVPs', 'Supabase'] },
-  { initials: 'DK', av: 'av4', name: 'David K.', role: 'AI Consultant · Berlin', bio: 'Trains enterprise teams to integrate AI. 12 companies onboarded, avg 40% productivity gain.', tags: ['enterprise AI', 'agent systems', 'workflow design'] },
-  { initials: 'MP', av: 'av5', name: 'Maya P.', role: 'Agent Builder · NYC', bio: 'Deploys AI agents for B2B outreach and content. One agent closed $40k last month with zero human input.', tags: ['agent systems', 'outreach automation', 'B2B'] },
-  { initials: 'RT', av: 'av6', name: 'Ravi T.', role: 'Full-Stack AI Dev · Singapore', bio: 'Integrates AI into production apps. Built a support system handling 10k+ queries/day, 94% auto-resolution.', tags: ['Claude API', 'customer support', 'Node.js'] },
-]
-
 async function goToCheckout() {
   const res = await fetch('/api/checkout', {
     method: 'POST',
@@ -113,9 +71,8 @@ export default function Home() {
       })
   }, [])
 
-  const showRealProfiles = realProfiles.length >= 6
-  const displayProfiles = showRealProfiles ? realProfiles : DUMMY_PROFILES
-  const displayPosts = feedPosts.length > 0 ? feedPosts : DUMMY_POSTS
+  const displayProfiles = realProfiles
+  const displayPosts = feedPosts
 
   return (
     <>
@@ -327,7 +284,7 @@ export default function Home() {
               const profile = post.profiles
               const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
               return (
-                <div key={post.id} className="feed-card">
+                <Link key={post.id} href={`/feed/${post.id}`} className="feed-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                   <div className="feed-author">
                     <div className="feed-avatar">
                       {profile?.avatar_url
@@ -351,7 +308,7 @@ export default function Home() {
                     {post.tools_used && <span className="feed-meta-item">🛠 {post.tools_used}</span>}
                     {post.time_taken && <span className="feed-meta-item">⏱ {post.time_taken}</span>}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
@@ -399,24 +356,18 @@ export default function Home() {
           </p>
           <div className="profiles-grid">
             {displayProfiles.map((profile: any, i: number) => {
-              const isReal = showRealProfiles
-              const initials = isReal
-                ? profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
-                : profile.initials
-              const name = isReal ? profile.full_name : profile.name
-              const role = isReal ? (profile.role || '') + (profile.location ? ' · ' + profile.location : '') : profile.role
+              const initials = profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
+              const name = profile.full_name
+              const role = (profile.role || '') + (profile.location ? ' · ' + profile.location : '')
               const bio = profile.bio
-              const tags = isReal
-                ? (profile.skills || []).filter((s: any) => s.category === 'claude_use_case').slice(0, 3).map((s: any) => s.name)
-                : profile.tags
-              const avClass = ['av1','av2','av3','av4','av5','av6'][i % 6]
-              const verified = isReal ? profile.verified : true
+              const tags = (profile.skills || []).filter((s: any) => s.category === 'claude_use_case').slice(0, 3).map((s: any) => s.name)
+              const verified = profile.verified
 
               return (
-                <div key={i} className="profile-card">
+                <Link key={i} href={`/u/${profile.username}`} className="profile-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                   <div className="profile-top">
-                    <div className={`avatar ${isReal ? '' : avClass}`} style={isReal && profile.avatar_url ? {} : {}}>
-                      {isReal && profile.avatar_url
+                    <div className="avatar">
+                      {profile.avatar_url
                         ? <img src={profile.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : initials
                       }
@@ -431,7 +382,7 @@ export default function Home() {
                   <div className="profile-tags">
                     {tags.map((tag: string) => <span key={tag} className="ptag">{tag}</span>)}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
