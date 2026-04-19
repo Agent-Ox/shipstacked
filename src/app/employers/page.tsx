@@ -305,8 +305,7 @@ export default function EmployersPage() {
               const role = (profile.role || '') + (profile.location ? ' · ' + profile.location : '')
               const bio = profile.bio
               const tags = (profile.skills || []).filter((s: any) => s.category === 'claude_use_case').slice(0, 3).map((s: any) => s.name)
-              const avClass = ['av1','av2','av3','av4','av5','av6'][i % 6]
-              const verified = isReal ? profile.verified : true
+              const verified = profile.verified
               return (
                 <Link key={i} href={`/u/${profile.username}`} className="profile-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
                   <div className="profile-top">
