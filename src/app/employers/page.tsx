@@ -325,7 +325,7 @@ export default function EmployersPage() {
                   <div className="profile-tags">
                     {(tags || []).map((tag: string) => <span key={tag} className="ptag">{tag}</span>)}
                   </div>
-                </div>
+                </Link>
               )
             })}
           </div>
