@@ -25,9 +25,9 @@ const WORLD_TOPO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110
 // Mercator projection fitted to 1000x500 viewBox, slight vertical crop to de-emphasise polar distortion
 function useProjection() {
   return geoMercator()
-    .scale(155)
-    .center([10, 25])
-    .translate([500, 270])
+    .scale(130)
+    .center([10, 20])
+    .translate([500, 260])
 }
 
 export default function BuilderMap() {
