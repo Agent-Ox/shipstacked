@@ -69,17 +69,48 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    fetch('/api/feed?limit=4')
+    // Try featured posts first, fall back to most recent
+    fetch('/api/feed?limit=4&featured=1')
       .then(r => r.json())
-      .then(({ posts }) => { if (posts?.length) setFeedPosts(posts) })
+      .then(({ posts }) => {
+        if (posts?.length >= 4) {
+          setFeedPosts(posts)
+        } else {
+          fetch('/api/feed?limit=4')
+            .then(r => r.json())
+            .then(({ posts }) => { if (posts?.length) setFeedPosts(posts) })
+            .catch(() => {})
+        }
+      })
       .catch(() => {})
   }, [])
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.from('profiles').select('*, skills(*)').eq('published', true)
-      .order('created_at', { ascending: false }).limit(6)
-      .then(({ data }) => { if ((data?.length ?? 0) >= 6) setRealProfiles(data ?? []) })
+    supabase.from('profiles').select('*, skills(*)')
+      .eq('published', true)
+      .eq('featured', true)
+      .order('featured_order', { ascending: true, nullsFirst: false })
+      .limit(6)
+      .then(async ({ data: featured }) => {
+        const featuredCount = featured?.length ?? 0
+        if (featuredCount >= 6) {
+          setRealProfiles(featured ?? [])
+          return
+        }
+        const featuredIds = (featured ?? []).map((p: any) => p.id)
+        const remaining = 6 - featuredCount
+        const { data: fill } = await supabase.from('profiles').select('*, skills(*)')
+          .eq('published', true)
+          .order('velocity_score', { ascending: false, nullsFirst: false })
+          .order('created_at', { ascending: false })
+          .limit(remaining + featuredIds.length)
+        const fillFiltered = (fill ?? [])
+          .filter((p: any) => !featuredIds.includes(p.id))
+          .slice(0, remaining)
+        const combined = [...(featured ?? []), ...fillFiltered]
+        if (combined.length >= 6) setRealProfiles(combined)
+      })
   }, [])
 
   const showRealProfiles = realProfiles.length >= 6

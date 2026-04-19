@@ -9,6 +9,7 @@ export async function GET(req: Request) {
   const limit = parseInt(searchParams.get('limit') || '20')
   const offset = parseInt(searchParams.get('offset') || '0')
   const profile_id = searchParams.get('profile_id')
+  const featured = searchParams.get('featured') === '1'
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,8 +19,13 @@ export async function GET(req: Request) {
   let query = supabase
     .from('posts')
     .select('*, profiles(username, full_name, avatar_url, verified, github_connected)')
-    .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1)
+
+  if (featured) {
+    query = query.eq('featured', true).order('featured_order', { ascending: true, nullsFirst: false })
+  } else {
+    query = query.order('created_at', { ascending: false })
+  }
 
   if (profile_id) {
     query = query.eq('profile_id', profile_id)
