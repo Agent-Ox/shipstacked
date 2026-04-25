@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { createServerSupabaseClient } from '@/lib/supabase-server'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(req: Request) {
   try {
+    // Require authenticated session
+    const supabase = await createServerSupabaseClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const { email, name, username } = await req.json()
+    if (user.email !== email) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     await resend.emails.send({
       from: 'ShipStacked <hello@shipstacked.com>',
