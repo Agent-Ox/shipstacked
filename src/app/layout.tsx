@@ -10,6 +10,9 @@ export const viewport = {
 }
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'gHqKduL9mCKWg27jtuLbCvjy-nn-utiIIEn1hlUFZzQ',
+  },
   icons: {
     icon: '/icon.svg',
     shortcut: '/icon.svg',
