@@ -4,19 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
 
 const ADMIN_EMAIL = 'oxleethomas+admin@gmail.com'
-const MODEL = 'claude-haiku-4-5-20251001'  // cheapest, fastest
-
-// =====================================================================
-// POST /api/admin/candidates/draft
-//
-// Generates a personalised tweet draft for one candidate using Claude.
-// Stores the draft in outreach_drafts and returns it.
-//
-// Body: { candidate_id: string, force_new?: boolean }
-//
-// If a recent draft (< 5 min old) exists, returns it instead of regenerating
-// — unless force_new=true (the regenerate button).
-// =====================================================================
+const MODEL = 'claude-haiku-4-5-20251001'
 
 type Candidate = {
   id: string
@@ -26,79 +14,119 @@ type Candidate = {
   bio: string | null
   location: string | null
   primary_profession: string | null
-  top_repos: unknown
   shipping_evidence: string | null
   tier: string | null
   velocity_score: number | null
 }
 
-const SYSTEM_PROMPT = `You are drafting a short, personal tweet from Thomas Oxlee, founder of ShipStacked, to a builder he's identified as AI-native and worth reaching out to.
+type GitHubRepo = {
+  name: string
+  description: string | null
+  language: string | null
+  stargazers_count: number
+  fork: boolean
+  updated_at: string
+}
+
+async function fetchTopRepos(githubUsername: string): Promise<GitHubRepo[]> {
+  try {
+    const headers: Record<string, string> = {
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'shipstacked-outreach',
+    }
+    if (process.env.GITHUB_TOKEN) {
+      headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`
+    }
+    const res = await fetch(
+      `https://api.github.com/users/${encodeURIComponent(githubUsername)}/repos?per_page=30&sort=pushed`,
+      { headers, signal: AbortSignal.timeout(8000) }
+    )
+    if (!res.ok) {
+      console.warn(`[draft] GitHub fetch failed for ${githubUsername}: ${res.status}`)
+      return []
+    }
+    const repos = await res.json() as GitHubRepo[]
+    const oneYearAgo = Date.now() - 365 * 24 * 60 * 60 * 1000
+    const filtered = repos.filter(r =>
+      !r.fork &&
+      (r.stargazers_count > 0 || new Date(r.updated_at).getTime() > oneYearAgo)
+    )
+    filtered.sort((a, b) => {
+      if (b.stargazers_count !== a.stargazers_count) return b.stargazers_count - a.stargazers_count
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    })
+    return filtered.slice(0, 5)
+  } catch (e) {
+    console.error(`[draft] GitHub fetch error for ${githubUsername}:`, e)
+    return []
+  }
+}
+
+const SYSTEM_PROMPT = `You are drafting a short tweet from Thomas Oxlee, founder of ShipStacked, to a builder he wants to invite to the platform.
 
 ShipStacked is a hiring platform that surfaces builders by their actual shipped work, not by CV. It's specifically for the AI-native generation: people who ship with Claude Code, Cursor, Lovable, Bolt, and AI agents.
 
 Your job: write ONE tweet that:
-1. References something SPECIFIC about this builder's actual public work — a repo name, a project, a tool they built. Not generic praise.
-2. Names ShipStacked once, briefly, in plain language.
-3. Includes the link "shipstacked.com" exactly once.
-4. Stays under 270 characters total (X tweet limit is 280, leave room).
-5. Reads like one human writing to another. NOT salesy. NOT templated.
-6. Lowercase casual style is fine. Founder voice: warm, direct, no fluff.
-7. Ends with low-pressure framing — "thought you'd like it", "no pressure", "your call". Make it easy to ignore.
+1. Names ShipStacked once, briefly, in plain language.
+2. Includes the link "shipstacked.com" exactly once.
+3. Stays under 270 characters total.
+4. Reads like one human writing to another. NOT salesy. NOT templated.
+5. Lowercase casual style. Founder voice: warm, direct, no fluff.
+6. Ends with low-pressure framing.
+
+CRITICAL RULES:
+
+1. NEVER INVENT FACTS. Only reference what is LITERALLY provided in the data below.
+2. If the data lists specific repos by name, you may reference them BY EXACT NAME.
+3. If the data lists no repos, do NOT invent one.
+4. If the bio mentions specific technologies, you MAY reference those.
+5. Do NOT pattern-match the X handle into a fake repo name.
+6. Do NOT use training-data knowledge of who this person is. Only use what's provided.
+7. If you have NO specific work to reference, write a GENERIC warm message about ShipStacked instead. A generic-but-honest message is infinitely better than a specific-but-fake one.
 
 DO NOT:
-- Use em-dashes (—). Use full stops or commas instead.
+- Use em-dashes. Use full stops or commas instead.
 - Use emojis.
-- Start with "Hey" or generic openers like "Saw your work".
-- Sound like a recruiter or a marketer.
+- Start with "Hey" or generic openers.
+- Sound like a recruiter or marketer.
 - Say "let's connect" or "let's chat".
-- Repeat the @handle (the tweet platform handles tagging once).
 - Use the word "platform" more than once.
 
 OUTPUT FORMAT:
-Return ONLY the tweet text. No JSON, no commentary, no quotation marks. Just the raw tweet starting with the @ tag.`
+Return ONLY the tweet text. No JSON, no commentary, no quotation marks.`
 
-function buildUserPrompt(c: Candidate): string {
+function buildUserPrompt(c: Candidate, repos: GitHubRepo[]): string {
   const lines: string[] = []
-  lines.push(`Builder to reach out to:`)
+  lines.push(`Builder data:`)
   lines.push(``)
   lines.push(`X handle: @${c.x_handle}`)
-  lines.push(`GitHub: ${c.github_username}`)
+  lines.push(`GitHub username: ${c.github_username}`)
   if (c.full_name) lines.push(`Name: ${c.full_name}`)
   if (c.location) lines.push(`Location: ${c.location}`)
   if (c.bio) lines.push(`GitHub bio: "${c.bio}"`)
   if (c.primary_profession) lines.push(`Profession: ${c.primary_profession}`)
-  if (c.tier) lines.push(`Tier: ${c.tier}`)
-  if (c.velocity_score && c.velocity_score > 0) lines.push(`Velocity score: ${c.velocity_score}`)
-  if (c.shipping_evidence) lines.push(`Shipping evidence: ${c.shipping_evidence}`)
 
-  if (c.top_repos) {
-    let repos: Array<{ name?: string; description?: string; url?: string; readme_excerpt?: string }> = []
-    try {
-      if (typeof c.top_repos === 'string') {
-        repos = JSON.parse(c.top_repos)
-      } else if (Array.isArray(c.top_repos)) {
-        repos = c.top_repos as Array<{ name?: string; description?: string }>
-      }
-    } catch { /* ignore */ }
-
-    if (repos.length > 0) {
-      lines.push(``)
-      lines.push(`Top public repos:`)
-      for (const r of repos.slice(0, 3)) {
-        if (r.name) {
-          let line = `- ${r.name}`
-          if (r.description) line += `: ${r.description}`
-          lines.push(line)
-          if (r.readme_excerpt) {
-            lines.push(`  README excerpt: "${r.readme_excerpt.slice(0, 200)}"`)
-          }
-        }
-      }
+  if (repos.length > 0) {
+    lines.push(``)
+    lines.push(`Their top public repos (verified, fetched from GitHub just now):`)
+    for (const r of repos) {
+      let line = `- "${r.name}"`
+      if (r.language) line += ` (${r.language})`
+      if (r.stargazers_count > 0) line += ` star${r.stargazers_count}`
+      if (r.description) line += ` — ${r.description}`
+      lines.push(line)
     }
+    lines.push(``)
+    lines.push(`You may reference any repo by its EXACT name above. Do not invent repo names not in this list.`)
+  } else {
+    lines.push(``)
+    lines.push(`NO REPO DATA AVAILABLE. Their public GitHub repos are private, deleted, or could not be fetched.`)
+    lines.push(`Therefore: do NOT reference any specific repo or project. Write a warm general message instead, mentioning at most their bio or location, then ShipStacked.`)
   }
 
   lines.push(``)
-  lines.push(`Write the tweet now. Reference something SPECIFIC about this builder. Stay under 270 characters.`)
+  lines.push(`Write the tweet now. Stay under 270 characters. Reference ONLY what's verified above.`)
 
   return lines.join('\n')
 }
@@ -129,10 +157,9 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Fetch candidate
   const { data: candidate, error: fetchErr } = await admin
     .from('candidates')
-    .select('id, github_username, full_name, x_handle, bio, location, primary_profession, top_repos, shipping_evidence, tier, velocity_score')
+    .select('id, github_username, full_name, x_handle, bio, location, primary_profession, shipping_evidence, tier, velocity_score')
     .eq('id', candidateId)
     .single()
 
@@ -140,7 +167,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Candidate not found' }, { status: 404 })
   }
 
-  // Reuse recent draft if it exists and not forcing new
   if (!forceNew) {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
     const { data: recentDraft } = await admin
@@ -162,7 +188,8 @@ export async function POST(req: Request) {
     }
   }
 
-  // Generate new draft via Claude
+  const repos = await fetchTopRepos((candidate as Candidate).github_username)
+
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 503 })
@@ -175,22 +202,18 @@ export async function POST(req: Request) {
   let tokensOut = 0
 
   try {
-    const userPrompt = buildUserPrompt(candidate as Candidate)
-
+    const userPrompt = buildUserPrompt(candidate as Candidate, repos)
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 200,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     })
-
     const block = response.content[0]
     if (block.type === 'text') {
       draftText = block.text.trim()
-      // Strip surrounding quotes if Claude added them
       draftText = draftText.replace(/^["']|["']$/g, '').trim()
     }
-
     tokensIn = response.usage.input_tokens
     tokensOut = response.usage.output_tokens
   } catch (e: unknown) {
@@ -203,19 +226,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Empty draft from Claude' }, { status: 500 })
   }
 
-  // Validate length (X cap is 280, but URLs auto-shorten to 23)
-  // Rough check: if draft is over 280 raw, warn but still save
-  if (draftText.length > 290) {
-    console.warn('[draft] over length:', draftText.length, 'chars')
-  }
-
-  // Persist
   const { data: draft, error: insertErr } = await admin
     .from('outreach_drafts')
     .insert({
       candidate_id: candidateId,
       draft_text: draftText,
-      prompt_used: 'recognition_v1',
+      prompt_used: 'recognition_v2_grounded',
       model: MODEL,
       tokens_in: tokensIn,
       tokens_out: tokensOut,
@@ -228,7 +244,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Failed to save draft' }, { status: 500 })
   }
 
-  // Mark candidate as having a fresh draft
   await admin
     .from('candidates')
     .update({ last_drafted_at: new Date().toISOString() })
@@ -240,5 +255,7 @@ export async function POST(req: Request) {
     cached: false,
     char_count: draftText.length,
     tokens: { in: tokensIn, out: tokensOut },
+    repos_used: repos.length,
+    repos_sample: repos.slice(0, 3).map(r => r.name),
   })
 }
