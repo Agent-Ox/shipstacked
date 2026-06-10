@@ -562,7 +562,12 @@ async function main(): Promise<void> {
     if (error || !data?.user) fatal(8, `team auth createUser failed: ${error?.message}`)
     teamUser = data!.user!
   }
-  const { entity: teamEntity } = await findOrCreateTeamEntity(admin, teamUser, 'Batch5TestTeam')
+  // TODO(Phase 7 cleanup): this Batch 5 verify script minted the orphan team
+  // entity id=23 (batch5testteam, profile_id null), now unpublished junk per
+  // Phase 2 Block 6. Dead-history one-shot — kept compiling against the new
+  // 4-arg findOrCreateTeamEntity signature (Phase 4 §D.1) but not intended
+  // to be re-run.
+  const { entity: teamEntity } = await findOrCreateTeamEntity(admin, teamUser, 'Batch5TestTeam', 'batch5testteam')
   console.log(`    team auth: ${teamUser.id.slice(0, 8)}…`)
   console.log(`    team entity: id=${teamEntity.id} kind=${teamEntity.kind} slug=${teamEntity.slug}`)
   // Verify no profile, no enrichment_runs
