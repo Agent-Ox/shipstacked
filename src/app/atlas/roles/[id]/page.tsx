@@ -204,7 +204,14 @@ export default async function AtlasRolePage({
                     {r.title}
                   </Link>
                   <div style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.15rem' }}>
-                    by {r.subject_name} ·{' '}
+                    by{' '}
+                    <Link
+                      href={r.subject_kind === 'team' ? `/team/${r.subject_slug}` : `/u/${r.subject_slug}`}
+                      style={{ color: '#0071e3', textDecoration: 'none' }}
+                    >
+                      {r.subject_name}
+                    </Link>{' '}
+                    ·{' '}
                     <time dateTime={r.issued_at}>
                       {new Date(r.issued_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </time>

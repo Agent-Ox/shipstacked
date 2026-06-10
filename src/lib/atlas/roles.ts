@@ -37,6 +37,11 @@ export interface RecentReceiptAtRole {
   issued_at: string
   subject_name: string
   subject_slug: string
+  // Phase 4 (Adjustment 3): drives the kind-aware subject link on the role
+  // page — 'team' → /team/<slug>, anything else → /u/<slug>. Team-subject
+  // receipts flow into this query unchanged (it's kind-agnostic), so without
+  // the kind a team subject would resolve to /u/<slug> and 404.
+  subject_kind: string
 }
 
 export function isValidAtlasVersion(v: string): v is AtlasVersion {
@@ -80,7 +85,7 @@ export async function getRecentReceiptsAtRole(
   // v0.3 receipts only show on v0.3 pages.
   const { data, error } = await supabase
     .from('proof_receipts')
-    .select('slug, title, issued_at, subject:entities!proof_receipts_subject_id_fkey(display_name, slug)')
+    .select('slug, title, issued_at, subject:entities!proof_receipts_subject_id_fkey(display_name, slug, kind)')
     .or(`atlas_confirmed.cs.{${roleId}},atlas_inferred.cs.{${roleId}}`)
     .eq('atlas_version', version)
     .eq('visibility', 'public')
@@ -94,7 +99,10 @@ export async function getRecentReceiptsAtRole(
     slug: string
     title: string
     issued_at: string
-    subject: { display_name: string; slug: string } | { display_name: string; slug: string }[] | null
+    subject:
+      | { display_name: string; slug: string; kind: string }
+      | { display_name: string; slug: string; kind: string }[]
+      | null
   }>).map((r) => {
     const subj = Array.isArray(r.subject) ? r.subject[0] : r.subject
     return {
@@ -103,6 +111,7 @@ export async function getRecentReceiptsAtRole(
       issued_at: r.issued_at,
       subject_name: subj?.display_name ?? 'ShipStacked builder',
       subject_slug: subj?.slug ?? 'builder',
+      subject_kind: subj?.kind ?? 'human',
     }
   })
 }

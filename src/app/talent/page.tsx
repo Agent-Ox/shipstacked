@@ -5,6 +5,7 @@ import TalentClient from './TalentClient'
 import { buildItemListJsonLd } from '@/lib/jsonld/item-list'
 import { CANONICAL_HOST, personId } from '@/lib/jsonld/context'
 import { getRankedBuilders } from '@/lib/ranking/get-ranked-builders'
+import { getRankedTeams } from '@/lib/ranking/get-ranked-teams'
 import { CLUSTER_LABELS, CLUSTER_ORDER, SHIPPED_BUCKETS, bucketsForEvents } from '@/lib/ranking/facets'
 
 export const metadata: Metadata = {
@@ -18,8 +19,41 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://shipstacked.com/talent' },
 }
 
+const PAGE_WRAP: React.CSSProperties = { minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', overflowX: 'hidden' }
+const PAGE_INNER: React.CSSProperties = { maxWidth: 1000, margin: '0 auto', padding: '4rem 1.5rem 5rem' }
+
 export default async function TalentPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const params = await searchParams
+
+  // Type facet (Phase 4 §I.4). Default 'builder' for unchanged backwards behavior.
+  const rawType = params.type
+  const type: 'builder' | 'team' | 'agent' = rawType === 'team' || rawType === 'agent' ? rawType : 'builder'
+
+  // ── Team directory — public, client-side filtered (§I.5). ──
+  if (type === 'team') {
+    const { ranked, belowThreshold } = await getRankedTeams()
+    const teams = [...ranked, ...belowThreshold]
+    return (
+      <div style={PAGE_WRAP}>
+        <div style={PAGE_INNER}>
+          <TalentClient type="team" teams={teams} />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Agent directory — Phase 5 placeholder. ──
+  if (type === 'agent') {
+    return (
+      <div style={PAGE_WRAP}>
+        <div style={PAGE_INNER}>
+          <TalentClient type="agent" />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Builder directory (default) — existing flow, unchanged. ──
   const filterProfession = params.profession || ''
   const filterAvailability = params.availability || ''
   const filterVerified = params.verified === 'true'
@@ -131,6 +165,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
       )}
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '4rem 1.5rem 5rem' }}>
         <TalentClient
+          type="builder"
           profiles={displayProfiles}
           savedIds={savedIds}
           isPaidHirer={isPaidHirer}

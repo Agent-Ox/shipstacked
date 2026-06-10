@@ -204,6 +204,11 @@ async function main(): Promise<void> {
       expect: 200,
       reason: 'real Atlas role JSON-LD',
     },
+    [`${base}/team/<slug>`]: {
+      url: `${base}/team/__beacon2_audit__`,
+      expect: 404,
+      reason: 'unknown slug — proves team route family + published gate (Phase 4)',
+    },
     [`${base}/p/<slug>`]: {
       url: `${base}/p/__beacon2_audit__`,
       expect: 404,
@@ -391,6 +396,17 @@ async function main(): Promise<void> {
     pass(`metadata.shipstacked:agentAuth: ${agentAuth}`)
   } else {
     fail(`metadata.shipstacked:agentAuth missing or not a URL ending in /auth.md: ${JSON.stringify(agentAuth)}`)
+  }
+
+  // ─── 6c. fetch-team-profile skill (Phase 4 §K) — REQUIRED from Phase 4 ─
+  // Same self-healing pattern as 6b: FAILS against prod until §N deploys the
+  // new skill, then flips green on deploy.
+  console.log('\n6c. fetch-team-profile skill (Phase 4)')
+  const teamSkill = card.skills.find((s) => s.id === 'fetch-team-profile')
+  if (teamSkill) {
+    pass(`fetch-team-profile skill present: ${teamSkill.name}`)
+  } else {
+    fail('skills[] missing fetch-team-profile (Phase 4 requirement)')
   }
 
   // ─── 7. Summary ────────────────────────────────────────────────────

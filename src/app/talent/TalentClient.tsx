@@ -4,6 +4,7 @@ import React, { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import posthog from 'posthog-js'
 import { CLUSTER_LABELS, SHIPPED_LABEL, bucketsForEvents } from '@/lib/ranking/facets'
+import type { RankedTeam } from '@/lib/ranking/get-ranked-teams'
 import { SaveButton } from './SaveButton'
 
 const PROFESSIONS = ['Developer', 'Designer', 'Product Manager', 'Consultant', 'Marketer', 'Operator', 'Founder', 'Other']
@@ -252,23 +253,76 @@ function ProfileCard({ profile, isPaidHirer, hasHirerProfile, isSaved, onToggleS
   )
 }
 
+function TeamCard({ team }: { team: RankedTeam }) {
+  const initials = team.team_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const services = team.services || []
+  return (
+    <a href={`/team/${team.slug}`} className={team.verified ? 'talent-card talent-card-verified' : 'talent-card'}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, overflow: 'hidden', background: team.logo_url ? 'transparent' : 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'white' }}>
+          {team.logo_url ? <img src={team.logo_url} alt={team.team_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{team.team_name}</span>
+            {team.verified && <span style={{ fontSize: 10, fontWeight: 700, color: '#0071e3', background: '#e8f1fd', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>✓ Verified</span>}
+          </div>
+          {(team.tagline || team.location) && (
+            <div style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {team.tagline || ''}{team.tagline && team.location ? ' · ' : ''}{team.location || ''}
+            </div>
+          )}
+        </div>
+        {team.l1_receipt_count > 0 && (
+          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#1a7f37', lineHeight: 1 }}>{team.l1_receipt_count}</div>
+            <div style={{ fontSize: 9, color: '#aeaeb2', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>shipped</div>
+          </div>
+        )}
+      </div>
+      {team.description && (
+        <p style={{ fontSize: 13, color: '#3d3d3f', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0, width: '100%' }}>
+          {team.description}
+        </p>
+      )}
+      {services.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, width: '100%' }}>
+          {services.slice(0, 3).map((s) => <span key={s} style={{ fontSize: 11, padding: '0.2rem 0.55rem', background: '#f0ecff', borderRadius: 980, color: '#6c4cff', fontWeight: 500 }}>{s}</span>)}
+          {services.length > 3 && <span style={{ fontSize: 11, padding: '0.2rem 0.55rem', background: '#f0f0f5', borderRadius: 980, color: '#6e6e73', fontWeight: 500 }}>+{services.length - 3} more</span>}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.25rem', width: '100%' }}>
+        {team.team_size_range
+          ? <span style={{ fontSize: 11, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>👥 {team.team_size_range}</span>
+          : <span />}
+        <span style={{ fontSize: 12, color: '#0071e3', fontWeight: 500 }}>View team →</span>
+      </div>
+    </a>
+  )
+}
+
 export default function TalentClient({
-  profiles, savedIds: initialSavedIds, isPaidHirer, isTeaser,
-  verifiedCount, totalCount, totalUnfilteredCount, user, hasHirerProfile = false, filters,
-  clusterFacets, shippedFacets,
+  type = 'builder',
+  profiles = [], savedIds: initialSavedIds = [], isPaidHirer = false, isTeaser = false,
+  verifiedCount = 0, totalCount = 0, totalUnfilteredCount = 0, user = null, hasHirerProfile = false,
+  filters = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '' },
+  clusterFacets = [], shippedFacets = [],
+  teams = [],
 }: {
-  profiles: any[]
-  savedIds: string[]
-  isPaidHirer: boolean
-  isTeaser: boolean
-  verifiedCount: number
-  totalCount: number
-  totalUnfilteredCount: number
-  user: any
+  type?: 'builder' | 'team' | 'agent'
+  profiles?: any[]
+  savedIds?: string[]
+  isPaidHirer?: boolean
+  isTeaser?: boolean
+  verifiedCount?: number
+  totalCount?: number
+  totalUnfilteredCount?: number
+  user?: any
   hasHirerProfile?: boolean
-  filters: TalentFilters
-  clusterFacets: FacetOpt[]
-  shippedFacets: FacetOpt[]
+  filters?: TalentFilters
+  clusterFacets?: FacetOpt[]
+  shippedFacets?: FacetOpt[]
+  teams?: RankedTeam[]
 }) {
   const router = useRouter()
   useEffect(() => {
@@ -334,6 +388,32 @@ export default function TalentClient({
     </button>
   )
 
+  // ── Type facet (Phase 4 §I.4) — swaps the server data source via URL. ──
+  function goToType(t: 'builder' | 'team') {
+    startTransition(() => { router.push(t === 'builder' ? '/talent' : `/talent?type=${t}`) })
+  }
+  const typeTab = (t: 'builder' | 'team', label: string) => (
+    <button onClick={() => goToType(t)} style={{
+      padding: '0.6rem 1rem', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
+      fontSize: 15, fontWeight: type === t ? 700 : 500, color: type === t ? '#1d1d1f' : '#6e6e73',
+      borderBottom: type === t ? '2px solid #0071e3' : '2px solid transparent', marginBottom: -1,
+    }}>{label}</button>
+  )
+
+  // ── Team filters (Phase 4 §I.5) — client-side, the team set is small. ──
+  const [teamServices, setTeamServices] = useState<string[]>([])
+  const [teamLocation, setTeamLocation] = useState('')
+  const [teamVerified, setTeamVerified] = useState(false)
+  const serviceOptions = Array.from(new Set(teams.flatMap(t => t.services || []))).sort()
+  const filteredTeams = teams.filter(t => {
+    if (teamVerified && !t.verified) return false
+    if (teamLocation && !(t.location || '').toLowerCase().includes(teamLocation.toLowerCase())) return false
+    if (teamServices.length > 0 && !teamServices.some(s => (t.services || []).includes(s))) return false
+    return true
+  })
+  const teamFiltersActive = teamServices.length > 0 || !!teamLocation || teamVerified
+  const clearTeamFilters = () => { setTeamServices([]); setTeamLocation(''); setTeamVerified(false) }
+
   return (
     <>
       <style>{`
@@ -355,6 +435,20 @@ export default function TalentClient({
           .mobile-filter-bar { display: flex; }
         }
       `}</style>
+
+      {/* Type facet — Builder / Team / Agent (Phase 4 §I.4). Sits above the
+          per-source All/Shortlist tab; it swaps the data source, not a filter. */}
+      <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.75rem', borderBottom: '1px solid #e0e0e5' }}>
+        {typeTab('builder', 'Builders')}
+        {typeTab('team', 'Teams')}
+        <button disabled title="Coming in Phase 5" style={{
+          padding: '0.6rem 1rem', border: 'none', background: 'none', cursor: 'not-allowed', fontFamily: 'inherit',
+          fontSize: 15, fontWeight: 500, color: '#c7c7cc', borderBottom: '2px solid transparent', marginBottom: -1,
+        }}>Agents (soon)</button>
+      </div>
+
+      {type === 'builder' && (
+      <>
 
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
@@ -524,6 +618,70 @@ export default function TalentClient({
             </div>
             <p style={{ fontSize: 13, color: '#aeaeb2', marginTop: '1rem' }}>No commissions. Cancel anytime.</p>
           </div>
+        </div>
+      )}
+      </>
+      )}
+
+      {type === 'team' && (
+        <>
+          {/* Header */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Talent</p>
+            <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.4rem' }}>AI implementation teams</h1>
+            <p style={{ fontSize: 15, color: '#6e6e73' }}>
+              {filteredTeams.length} team{filteredTeams.length !== 1 ? 's' : ''}{teamFiltersActive ? ` matching · ${teams.length} total` : ''}
+            </p>
+          </div>
+
+          {/* Team filters (client-side) */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            {serviceOptions.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#aeaeb2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Services</span>
+                {serviceOptions.map(s => (
+                  <FilterChip key={s} label={s} active={teamServices.includes(s)} onClick={() => setTeamServices(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])} />
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <input value={teamLocation} onChange={e => setTeamLocation(e.target.value)} placeholder="Filter by location…" style={{ padding: '0.35rem 0.85rem', borderRadius: 980, border: '1px solid #d2d2d7', fontFamily: 'inherit', fontSize: 13, outline: 'none' }} />
+              <FilterChip label="✓ Verified only" active={teamVerified} onClick={() => setTeamVerified(v => !v)} />
+              {teamFiltersActive && (
+                <button onClick={clearTeamFilters} style={{ fontSize: 12, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Clear all filters</button>
+              )}
+            </div>
+          </div>
+
+          {filteredTeams.length === 0 ? (
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '3rem', textAlign: 'center' }}>
+              <p style={{ fontSize: 28, marginBottom: '0.75rem' }}>🔍</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>{teams.length === 0 ? 'No teams yet' : 'No teams match these filters'}</p>
+              <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '1.25rem' }}>{teams.length === 0 ? 'Be the first — create a team profile.' : 'Try removing a filter.'}</p>
+              {teamFiltersActive
+                ? <button onClick={clearTeamFilters} style={{ padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Clear filters</button>
+                : <a href="/join" style={{ display: 'inline-block', padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>Create team profile →</a>}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Ranked by proof of work</span>
+                <div style={{ flex: 1, height: '0.5px', background: '#e0e0e5' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1rem' }}>
+                {filteredTeams.map(t => <TeamCard key={t.id} team={t} />)}
+              </div>
+            </>
+          )}
+        </>
+      )}
+
+      {type === 'agent' && (
+        <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '3rem', textAlign: 'center', marginTop: '1rem' }}>
+          <p style={{ fontSize: 28, marginBottom: '0.75rem' }}>🤖</p>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>Agent directory ships in Phase 5</p>
+          <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '1.25rem' }}>Until then, agents act via the API.</p>
+          <a href="/api-docs" style={{ display: 'inline-block', padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>API docs →</a>
         </div>
       )}
     </>

@@ -6,11 +6,17 @@ const admin = () => createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+// Phase 4 §G: 'team:rw' added. The api_keys.scope column is plain
+// TEXT NOT NULL DEFAULT 'builder:rw' (Phase 3 §D DDL — no CHECK constraint),
+// so the DB already accepts any scope string; this union + /api/keys
+// ALLOWED_SCOPES are the only gates on valid values.
+export type ApiScope = 'builder:rw' | 'buyer:rw' | 'agent:rw' | 'team:rw'
+
 export type ApiKeyAuth = {
   profile: any
   email: string
   keyId: string
-  scope: 'builder:rw' | 'buyer:rw' | 'agent:rw'
+  scope: ApiScope
 }
 
 export type ApiAuthResult =
@@ -70,7 +76,7 @@ export async function authenticateApiKey(req: Request): Promise<ApiAuthResult> {
       keyId: keyRow.id,
       // scope column is NOT NULL DEFAULT 'builder:rw' (Phase 3 §D); the ?? guard
       // is belt-and-suspenders for any pre-migration row a stale cache might return.
-      scope: (keyRow.scope ?? 'builder:rw') as 'builder:rw' | 'buyer:rw' | 'agent:rw',
+      scope: (keyRow.scope ?? 'builder:rw') as ApiScope,
     }
   }
 }
@@ -90,7 +96,7 @@ export function apiOk(data: any) {
 // Returns a Response (via apiError) to match this file's existing convention.
 export function requireScope(
   auth: ApiKeyAuth,
-  allowed: ReadonlyArray<'builder:rw' | 'buyer:rw' | 'agent:rw'>,
+  allowed: ReadonlyArray<ApiScope>,
 ): Response | null {
   if (!allowed.includes(auth.scope)) {
     return apiError(403, `Insufficient scope. Required: ${allowed.join(' or ')}, got: ${auth.scope}`)

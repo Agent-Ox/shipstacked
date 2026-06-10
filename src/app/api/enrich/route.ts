@@ -90,6 +90,9 @@ export async function POST(req: Request) {
   let resolvedProfile: { id: string; user_id: string | null; username: string }
   let targetUser: User
   let force = false
+  // Phase 4 §D.3: the API key's scope drives which entity kind a receipt is
+  // attributed to. Undefined on the cookie-session path (no scope → human-first).
+  let hintScope: 'builder:rw' | 'buyer:rw' | 'agent:rw' | 'team:rw' | undefined
 
   const authHeader = req.headers.get('authorization')
   if (authHeader && authHeader.startsWith('Bearer sk_ss_')) {
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Auth user not found for API key' }, { status: 500 })
     }
     targetUser = lookup.user
+    hintScope = apiAuth.auth.scope
     // API-key auth ignores ?force=1 (no admin override on the agent path).
   } else {
     // ── Cookie-session path (Card 1 signup, EditProfileForm, admin re-enrich) ─
@@ -171,12 +175,26 @@ export async function POST(req: Request) {
   // kind='agent' entity) get their agent entity; humans get their human entity.
   // The resolved entity is threaded into runEnrichment → publishProofReceipt
   // via the new subjectEntity option (Phase 1 Block 5R).
-  const kind = await resolveEntityKindForOwner(admin, targetUser.id)
+  const kind = await resolveEntityKindForOwner(admin, targetUser.id, hintScope)
   let entity: EntityRow
   try {
     if (kind === 'agent') {
       const result = await findOrCreateAgentEntity(admin, targetUser)
       entity = result.entity
+    } else if (kind === 'team') {
+      // Team-scoped key: resolve the team entity this user owns. Teams are not
+      // minted on this path — they're created via /api/join/team (Phase 4 §E).
+      const { data: teamRow } = await admin
+        .from('entities')
+        .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+        .eq('kind', 'team')
+        .eq('owner_user_id', targetUser.id)
+        .limit(1)
+        .maybeSingle()
+      if (!teamRow) {
+        return NextResponse.json({ error: 'No team entity for team-scoped key' }, { status: 500 })
+      }
+      entity = teamRow as EntityRow
     } else {
       // 'human' OR null (genuinely new account) — both go through human factory.
       const result = await findOrCreateHumanEntity(admin, targetUser)

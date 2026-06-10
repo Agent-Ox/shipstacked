@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+
+type TeamResult = { entity_id: number; slug: string; name: string; logo_url: string | null; tagline: string | null }
+type InitialTeam = { entity_id: number; slug: string; team_name: string; logo_url: string | null }
 
 const AVAILABILITY_OPTIONS = ['freelance', 'full-time', 'contract', 'part-time', 'open']
 const PROFESSIONS = ['Developer', 'Designer', 'Product Manager', 'Consultant', 'Marketer', 'Operator', 'Founder', 'Other']
@@ -93,10 +96,11 @@ const emptyProject = (): Project => ({
   title: '', description: '', prompt_approach: '', outcome: '', project_url: ''
 })
 
-export default function EditProfileForm({ profile, projects: initialProjects, skills }: {
+export default function EditProfileForm({ profile, projects: initialProjects, skills, initialTeam }: {
   profile: any
   projects: any[]
   skills: any[]
+  initialTeam?: InitialTeam | null
 }) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -185,6 +189,50 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
   const [linkedinUrl, setLinkedinUrl] = useState(profile.linkedin_url || '')
   const [websiteUrl, setWebsiteUrl] = useState(profile.website_url || '')
 
+  // Team / Agency / Studio link (Phase 4 §H.3). entity_id is the FK we persist;
+  // selectedTeam drives the display chip; query/results drive the autocomplete.
+  const [teamEntityId, setTeamEntityId] = useState<number | null>(profile.team_entity_id ?? null)
+  const [selectedTeam, setSelectedTeam] = useState<{ slug: string; name: string; logo_url: string | null } | null>(
+    initialTeam ? { slug: initialTeam.slug, name: initialTeam.team_name, logo_url: initialTeam.logo_url } : null,
+  )
+  const [teamQuery, setTeamQuery] = useState('')
+  const [teamResults, setTeamResults] = useState<TeamResult[]>([])
+  const [teamSearching, setTeamSearching] = useState(false)
+  const teamDebounce = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const onTeamQueryChange = (v: string) => {
+    setTeamQuery(v)
+    if (teamDebounce.current) clearTimeout(teamDebounce.current)
+    const query = v.trim()
+    if (query.length < 1) { setTeamResults([]); setTeamSearching(false); return }
+    setTeamSearching(true)
+    teamDebounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/teams/search?q=${encodeURIComponent(query)}`)
+        const data = await res.json()
+        setTeamResults(data.results || [])
+      } catch {
+        setTeamResults([])
+      } finally {
+        setTeamSearching(false)
+      }
+    }, 300)
+  }
+
+  const selectTeam = (t: TeamResult) => {
+    setSelectedTeam({ slug: t.slug, name: t.name, logo_url: t.logo_url })
+    setTeamEntityId(t.entity_id)
+    setTeamResults([])
+    setTeamQuery('')
+  }
+
+  const clearTeam = () => {
+    setSelectedTeam(null)
+    setTeamEntityId(null)
+    setTeamQuery('')
+    setTeamResults([])
+  }
+
   const [projectsList, setProjectsList] = useState<Project[]>(
     initialProjects.length > 0
       ? initialProjects.slice(0, MAX_PROJECTS).map(p => ({
@@ -237,6 +285,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           day_rate: dayRate,
           timezone,
           languages: spokenLanguages.length > 0 ? spokenLanguages : null,
+          team_entity_id: teamEntityId,
         })
         .eq('id', profile.id)
 
@@ -403,6 +452,44 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
               <Tag key={lang} label={lang} selected={spokenLanguages.includes(lang)} onClick={() => setSpokenLanguages(spokenLanguages.includes(lang) ? spokenLanguages.filter(l => l !== lang) : [...spokenLanguages, lang])} />
             ))}
           </div>
+        </div>
+
+        {/* Team / Agency / Studio link */}
+        <div style={{ marginBottom: '2rem' }}>
+          <label style={labelStyle}>Team / Agency / Studio you're with <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+          <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '-0.15rem', marginBottom: '0.5rem' }}>Link to your team's ShipStacked profile. Members link themselves — LinkedIn-style.</p>
+          {selectedTeam ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.875rem', border: '1px solid #d2d2d7', borderRadius: 10, background: '#f5f5f7' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white' }}>
+                {selectedTeam.logo_url ? <img src={selectedTeam.logo_url} alt={selectedTeam.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : selectedTeam.name.slice(0, 2).toUpperCase()}
+              </div>
+              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{selectedTeam.name}</span>
+              <button type="button" onClick={clearTeam} style={{ fontSize: 12, padding: '0.3rem 0.7rem', background: 'white', border: '1px solid #d2d2d7', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', color: '#6e6e73' }}>Clear</button>
+            </div>
+          ) : (
+            <div>
+              <input type="text" value={teamQuery} placeholder="Search your team's name…" onChange={e => onTeamQueryChange(e.target.value)} style={inputStyle} />
+              {teamQuery.trim().length >= 1 && (
+                <div style={{ border: '1px solid #e0e0e5', borderRadius: 10, marginTop: '0.4rem', overflow: 'hidden', background: 'white' }}>
+                  {teamResults.length > 0 ? teamResults.map(t => (
+                    <button key={t.entity_id} type="button" onClick={() => selectTeam(t)} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', width: '100%', textAlign: 'left', padding: '0.6rem 0.875rem', background: 'white', border: 'none', borderBottom: '0.5px solid #f0f0f5', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <div style={{ width: 28, height: 28, borderRadius: 6, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: 'white' }}>
+                        {t.logo_url ? <img src={t.logo_url} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : t.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>{t.name}</p>
+                        {t.tagline && <p style={{ fontSize: 12, color: '#6e6e73', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.tagline}</p>}
+                      </div>
+                    </button>
+                  )) : (
+                    <div style={{ padding: '0.75rem 0.875rem', fontSize: 13, color: '#6e6e73' }}>
+                      {teamSearching ? 'Searching…' : <>No teams found. Not on ShipStacked yet? <a href="/join" style={{ color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>Create team profile →</a></>}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* About */}

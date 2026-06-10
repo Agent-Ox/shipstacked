@@ -7,6 +7,7 @@ import ShareButtons from './ShareButtons'
 import { ProfileViewTracker, MessageButton } from './ProfileAnalytics'
 import { buildPersonJsonLd } from '@/lib/jsonld/person'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
+import { createClient } from '@supabase/supabase-js'
 
 export async function generateMetadata(
   { params }: { params: Promise<{ username: string }> }
@@ -34,6 +35,33 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const profile = await getPublishedProfile(supabase, username)
 
   if (!profile) notFound()
+
+  // Works-with team (Phase 4 §H.5) — only when linked AND the team is published.
+  // Service-role read (matches §F/§G) to avoid anon-grant ambiguity on the new
+  // team tables. Unpublished/missing → null → renders nothing + no worksFor.
+  let worksWithTeam: { slug: string; team_name: string; logo_url: string | null } | null = null
+  if (profile.team_entity_id) {
+    const teamAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const { data: teamEnt } = await teamAdmin
+      .from('entities')
+      .select('slug, display_name')
+      .eq('id', profile.team_entity_id)
+      .eq('kind', 'team')
+      .maybeSingle()
+    if (teamEnt) {
+      const { data: tp } = await teamAdmin
+        .from('team_profiles')
+        .select('team_name, logo_url, published')
+        .eq('entity_id', profile.team_entity_id)
+        .maybeSingle()
+      if (tp?.published) {
+        worksWithTeam = { slug: teamEnt.slug, team_name: tp.team_name || teamEnt.display_name, logo_url: tp.logo_url ?? null }
+      }
+    }
+  }
 
   const { data: projects } = await supabase
     .from('projects')
@@ -144,6 +172,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       commits_90d: githubData.commits_90d,
       top_languages: githubData.top_languages,
     } : null,
+    worksWithTeam?.slug ?? null,
   )
 
   return (
@@ -233,6 +262,22 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               </p>
             )}
           </div>
+
+          {/* Works with (Phase 4 §H.5) — linked team, published-gated */}
+          {worksWithTeam && (
+            <a href={`/team/${worksWithTeam.slug}`} className="fade-up" style={{ display: 'block', textDecoration: 'none', marginBottom: '1.5rem', animationDelay: '0.05s' }}>
+              <div className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, overflow: 'hidden', flexShrink: 0, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>
+                  {worksWithTeam.logo_url ? <img src={worksWithTeam.logo_url} alt={worksWithTeam.team_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : worksWithTeam.team_name.slice(0, 2).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.15rem' }}>Works with</p>
+                  <p style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{worksWithTeam.team_name}</p>
+                </div>
+                <span style={{ marginLeft: 'auto', color: 'var(--text3)', fontSize: 18 }}>→</span>
+              </div>
+            </a>
+          )}
 
           {/* Professional info */}
           {(profile.primary_profession || profile.seniority || profile.work_type || profile.day_rate || profile.timezone || (profile.languages && profile.languages.length > 0)) && (

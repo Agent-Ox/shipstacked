@@ -307,35 +307,41 @@ export async function findOrCreateAgentEntity(
 /**
  * Create a team entity for Card 2 (Team / Agency / Studio).
  *
- * Batch 4 / Card 2 (D7=b, kind='team' added to CHECK constraint).
- * Minimal field scope per D4=(a): team name + owner user. No profile link.
+ * Phase 4 §D.1 (Adjustment 1): idempotency is keyed on SLUG, not
+ * owner_user_id — a user may own multiple teams, each with a distinct slug.
+ * The caller passes an explicit, pre-validated slug (no auto-derivation here).
  *
- * One team entity per owner_user_id for now (member-linking is Batch 5+,
- * so a user can only "own" one team at signup). Slug derived from team name.
+ * Resolution:
+ *   - Same owner re-submitting an existing slug → idempotent return (was_created=false).
+ *   - Slug already taken (by this or another owner, racing inserts) → the
+ *     underlying 23505 unique-violation is re-thrown with `code='23505'`
+ *     intact so the route can map it to a 409 conflict.
+ *
+ * Caller is responsible for the corresponding team_profiles + team_admins rows.
  */
 export async function findOrCreateTeamEntity(
   admin: SupabaseClient,
   user: User,
   teamName: string,
+  slug: string,
 ): Promise<FindOrCreateResult> {
   const cleanName = teamName.trim();
   if (!cleanName) throw new Error('team name is required');
+  if (!slug) throw new Error('team slug is required');
 
-  // Existing team entity for this owner?
+  // Idempotent: this owner re-submitting the same slug returns the existing team.
   const { data: existing, error: existingErr } = await admin
     .from('entities')
     .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
-    .eq('owner_user_id', user.id)
     .eq('kind', 'team')
+    .eq('slug', slug)
+    .eq('owner_user_id', user.id)
     .limit(1)
     .maybeSingle();
   if (existingErr && existingErr.code !== 'PGRST116') {
     throw new Error(`team entity lookup failed: ${existingErr.message}`);
   }
   if (existing) return { entity: existing as EntityRow, was_created: false };
-
-  const slugBase = normalizeSlug(cleanName);
-  const slug = await generateUniqueSlug(admin, 'entities', slugBase || 'team');
 
   const row = {
     external_id: entityExternalId(),
@@ -352,15 +358,12 @@ export async function findOrCreateTeamEntity(
     .single();
 
   if (insertErr || !inserted) {
+    // 23505 = slug already taken (by this or another owner). Bubble up with the
+    // code intact so the route maps it to a 409 conflict (Phase 4 §D.1 / §E).
     if (insertErr?.code === '23505') {
-      const { data: raceWinner } = await admin
-        .from('entities')
-        .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
-        .eq('owner_user_id', user.id)
-        .eq('kind', 'team')
-        .limit(1)
-        .maybeSingle();
-      if (raceWinner) return { entity: raceWinner as EntityRow, was_created: false };
+      const conflict: Error & { code?: string } = new Error('team slug already taken');
+      conflict.code = '23505';
+      throw conflict;
     }
     throw new Error(`team entity insert failed: ${insertErr?.message ?? 'unknown'}`);
   }
@@ -418,21 +421,60 @@ export async function findOrCreateBuyerEntity(
 
 /**
  * Resolve the entity kind for a given owner_user_id by querying entities directly.
- * Used by /api/enrich to route receipt subject resolution through the right factory
- * (findOrCreateAgentEntity vs findOrCreateHumanEntity) when called via API-key auth.
+ * Used by /api/enrich to route receipt subject resolution through the right entity
+ * (agent / team / human) when called via API-key auth.
  *
- * Returns 'agent' if the user owns a kind='agent' entity (priority).
- * Returns 'human' if the user owns a kind='human' entity.
- * Returns null if neither exists (caller decides whether to mint).
+ * Phase 4 §D.2 (Adjustment 1): scope drives the kind, not the user's entity
+ * inventory. The API key's scope is passed as `hintScope`; a user who owns a
+ * human + a team entity resolves to 'team' only when a team:rw key was used.
+ *
+ *   - hintScope === 'team:rw'  → return 'team' if a team entity exists (else fall through)
+ *   - hintScope === 'agent:rw' → return 'agent' if an agent entity exists (else fall through)
+ *   - otherwise (no hint, builder:rw, buyer:rw) → prefer human → agent → team → null
  *
  * Note: this does NOT touch the profiles.entity_id ↔ entities.profile_id link contract,
- * which remains human-only per Spec §0. Agent entities continue to have no profile link.
+ * which remains human-only per Spec §0. Agent and team entities have no profile link.
  */
 export async function resolveEntityKindForOwner(
   admin: SupabaseClient,
   userId: string,
-): Promise<'agent' | 'human' | null> {
-  // Agent priority — if both exist, agent wins (it's the more specific identity).
+  hintScope?: 'builder:rw' | 'buyer:rw' | 'agent:rw' | 'team:rw',
+): Promise<'agent' | 'team' | 'human' | null> {
+  // Scope-driven short-circuits: the key's scope picks the identity when the
+  // user owns more than one kind.
+  if (hintScope === 'team:rw') {
+    const { data: teamRow } = await admin
+      .from('entities')
+      .select('id')
+      .eq('owner_user_id', userId)
+      .eq('kind', 'team')
+      .limit(1)
+      .maybeSingle()
+    if (teamRow) return 'team'
+    // fall through if the team-scoped key's owner has no team entity
+  }
+  if (hintScope === 'agent:rw') {
+    const { data: agentRow } = await admin
+      .from('entities')
+      .select('id')
+      .eq('owner_user_id', userId)
+      .eq('kind', 'agent')
+      .limit(1)
+      .maybeSingle()
+    if (agentRow) return 'agent'
+    // fall through
+  }
+
+  // Default resolution (no hint / builder:rw / buyer:rw): human → agent → team.
+  const { data: humanRow } = await admin
+    .from('entities')
+    .select('id')
+    .eq('owner_user_id', userId)
+    .eq('kind', 'human')
+    .limit(1)
+    .maybeSingle()
+  if (humanRow) return 'human'
+
   const { data: agentRow } = await admin
     .from('entities')
     .select('id')
@@ -442,14 +484,14 @@ export async function resolveEntityKindForOwner(
     .maybeSingle()
   if (agentRow) return 'agent'
 
-  const { data: humanRow } = await admin
+  const { data: teamRow } = await admin
     .from('entities')
     .select('id')
     .eq('owner_user_id', userId)
-    .eq('kind', 'human')
+    .eq('kind', 'team')
     .limit(1)
     .maybeSingle()
-  if (humanRow) return 'human'
+  if (teamRow) return 'team'
 
   return null
 }

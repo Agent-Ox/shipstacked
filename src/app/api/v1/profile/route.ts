@@ -42,6 +42,28 @@ export async function PATCH(req: Request) {
     if (body[field] !== undefined) updates[field] = body[field]
   }
 
+  // team_entity_id (Phase 4 §H.4) — dedicated validated branch, NOT a blind
+  // passthrough. Agents are programmatic, so the link target is checked: null
+  // un-links; a positive int must resolve to a kind='team' entity that has a
+  // published=true team_profiles row. (The browser EditProfileForm writes this
+  // field direct-to-Supabase and relies on the autocomplete + FK + render-side
+  // published gate instead — a deliberately lighter posture for that path.)
+  if (body.team_entity_id !== undefined) {
+    if (body.team_entity_id === null) {
+      updates.team_entity_id = null
+    } else {
+      const teamId = Number(body.team_entity_id)
+      if (!Number.isInteger(teamId) || teamId <= 0) {
+        return apiError(400, 'team_entity_id must be a positive integer or null')
+      }
+      const { data: teamEnt } = await db.from('entities').select('id').eq('id', teamId).eq('kind', 'team').maybeSingle()
+      if (!teamEnt) return apiError(400, 'team_entity_id does not reference a team')
+      const { data: tp } = await db.from('team_profiles').select('published').eq('entity_id', teamId).maybeSingle()
+      if (!tp || !tp.published) return apiError(400, 'team is not published')
+      updates.team_entity_id = teamId
+    }
+  }
+
   if (Object.keys(updates).length > 0) {
     const { error } = await db
       .from('profiles')

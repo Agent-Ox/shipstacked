@@ -15,6 +15,7 @@ import remarkGfm from 'remark-gfm'
 import type { Outcome, StackElement } from '@/schemas/proof-receipt-v0.1'
 import type { PasteDraft } from '@/lib/paste/draft'
 import type { AtlasRole } from '@/services/atlas-classifier/roles'
+import IdentityPicker, { type IdentityOption } from '@/app/components/IdentityPicker'
 import AtlasRoleSelector from './AtlasRoleSelector'
 import StackChipList from './StackChipList'
 import VerificationLadder from './VerificationLadder'
@@ -54,15 +55,24 @@ export default function ReviewForm({
   draftId,
   draft,
   atlasRoles,
+  ownedEntities = [],
 }: {
   draftId: string
   draft: PasteDraft
   atlasRoles: AtlasRole[]
+  ownedEntities?: IdentityOption[]
 }) {
   const inferredIds = draft.atlas.inferred
   const lowConfidence = draft.atlas.confidence < 0.2
 
   const router = useRouter()
+
+  // Identity picker (Phase 4 §J): default to the human entity, else first owned.
+  const defaultEntityId = useMemo(() => {
+    if (ownedEntities.length === 0) return 0
+    return (ownedEntities.find((e) => e.kind === 'human') ?? ownedEntities[0]).id
+  }, [ownedEntities])
+  const [subjectEntityId, setSubjectEntityId] = useState<number>(defaultEntityId)
   const [title, setTitle] = useState(draft.analyze.title_draft.slice(0, TITLE_MAX))
   const [description, setDescription] = useState(draft.analyze.description_draft.slice(0, DESCRIPTION_MAX))
   const [occurredAt, setOccurredAt] = useState(todayISODate())
@@ -119,6 +129,10 @@ export default function ReviewForm({
     const claimedRoles = confirmedRoles.filter((id) => !inferredIds.includes(id))
     const publishPayload = {
       draft_id: draftId,
+      // Only sent when the user actually has a choice (>1 owned entity); when
+      // omitted the server defaults to human-entity resolution — solo path
+      // unchanged (Phase 4 §J).
+      ...(ownedEntities.length > 1 ? { subject_entity_id: subjectEntityId } : {}),
       draft: {
         url: draft.url,
         source: draft.classify.source,
@@ -194,6 +208,9 @@ export default function ReviewForm({
             This didn’t classify cleanly — pick a role yourself below.
           </div>
         )}
+
+        {/* IDENTITY PICKER (Phase 4 §J) — hidden unless >1 owned entity */}
+        <IdentityPicker options={ownedEntities} value={subjectEntityId} onChange={setSubjectEntityId} />
 
         {/* TITLE */}
         <Section label="Title">

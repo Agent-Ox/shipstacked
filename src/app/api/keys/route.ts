@@ -99,7 +99,7 @@ export async function POST(req: Request) {
 
   // Phase 3: optional scope. Defaults to 'builder:rw' so the existing Card-3 /
   // AgentOnboarding flow (which sends no scope) is unchanged.
-  const ALLOWED_SCOPES = ['builder:rw', 'buyer:rw', 'agent:rw']
+  const ALLOWED_SCOPES = ['builder:rw', 'buyer:rw', 'agent:rw', 'team:rw']
   const scope = ALLOWED_SCOPES.includes(body.scope) ? body.scope : 'builder:rw'
 
   const { raw, hash, prefix } = generateKey()

@@ -22,7 +22,7 @@
  * Spec: BEACON_1_DISCOVERY.md §H4, §C
  */
 
-import { CANONICAL_HOST, SCHEMA_CONTEXT, personId } from './context.ts'
+import { CANONICAL_HOST, SCHEMA_CONTEXT, personId, teamOrgId } from './context.ts'
 
 export interface PersonProfileInput {
   username: string
@@ -78,6 +78,10 @@ export interface PersonJsonLd {
   url: string
   sameAs?: string[]
   knowsAbout?: string[]
+  worksFor?: {
+    '@type': 'Organization'
+    '@id': string
+  }
   address?: {
     '@type': 'PostalAddress'
     addressLocality: string
@@ -117,6 +121,7 @@ export function buildPersonJsonLd(
   skills: PersonSkillInput[],
   projects: PersonProjectInput[],
   github: PersonGithubInput | null,
+  worksForTeamSlug?: string | null,
 ): PersonJsonLd {
   const url = personId(profile.username)
 
@@ -172,6 +177,14 @@ export function buildPersonJsonLd(
   if (sameAs.length > 0) out.sameAs = sameAs
   if (knowsAbout.length > 0) out.knowsAbout = knowsAbout
   if (subjectOf.length > 0) out.subjectOf = subjectOf
+
+  // worksFor — Person → Organization reference (Phase 4 §H.5). Emitted only
+  // when the caller resolved a PUBLISHED linked team. The Organization node
+  // itself lives at /team/<slug> (team-org.ts owns it); here we emit only the
+  // @id reference (one-graph-per-URL, Invariant #5).
+  if (worksForTeamSlug) {
+    out.worksFor = { '@type': 'Organization', '@id': teamOrgId(worksForTeamSlug) }
+  }
 
   if (locality) {
     out.address = { '@type': 'PostalAddress', addressLocality: locality }

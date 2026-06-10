@@ -13,7 +13,7 @@ type View =
   | 'cards'           // 4-card router landing
   | 'auth'            // email + password step (when not logged in)
   | 'builder-0' | 'builder-1' | 'builder-2'
-  | 'team-form' | 'team-2'
+  | 'team-form'
   | 'buyer-form' | 'buyer-2'
 
 const inputStyle: React.CSSProperties = {
@@ -40,6 +40,20 @@ function Tag({ label, selected, onClick }: { label: string, selected: boolean, o
 
 function tog<T>(arr: T[], setArr: (v: T[]) => void, val: T) {
   setArr(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val])
+}
+
+// Team slug contract — mirrors the server-side SLUG_RE in /api/join/team (Phase 4 §E).
+const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/ // 3–40 chars, kebab-case
+
+// Auto-derive a kebab-case slug from a team name (Phase 4 §E.2 DECISION 1).
+function deriveTeamSlug(name: string): string {
+  const base = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+  return base.replace(/-+$/g, '')
 }
 
 export default function JoinPage() {
@@ -73,7 +87,8 @@ export default function JoinPage() {
   // Card 2 team fields
   const [teamName, setTeamName] = useState('')
   const [teamDescription, setTeamDescription] = useState('')
-  const [teamSlug, setTeamSlug] = useState('')
+  const [teamSlug, setTeamSlug] = useState('')          // URL slug (input; auto-derived from name until edited)
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
   // Card 4 buyer fields (none beyond email/password — minimal per D4 logic)
 
@@ -212,6 +227,10 @@ export default function JoinPage() {
   // ─── Card 2 team submit ─────────────────────────────────────────────
   const handleTeamSubmit = async () => {
     if (!teamName.trim()) { setError('Team name is required.'); return }
+    if (!SLUG_RE.test(teamSlug)) {
+      setError('Enter a valid URL slug (3–40 lowercase letters, numbers, hyphens; no leading/trailing hyphen).')
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -220,12 +239,12 @@ export default function JoinPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           team_name: teamName.trim(),
+          slug: teamSlug,
           description: teamDescription.trim() || null,
         }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Team signup failed')
-      setTeamSlug(data.slug || '')
       try {
         await fetch('/api/welcome', {
           method: 'POST',
@@ -233,10 +252,10 @@ export default function JoinPage() {
           body: JSON.stringify({ email, name: teamName.trim(), type: 'team' }),
         })
       } catch {}
-      setView('team-2')
+      // Phase 4 §E.2 DECISION 2: straight to the edit page to finish the profile.
+      window.location.href = data.edit_url || `/team/${data.slug}/edit`
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
-    } finally {
       setLoading(false)
     }
   }
@@ -312,7 +331,7 @@ export default function JoinPage() {
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>Team / Agency / Studio</p>
               <p style={{ fontSize: 14, color: '#3d3d3f', marginBottom: '0.4rem', lineHeight: 1.5 }}>"We deliver AI implementation for clients. We may also hire specialists."</p>
-              <p style={{ fontSize: 12, color: '#6e6e73' }}>Reserve your team name. Full profile editor and shipped-work display ship next.</p>
+              <p style={{ fontSize: 12, color: '#6e6e73' }}>Show what your team has shipped. Get found by the SMBs and Series-A's looking for AI implementation capability.</p>
             </div>
             <span style={{ fontSize: 20, color: '#6e6e73', flexShrink: 0 }}>→</span>
           </div>
@@ -487,14 +506,32 @@ export default function JoinPage() {
   )
 
   // ─── Card 2 Team form ───────────────────────────────────────────────
-  const renderTeamForm = () => (
+  const renderTeamForm = () => {
+    const slugInvalid = teamSlug.length > 0 && !SLUG_RE.test(teamSlug)
+    return (
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Your team</h1>
       <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>The basics. You can add members and build out the profile later.</p>
 
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Team / agency / studio name</label>
-        <input autoComplete="organization" type="text" placeholder="Acme AI Studio" value={teamName} onChange={e => setTeamName(e.target.value)} style={inputStyle} />
+        <input autoComplete="organization" type="text" placeholder="Acme AI Studio" value={teamName} onChange={e => {
+          const v = e.target.value
+          setTeamName(v)
+          if (!slugManuallyEdited) setTeamSlug(deriveTeamSlug(v))
+        }} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>URL slug</label>
+        <input autoComplete="off" type="text" placeholder="acme-ai-studio" value={teamSlug} onChange={e => {
+          setSlugManuallyEdited(true)
+          setTeamSlug(e.target.value.toLowerCase())
+        }} style={{ ...inputStyle, borderColor: slugInvalid ? '#d70015' : '#d2d2d7' }} />
+        <p style={{ fontSize: 12, color: slugInvalid ? '#d70015' : '#6e6e73', marginTop: '0.3rem' }}>
+          {slugInvalid
+            ? 'Use 3–40 lowercase letters, numbers, and hyphens (no leading or trailing hyphen).'
+            : `shipstacked.com/team/${teamSlug || '<slug>'} — auto-generated from team name; edit if you want a different one`}
+        </p>
       </div>
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Email</label>
@@ -507,22 +544,8 @@ export default function JoinPage() {
       </div>
       <p style={{ fontSize: 12, color: '#aeaeb2' }}>You can add team members and case studies from your dashboard after signup.</p>
     </div>
-  )
-
-  // ─── Card 2 Success ─────────────────────────────────────────────────
-  const renderTeam2 = () => (
-    <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-      <div style={{ width: 64, height: 64, background: '#f0f0ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', fontSize: 28 }}>👥</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>{teamName} is set up.</h1>
-      <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>Your team entity is created. Member linking and the full team profile come next.</p>
-      {teamSlug && (
-        <div style={{ background: '#f5f5f7', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#6e6e73', fontFamily: 'monospace' }}>
-          Team slug: {teamSlug}
-        </div>
-      )}
-      <a href="/dashboard" style={{ color: 'white', background: '#0071e3', padding: '0.65rem 1.25rem', borderRadius: 20, fontSize: 14, textDecoration: 'none', fontWeight: 500 }}>Go to dashboard →</a>
-    </div>
-  )
+    )
+  }
 
   // ─── Card 4 Buyer form ──────────────────────────────────────────────
   const renderBuyerForm = () => (
@@ -581,7 +604,7 @@ export default function JoinPage() {
       secondaryAction = () => setView('builder-0')
     } else if (view === 'team-form') {
       primaryLabel = loading ? 'Setting up...' : 'Create team →'
-      primaryDisabled = loading || !teamName.trim()
+      primaryDisabled = loading || !teamName.trim() || !SLUG_RE.test(teamSlug)
       primaryAction = handleTeamSubmit
     } else if (view === 'buyer-form') {
       primaryLabel = loading ? 'Setting up...' : 'Continue to talent →'
@@ -622,7 +645,6 @@ export default function JoinPage() {
           {view === 'builder-1' && renderBuilder1()}
           {view === 'builder-2' && renderBuilder2()}
           {view === 'team-form' && renderTeamForm()}
-          {view === 'team-2' && renderTeam2()}
           {view === 'buyer-form' && renderBuyerForm()}
           {view === 'buyer-2' && renderBuyer2()}
         </div>

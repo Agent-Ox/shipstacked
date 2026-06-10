@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 
-type Scope = 'builder:rw' | 'buyer:rw'
+type Scope = 'builder:rw' | 'buyer:rw' | 'team:rw'
 type Variant = 'solo_dashboard' | 'buyer_dashboard' | 'team_dashboard'
 
 type KeyRow = {
@@ -52,6 +52,24 @@ Your job:
 2. For each promising candidate, deep-fetch the profile + receipts. Evaluate fit.
 3. Build a shortlist via /saved-profiles.
 4. Draft outreach messages for review before sending.
+
+Machine-readable capability map: ${SITE}/.well-known/agent-card.json
+Auth surface: ${SITE}/auth.md`,
+
+  'team:rw': ({ username }) => `You are an AI agent managing the ShipStacked team profile ${username ?? '<team-slug>'}.
+
+Authoritative endpoints (Authorization: Bearer <api_key>):
+- GET ${SITE}/api/v1/team — fetch the team profile state
+- PATCH ${SITE}/api/v1/team — update team profile fields
+- POST ${SITE}/api/v1/builds — post a shipped build as the team (team-subject receipt)
+- GET ${SITE}/api/v1/builds — list recent team posts
+
+Your job:
+1. Keep the team profile current (tagline, description, services, location).
+2. Post the team's shipped client work as builds. Always include "outcome" and "url" so the build can be verified.
+3. Surface the team to buyers searching for AI implementation capability.
+
+Do not modify billing or remove members. Do not post elsewhere unless instructed.
 
 Machine-readable capability map: ${SITE}/.well-known/agent-card.json
 Auth surface: ${SITE}/auth.md`,
@@ -127,6 +145,8 @@ export default function ConnectAnAgent({ scope, variant, email, username }: Prop
   const systemPrompt = SYSTEM_PROMPT_BY_SCOPE[scope]({ email, username })
   const blurb = scope === 'builder:rw'
     ? 'manage your profile and post builds'
+    : scope === 'team:rw'
+    ? "manage your team profile and post the team's shipped work"
     : 'search talent, message builders, and post jobs'
 
   return (

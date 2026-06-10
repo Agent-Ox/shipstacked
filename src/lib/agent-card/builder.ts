@@ -135,6 +135,18 @@ export function buildAgentCard(): AgentCard {
       outputModes: ['text/html'],
     }),
     fetchSkill({
+      id: 'fetch-team-profile',
+      name: 'Fetch a public team / agency profile',
+      description:
+        'Fetch https://shipstacked.com/team/<slug> → returns text/html with embedded schema.org/Organization + shipstacked:Team JSON-LD. ' +
+        'Lists the team\'s services, linked members (Person @id refs into /u/<username>), and recent proof receipts. ' +
+        'Published teams only; unknown or unpublished slugs return 404 by design. ' +
+        'This is a plain HTTP GET; no A2A invocation.',
+      tags: ['schema.org', 'Organization', 'shipstacked:Team', 'team', 'agency', 'http-get'],
+      examples: [`GET ${CANONICAL_HOST}/team/<slug>`],
+      outputModes: ['text/html'],
+    }),
+    fetchSkill({
       id: 'fetch-atlas-role',
       name: 'Fetch an Atlas role definition by id',
       description:

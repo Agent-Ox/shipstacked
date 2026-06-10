@@ -20,6 +20,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { rateLimit } from '@/lib/rateLimit'
 import { PasteDraftSchema, publishProofReceipt } from '@/lib/paste/publish'
 import { getDraft } from '@/lib/paste/draft'
+import type { EntityRow } from '@/lib/entities'
 
 const RATE_WINDOW_SECONDS = 60
 const RATE_PER_IP = 20
@@ -89,6 +90,8 @@ export async function POST(req: Request) {
   const o = body as Record<string, unknown>
   const draftId = typeof o.draft_id === 'string' ? o.draft_id : undefined
   const inlineDraft = o.draft
+  // Phase 4 §J — optional explicit subject identity (the "Post as" picker).
+  const subjectEntityId = typeof o.subject_entity_id === 'number' ? o.subject_entity_id : undefined
 
   if (!draftId) {
     return NextResponse.json(
@@ -127,13 +130,41 @@ export async function POST(req: Request) {
     )
   }
 
+  // ── Subject entity (Phase 4 §J) — when the user picked a non-default
+  // identity, resolve it and ownership-check it (can't post as someone else's
+  // identity). Omitted → publishProofReceipt defaults to human resolution. ──
+  const admin = adminClient()
+  let subjectEntity: EntityRow | undefined
+  if (subjectEntityId !== undefined) {
+    if (!Number.isInteger(subjectEntityId) || subjectEntityId <= 0) {
+      return NextResponse.json(
+        { success: false, error: 'invalid_draft', message: 'subject_entity_id must be a positive integer.' },
+        { status: 400 },
+      )
+    }
+    const { data: ent } = await admin
+      .from('entities')
+      .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+      .eq('id', subjectEntityId)
+      .eq('owner_user_id', user.id)
+      .maybeSingle()
+    if (!ent) {
+      return NextResponse.json(
+        { success: false, error: 'invalid_draft', message: 'subject_entity_id must reference an entity owned by the current user.' },
+        { status: 400 },
+      )
+    }
+    subjectEntity = ent as EntityRow
+  }
+
   // ── Delegate ──────────────────────────────────────────────────────────
   const result = await publishProofReceipt({
-    admin: adminClient(),
+    admin,
     user,
     draft: parsed.data,
     draftId,
     requestId: req.headers.get('x-vercel-id') ?? req.headers.get('x-request-id') ?? undefined,
+    subjectEntity,
   })
 
   if (result.success) {

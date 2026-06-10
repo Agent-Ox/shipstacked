@@ -49,6 +49,25 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 - Path D after — Builder mode auto-badge on first verified receipt
 - Path B last — Entity graph (D2/D3)
 
+## Operator identity (known facts)
+
+- **Auth account (auth.users):** `oxleethomas@gmail.com` — uuid `d6b1c972-882c-4a6a-988b-4c9aeda8619e`. This is the login/session identity; entity ownership + team_admins rows key off this uuid.
+- **Git-commit identity (NOT the auth account):** `ox@agentagous.com` (Thomas Oxlee). Used for commit attribution only — there is no auth.users row with this email.
+- **No `profiles` row yet** — operator has not done Card 1 (builder) signup. Consequences: no `/u/<username>` page, cannot own a builder profile, several Phase 4 builder-side flows (worksFor, IdentityPicker) can't be dogfooded by the operator until they sign up. Open question post-Phase-4: should the operator dogfood Card 1.
+
+## In-flight phases
+
+## Phase 4 (completed, committed this session) — Team flow
+
+- §A–§M shipped. Plan: docs/audit/PHASE4_TEAM_FLOW.md (untracked; Phase 7 commits per pattern).
+- DDL applied to prod DB before session: team_profiles (16 cols), team_admins (5 cols), profiles.team_entity_id column.
+- **§M.2 seed-and-verify (headless, operator could not drive browser):** seeded a real team directly via service-role:
+  - entities id=39 (kind=team, slug=test-studio-phase4, owner=operator), team_profiles id=1 (published=true), team_admins id=1 (owner).
+  - proof_receipts id=88 (team-subject, atlas_inferred=[A4], v0.4, public, L1) — left as baseline data.
+  - Verified green: `/team/test-studio-phase4` 200 + Organization JSON-LD; `/talent?type=team` shows the team; `GET /api/v1/team/<slug>` 200 with payload; `/atlas/roles/A4` renders the kind-aware `/team/` subject link (Adjustment 3 proven on prod data).
+- **§G deferred verification CLOSED ✅** — api_keys.scope CHECK constraint empirically ALLOWS `team:rw` (real insert succeeded, no 23514, no ALTER TABLE needed). Tested via a transient key (deleted in-run).
+- §M.2 §4 (worksFor) NOT run — operator has no profiles row (see Operator identity below); deferred.
+
 ## Recovery artifacts (external, not in repo):
 
 - `/tmp/outreach_engine_recovery_2026-05-23.sql` (outreach engine schema, dropped 2026-05-23)
@@ -66,6 +85,38 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 - **Phase 1 (`11e9a31`) — agent enrichment smoke test (Block 5R §5R.5)** — NOT yet run on prod. With a real `sk_ss_` key, `POST /api/v1/builds`, wait ~30s, then confirm the receipt subject is an agent entity: `SELECT pr.id, pr.slug, pr.subject_id, e.kind, e.slug, pr.verification_level, pr.issued_at FROM proof_receipts pr JOIN entities e ON e.id = pr.subject_id WHERE pr.issued_at > NOW() - INTERVAL '5 minutes' ORDER BY pr.issued_at DESC LIMIT 5;` — expected `e.kind = 'agent'`. If `human`, Block 5R is wrong.
 
 - **Phase 1 (`11e9a31`) — full §I cold walkthrough on prod** — NOT yet run. Verify: homepage step-03 copy (no "Velocity Score"), dashboard "Proof of Work" card, Atlas role chips on `/u/<classified-builder>`, OG image role pills, `/atlas/roles/<id>` lists ≥1 practitioner, `/join` Card 2 + Card 3 copy, junk profiles 404, `verify-agent-card.ts --base https://shipstacked.com` green. Full list in `docs/audit/DISCOVERY_phase1_foundation.md` §M.
+
+## Phase 3 (`c191ad1`) — deferred verifications
+
+Agent-native foundation shipped + prod-verified (discovery endpoints 200, `verify-agent-card` green against prod). These four need a real session / agent / email inbox and were NOT run automatically. Plan: `docs/audit/PHASE3_AGENT_NATIVE_R1.md`.
+
+1. **auth.md OTP end-to-end with a real agent:** `POST /api/agent/auth/claim` → check inbox for the 6-digit code → `POST /api/agent/auth/claim/complete` → confirm a scoped `sk_ss_` key is returned → `GET /api/v1/me/scope` returns `buyer:rw` or `builder:rw` matching the requested scope.
+
+2. **Buyer-key smoke test on prod (after #1):**
+   - `GET /api/v1/talent/search` → ranked builders returned
+   - `GET /api/v1/builders/<username>` → deep-fetch works
+   - `POST /api/v1/messages` with `{ to_username, body }` → 200; message lands in the builder's inbox + email notification fires
+   - `POST /api/v1/jobs` with `{ role_title, ... }` → 200; job appears at `/jobs`
+   - `POST /api/v1/saved-profiles` with `{ builder_username, action: 'save' }` → 200; shows in `GET`
+
+3. **Builder-key 403 enforcement:**
+   - `POST /api/v1/jobs` with a `builder:rw` key → 403 "Insufficient scope"
+   - `POST /api/v1/messages` with a `builder:rw` key → 403
+
+4. **ConnectAnAgent UI walkthrough:**
+   - `/dashboard` (logged in as builder): "Connect an Agent" card with the `builder:rw` system prompt, auth.md path, manual key-gen path, list/revoke of existing keys.
+   - `/hirer` (logged in as buyer with active sub): "Connect an Agent" card with the `buyer:rw` system prompt.
+
+## Phase 4 — deferred verifications
+
+Shipped + headless-verified (seed-and-verify §M.2: team page, /talent?type=team, /api/v1/team, atlas kind-aware link, team:rw CHECK constraint all green on prod data). These remaining flows need a real browser session / a profile and were NOT run automatically:
+
+1. **Card 2 team signup form end-to-end** (browser-paired) — `/join` Card 2 → fill form → POST `/api/join/team` → redirect to `/team/<slug>/edit`; confirm entity + team_profiles (published=false) + team_admins rows.
+2. **EditProfileForm team autocomplete + initial-team hydration display** (browser-paired) — type team name, `/api/teams/search` fires, select, save; confirm hydrated team chip on reload.
+3. **IdentityPicker on `/paste/review`** when the user owns >1 entity (browser-paired) — **blocked until operator has a profile** (needs a human + team entity owned by same user to surface the picker).
+4. **ConnectAnAgent `team:rw` key-gen UI** on `/team/<slug>/edit` (browser-paired) — generate a team:rw key through the card (DB-level constraint already proven; this verifies the UI path).
+5. **worksFor "Works with" card + JSON-LD on `/u/<username>`** (browser-paired) — **blocked until operator has a profile.** §M.2 §4 was deferred specifically because the operator has no profiles row. Open question post-Phase-4: should the operator dogfood Card 1 signup so this can be verified on their own profile.
+6. **`/team/[slug]/edit` member-remove action** (browser-paired) — link a member, then remove; confirm `profiles.team_entity_id` set back to NULL and member drops from the People list.
 
 ## Deploy-time + manual verification checklist (do once, after current session ships)
 
