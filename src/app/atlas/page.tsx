@@ -28,11 +28,13 @@ export const metadata: Metadata = {
     url: CANONICAL,
     authors: ['Thomas Oxlee'],
     publishedTime: PUBLISHED,
+    images: [{ url: '/og?v=2', width: 1200, height: 630, alt: 'ShipStacked' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
     description: DESCRIPTION,
+    images: ['/og?v=2'],
   },
 }
 
