@@ -8,6 +8,11 @@ import type { EntityModes } from '@/lib/user'
 type NavUser = {
   email: string
   modes: EntityModes
+  // Phase 8 §F Block 2 — identity affordances (additive; modes stays the 4
+  // canonical booleans). v1 surfaces the FIRST team admined / agent owned.
+  profileUsername: string | null
+  teamSlug: string | null
+  agentSlug: string | null
 }
 
 const EMPTY_MODES: EntityModes = { builder: false, hirer: false, client: false, admin: false }
@@ -28,6 +33,9 @@ export default function NavBar() {
   const mobileBorder = isDark ? 'rgba(255,255,255,0.08)' : '#f0f0f0'
 
   const modes = navUser?.modes ?? EMPTY_MODES
+  const profileUsername = navUser?.profileUsername ?? null
+  const teamSlug = navUser?.teamSlug ?? null
+  const agentSlug = navUser?.agentSlug ?? null
   // Dashboard link priority: client > hirer > builder (mirrors routeAfterAuth)
   const dashboardLink = modes.client ? '/client/inbox' : modes.hirer ? '/hirer' : '/dashboard'
   const isAdmin = modes.admin
@@ -162,9 +170,15 @@ export default function NavBar() {
       const metaRole = user.user_metadata?.role
 
       const now = new Date().toISOString()
-      const [{ data: sub }, { data: profile }] = await Promise.all([
+      // Phase 8 §F Block 2: 4 parallel queries (added team_admins + agent
+      // entities). Browser client + user session; RLS-gated. entities has a
+      // public-read policy; team_admins self-read depends on its RLS — a blocked
+      // read degrades gracefully (no team link), it never errors the nav.
+      const [{ data: sub }, { data: profile }, { data: teamAdmin }, { data: agentEntity }] = await Promise.all([
         supabase.from('subscriptions').select('id').eq('email', email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
-        supabase.from('profiles').select('id').eq('email', email).maybeSingle(),
+        supabase.from('profiles').select('id, username').eq('email', email).maybeSingle(),
+        supabase.from('team_admins').select('team:entities!team_admins_team_entity_id_fkey(slug)').eq('user_id', user.id).limit(1).maybeSingle(),
+        supabase.from('entities').select('slug').eq('kind', 'agent').eq('owner_user_id', user.id).limit(1).maybeSingle(),
       ])
 
       if (cancelled) return
@@ -174,7 +188,15 @@ export default function NavBar() {
         client: metaRole === 'client',
         admin: metaRole === 'admin',
       }
-      setNavUser({ email, modes })
+      const teamRel = (teamAdmin as any)?.team
+      const teamSlug = (Array.isArray(teamRel) ? teamRel[0]?.slug : teamRel?.slug) ?? null
+      setNavUser({
+        email,
+        modes,
+        profileUsername: (profile as any)?.username ?? null,
+        teamSlug,
+        agentSlug: (agentEntity as any)?.slug ?? null,
+      })
       setLoading(false)
       // Aggregated unread count across all active messaging modes
       fetch('/api/messages/unread').then(r => r.json()).then(({ unread }) => setUnreadCount(unread || 0)).catch(() => {})
@@ -182,7 +204,28 @@ export default function NavBar() {
     return () => { cancelled = true }
   }, [])
 
-  const menuLinks = getMenuLinks()
+  // Phase 8 §F Block 2 — identity affordances, appended to the role-based menu
+  // for any authenticated user. Additive: a builder + team admin + agent owner
+  // sees their dashboard links AND their team AND their agent. Edit links surface
+  // only when viewing the team/agent page they own.
+  const getIdentityLinks = (): { label: string; href: string }[] => {
+    if (!navUser) return []
+    const links: { label: string; href: string }[] = []
+    if (profileUsername && pathname !== `/u/${profileUsername}`) {
+      links.push({ label: 'Your profile', href: `/u/${profileUsername}` })
+    }
+    if (teamSlug) {
+      links.push({ label: 'Your team', href: `/team/${teamSlug}` })
+      if (pathname === `/team/${teamSlug}`) links.push({ label: 'Edit team', href: `/team/${teamSlug}/edit` })
+    }
+    if (agentSlug) {
+      links.push({ label: 'Your agent', href: `/agent/${agentSlug}` })
+      if (pathname === `/agent/${agentSlug}`) links.push({ label: 'Edit agent', href: `/agent/${agentSlug}/edit` })
+    }
+    return links
+  }
+
+  const menuLinks = [...getMenuLinks(), ...getIdentityLinks()]
 
   // Resolve messages href: hirer-mode users get ?as=hirer; builders get plain /messages.
   // Client-only users get /client/inbox (handled in the early return below).
