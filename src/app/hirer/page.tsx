@@ -16,6 +16,10 @@ export default async function HirerDashboardPage() {
     .eq('status', 'active')
     .eq('product', 'full_access')
     .or(`expires_at.is.null,expires_at.gt.${now}`)
+    // Align with getEntityModes (src/lib/user.ts:42): even if a lifecycle event
+    // was missed and status is still 'active', access expires at the paid-through
+    // period end. Keeps the /hirer dashboard gate consistent with the platform gate.
+    .or(`current_period_end.is.null,current_period_end.gt.${now}`)
     .maybeSingle()
 
   if (!sub) {
