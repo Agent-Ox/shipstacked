@@ -61,7 +61,9 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 
 ## In-flight phases
 
-## Site Audit (in-flight, pre-launch) — PAUSED at §E.7
+## Site Audit CLOSED 2026-06-16
+
+**Site Audit CLOSED 2026-06-16.** All 8 blocks (§A-§H + §I synthesis + §J fixes + §Z cleanup) complete. Findings consolidated in §I. 2 BLOCKERs CLOSED in-flight (§B.4 credits, §E.3 OTP). 3 §J MINORs shipped this session (e228677, 470de64, 6d36407). §Z verified — baseline counts restored exactly. Pre-launch BLOCKER queued: Phase 8.5 real-Stripe verification. Cross-cutting operator decisions pending: contact-gating positioning + §B silent-enrich-failure triage (both deferred to Phase 9 — Agency Positioning).
 
 End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLAN.md` (485 lines, locked decisions intact). **No code shipped in the audit** — findings are observation-only + accumulated test data (all tagged `audit-2026-06-16-*`). Paused at the §E BLOCKER (context boundary), §E.7 fix designed but NOT applied.
 
@@ -112,14 +114,9 @@ End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLA
 - posts: 2 (builder) · proof_receipts: #90 · enrichment_runs: #6 (failed-credit), #7 (ok) · agent_registrations: #1 (stuck pending), #2 (v2, completed), #3 (v3, completed)
 
 **Resume order (next session):**
-1. ✅ DONE — §E.7 fix applied + shipped (`e2e360b`).
-2. ✅ DONE — §E.3–§E.5 re-verified green with fresh users (v2 local, v3 prod). Orphan `f66d3639` left stuck-pending for §Z.
-3. ✅ DONE — §F via approach (a) DB-simulation (sk_live blocker → no Stripe calls). **Real-Stripe verification queued as Phase 8.5** (architect to draft). §F findings all clean.
-4. ✅ DONE — §G Buyer-only Card 4 fresh signup (DB-simulation). Clean; 1 MINOR + 1 NOTE queued (see §G results).
-5. ✅ DONE — §H cross-cutting checks (read-only). Clean; 2 MINOR (atlas og:image, title-dup) + 2 NOTE (contact asymmetry, practitioners empty copy) queued.
-6. ✅ DONE — §I findings consolidation (see "## §I — Findings consolidation" below). Zero open BLOCKER; 1 open SERIOUS (§B silent-enrich) + contact-gating asymmetry need operator decisions; 3 surgical §J MINORs recommended.
-7. **← NEXT: §J** — in-session fixes (architect decides scope; recommended: /hirer sub-check, /atlas og:image, title-dup). Awaiting review.
-8. §Z — bulk-delete all `audit-2026-06-16-*` via paste-back DDL; verify counts match the §A baseline.
+1-8. ✅ DONE — Audit closed.
+9. **← NEXT: Phase 8.5** — Real-Stripe lifecycle verification (~60-90 min operator-driven, spec in RESUME_HERE).
+10. **← OR: Phase 9** — Agency Positioning (homepage/pricing/how-it-works reframe + agency-targeted outreach list + outreach copy). Operator-driven; architect-Claude as structured-thinking partner not market-truth source.
 
 ## §I — Findings consolidation (Site Audit §B–§H synthesis)
 
