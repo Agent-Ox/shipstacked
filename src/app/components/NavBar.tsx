@@ -163,8 +163,12 @@ export default function NavBar() {
   useEffect(() => {
     const supabase = createClient()
     let cancelled = false
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session) { setLoading(false); return }
+
+    // Phase 8 §F Block 3: auth detection extracted so it runs on mount AND on
+    // realtime auth changes (sign-in / sign-out / token refresh) — nav updates
+    // without a page navigation.
+    const loadAuthState = async (session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']) => {
+      if (!session) { if (!cancelled) { setNavUser(null); setLoading(false) } return }
       const user = session.user
       const email = user.email || ''
       const metaRole = user.user_metadata?.role
@@ -172,8 +176,7 @@ export default function NavBar() {
       const now = new Date().toISOString()
       // Phase 8 §F Block 2: 4 parallel queries (added team_admins + agent
       // entities). Browser client + user session; RLS-gated. entities has a
-      // public-read policy; team_admins self-read depends on its RLS — a blocked
-      // read degrades gracefully (no team link), it never errors the nav.
+      // public-read policy; team_admins self-read added in §F.B2.7 — both render.
       const [{ data: sub }, { data: profile }, { data: teamAdmin }, { data: agentEntity }] = await Promise.all([
         supabase.from('subscriptions').select('id').eq('email', email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
         supabase.from('profiles').select('id, username').eq('email', email).maybeSingle(),
@@ -200,9 +203,26 @@ export default function NavBar() {
       setLoading(false)
       // Aggregated unread count across all active messaging modes
       fetch('/api/messages/unread').then(r => r.json()).then(({ unread }) => setUnreadCount(unread || 0)).catch(() => {})
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => loadAuthState(session))
+
+    // Realtime: keep nav in sync with auth without requiring a navigation.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') { if (!cancelled) { setNavUser(null); setLoading(false) } return }
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') loadAuthState(session)
     })
-    return () => { cancelled = true }
+
+    return () => { cancelled = true; subscription.unsubscribe() }
   }, [])
+
+  // Phase 8 §F Block 3: close the hamburger menu on Escape (scoped to open).
+  useEffect(() => {
+    if (!menuOpen) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [menuOpen])
 
   // Phase 8 §F Block 2 — identity affordances, appended to the role-based menu
   // for any authenticated user. Additive: a builder + team admin + agent owner
@@ -259,6 +279,18 @@ export default function NavBar() {
         </button>
       </nav>
 
+      {/* Phase 8 §F Block 3: click-outside-to-close backdrop. Transparent (not a
+          dimming scrim — keeps the minimal aesthetic); z-index 98 sits below the
+          menu (99) so menu items still receive clicks, and below the nav (100)
+          so the hamburger stays clickable to toggle closed. */}
+      {menuOpen && (
+        <div
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+          style={{ position: 'fixed', inset: 0, background: 'transparent', zIndex: 98 }}
+        />
+      )}
+
       {menuOpen && (
         <div style={{
           position: 'fixed', top: 52, right: 0, zIndex: 99,
@@ -271,12 +303,17 @@ export default function NavBar() {
           minWidth: 220,
           boxShadow: '-4px 4px 24px rgba(0,0,0,0.08)',
         }}>
-          {menuLinks.map(link => (
-            <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)}
-              style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
-              {link.label}
-            </a>
-          ))}
+          {menuLinks.map(link => {
+            // Phase 8 §F Block 3: active-page indicator (exact pathname match).
+            const isActive = link.href === pathname
+            return (
+              <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)}
+                aria-current={isActive ? 'page' : undefined}
+                style={{ fontSize: 15, color: isActive ? accentColor : textColor, fontWeight: isActive ? 600 : 400, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
+                {link.label}
+              </a>
+            )
+          })}
 
           {/* Client-only nav links */}
           {modes.client && !modes.builder && !modes.hirer && (
