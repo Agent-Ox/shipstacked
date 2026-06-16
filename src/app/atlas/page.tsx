@@ -11,7 +11,7 @@ import GithubSlugger from 'github-slugger'
 import { createClient } from '@supabase/supabase-js'
 import { buildAtlasArticleJsonLd, buildAtlasDefinedTermSetJsonLd } from '@/lib/jsonld/atlas-article'
 
-const TITLE = 'The Atlas — AI implementation roles, mapped | ShipStacked'
+const TITLE = 'The Atlas — AI implementation roles, mapped'
 const DESCRIPTION =
   "A practitioner's map of the roles, operators, and teams doing real AI implementation work. By Thomas Oxlee."
 const CANONICAL = 'https://shipstacked.com/atlas'

@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: 'Builder API | ShipStacked',
+  title: 'Builder API',
   description: 'ShipStacked has a real API. Let your agent keep your profile updated, post your builds, and maintain your proof-of-work record — automatically.',
   alternates: { canonical: 'https://shipstacked.com/api-docs' },
 }
