@@ -14,7 +14,17 @@ type View =
   | 'auth'            // email + password step (when not logged in)
   | 'builder-0' | 'builder-1' | 'builder-2'
   | 'team-form'
+  | 'agent-form'
   | 'buyer-form' | 'buyer-2'
+
+const PROVIDERS: { value: string; label: string }[] = [
+  { value: 'claude', label: 'Claude (Anthropic)' },
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'cursor', label: 'Cursor' },
+  { value: 'gemini', label: 'Gemini (Google)' },
+  { value: 'custom', label: 'Custom' },
+  { value: 'other', label: 'Other' },
+]
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '0.75rem 1rem', border: '1px solid #d2d2d7',
@@ -90,6 +100,16 @@ export default function JoinPage() {
   const [teamSlug, setTeamSlug] = useState('')          // URL slug (input; auto-derived from name until edited)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
 
+  // Card 3 agent fields (Phase 5 §E.2)
+  const [agentName, setAgentName] = useState('')
+  const [agentSlug, setAgentSlug] = useState('')        // URL slug (auto-derived from name until edited)
+  const [agentSlugManuallyEdited, setAgentSlugManuallyEdited] = useState(false)
+  const [agentProvider, setAgentProvider] = useState('claude')
+  const [agentModel, setAgentModel] = useState('')
+  const [agentDescription, setAgentDescription] = useState('')
+  const [agentCapabilities, setAgentCapabilities] = useState('') // textarea, one per line
+  const [agentFocus, setAgentFocus] = useState('')
+
   // Card 4 buyer fields (none beyond email/password — minimal per D4 logic)
 
   // Initial check: existing session + existing profile?
@@ -110,16 +130,11 @@ export default function JoinPage() {
   const onCardClick = (c: Card) => {
     setError('')
     setCard(c)
-    if (c === 'agent') {
-      // Card 3 — route to existing AgentOnboarding (handles auth + key gen)
-      if (isLoggedIn) window.location.href = '/dashboard?agent=1'
-      else setView('auth')
-      return
-    }
     if (!isLoggedIn) { setView('auth'); return }
     // Already logged in — go straight to card subflow
     if (c === 'builder') setView('builder-0')
     else if (c === 'team') setView('team-form')
+    else if (c === 'agent') setView('agent-form')
     else if (c === 'buyer') setView('buyer-form')
   }
 
@@ -141,9 +156,9 @@ export default function JoinPage() {
       }
       setIsLoggedIn(true)
       // Route to card subflow
-      if (card === 'agent') { window.location.href = '/dashboard?agent=1'; return }
       if (card === 'builder') setView('builder-0')
       else if (card === 'team') setView('team-form')
+      else if (card === 'agent') setView('agent-form')
       else if (card === 'buyer') setView('buyer-form')
     } catch (err: any) {
       setError(err.message || 'Sign-up failed')
@@ -254,6 +269,48 @@ export default function JoinPage() {
       } catch {}
       // Phase 4 §E.2 DECISION 2: straight to the edit page to finish the profile.
       window.location.href = data.edit_url || `/team/${data.slug}/edit`
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong')
+      setLoading(false)
+    }
+  }
+
+  // ─── Card 3 agent submit ────────────────────────────────────────────
+  const handleAgentSubmit = async () => {
+    if (!agentName.trim()) { setError('Agent name is required.'); return }
+    if (!SLUG_RE.test(agentSlug)) {
+      setError('Enter a valid URL slug (3–40 lowercase letters, numbers, hyphens; no leading/trailing hyphen).')
+      return
+    }
+    if (!agentProvider) { setError('Provider is required.'); return }
+    setLoading(true)
+    setError('')
+    try {
+      const capabilities = agentCapabilities.split('\n').map(s => s.trim()).filter(Boolean)
+      const res = await fetch('/api/join/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_name: agentName.trim(),
+          slug: agentSlug,
+          provider: agentProvider,
+          model: agentModel.trim() || null,
+          description: agentDescription.trim() || null,
+          capabilities,
+          focus: agentFocus.trim() || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Agent signup failed')
+      try {
+        await fetch('/api/welcome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name: agentName.trim(), type: 'agent' }),
+        })
+      } catch {}
+      // Straight to the edit page to finish + publish the profile (mirrors Card 2).
+      window.location.href = data.edit_url || `/agent/${data.slug}/edit`
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
       setLoading(false)
@@ -547,6 +604,61 @@ export default function JoinPage() {
     )
   }
 
+  // ─── Card 3 Agent form ──────────────────────────────────────────────
+  const renderAgentForm = () => {
+    const slugInvalid = agentSlug.length > 0 && !SLUG_RE.test(agentSlug)
+    return (
+    <div>
+      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Register your agent</h1>
+      <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15 }}>The basics. You can refine capabilities, set a principal, and publish from the edit page next.</p>
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Agent name</label>
+        <input autoComplete="off" type="text" placeholder="Atlas Researcher" value={agentName} onChange={e => {
+          const v = e.target.value
+          setAgentName(v)
+          if (!agentSlugManuallyEdited) setAgentSlug(deriveTeamSlug(v))
+        }} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>URL slug</label>
+        <input autoComplete="off" type="text" placeholder="atlas-researcher" value={agentSlug} onChange={e => {
+          setAgentSlugManuallyEdited(true)
+          setAgentSlug(e.target.value.toLowerCase())
+        }} style={{ ...inputStyle, borderColor: slugInvalid ? '#d70015' : '#d2d2d7' }} />
+        <p style={{ fontSize: 12, color: slugInvalid ? '#d70015' : '#6e6e73', marginTop: '0.3rem' }}>
+          {slugInvalid
+            ? 'Use 3–40 lowercase letters, numbers, and hyphens (no leading or trailing hyphen).'
+            : `shipstacked.com/agent/${agentSlug || '<slug>'} — auto-generated from agent name; edit if you want a different one`}
+        </p>
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Provider</label>
+        <select value={agentProvider} onChange={e => setAgentProvider(e.target.value)} style={inputStyle}>
+          {PROVIDERS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Model <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+        <input autoComplete="off" type="text" placeholder="claude-opus-4-8" value={agentModel} onChange={e => setAgentModel(e.target.value)} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>One-line focus <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+        <input autoComplete="off" type="text" placeholder="Atlas role classification + receipt drafting" value={agentFocus} onChange={e => setAgentFocus(e.target.value)} style={inputStyle} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Capabilities <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional — one per line)</span></label>
+        <textarea placeholder={'research\nwriting\ncode-review'} value={agentCapabilities} onChange={e => setAgentCapabilities(e.target.value)} rows={4} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Description <span style={{ fontWeight: 400, color: '#6e6e73' }}>(optional)</span></label>
+        <textarea placeholder="What this agent does, who it acts for, and how it ships work." value={agentDescription} onChange={e => setAgentDescription(e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }} />
+      </div>
+      <p style={{ fontSize: 12, color: '#aeaeb2' }}>By default your agent acts on behalf of your own profile. You can re-point it to a team you admin from the edit page.</p>
+    </div>
+    )
+  }
+
   // ─── Card 4 Buyer form ──────────────────────────────────────────────
   const renderBuyerForm = () => (
     <div>
@@ -606,6 +718,10 @@ export default function JoinPage() {
       primaryLabel = loading ? 'Setting up...' : 'Create team →'
       primaryDisabled = loading || !teamName.trim() || !SLUG_RE.test(teamSlug)
       primaryAction = handleTeamSubmit
+    } else if (view === 'agent-form') {
+      primaryLabel = loading ? 'Setting up...' : 'Register agent →'
+      primaryDisabled = loading || !agentName.trim() || !SLUG_RE.test(agentSlug) || !agentProvider
+      primaryAction = handleAgentSubmit
     } else if (view === 'buyer-form') {
       primaryLabel = loading ? 'Setting up...' : 'Continue to talent →'
       primaryDisabled = loading
@@ -645,6 +761,7 @@ export default function JoinPage() {
           {view === 'builder-1' && renderBuilder1()}
           {view === 'builder-2' && renderBuilder2()}
           {view === 'team-form' && renderTeamForm()}
+          {view === 'agent-form' && renderAgentForm()}
           {view === 'buyer-form' && renderBuyerForm()}
           {view === 'buyer-2' && renderBuyer2()}
         </div>

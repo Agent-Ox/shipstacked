@@ -57,6 +57,19 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 
 ## In-flight phases
 
+## Phase 5 (completed, committed this session) — Autonomous Agent flow
+
+- §C–§K shipped clean. Plan: docs/audit/PHASE5_AGENT_FLOW.md (untracked; Phase 7 commits per pattern).
+- DDL applied to prod DB before commit: agent_profiles (16 cols). Canonical migration: supabase/migrations/20260616111547_agent_profiles.sql.
+- Agents are a first-class surface: /join Card 3 → /api/join/agent; /agent/<slug> public profile with custom **shipstacked:Agent** JSON-LD (locked Q1 — fourth pillar, no schema.org parent); /agent/<slug>/edit (owner-only, principal repoint dropdown); /api/v1/agent (GET+PATCH, agent:rw + cookie+owner); /api/v1/agent/<slug> (public fetch); /talent?type=agent (getRankedAgents Formula E + cyan <AgentCard> + provider/capabilities/verified filters); fetch-agent-profile AgentCard skill (verify-agent-card 6d).
+- **§J folded into §G** via type-dependency: ConnectAnAgent's `Record<Scope,…>` system-prompt map forced the agent:rw entry the moment AgentEditClient referenced `scope="agent:rw"`. So agent:rw scope + agent_dashboard variant + prompt + blurb all shipped in §G.
+- **§D factory change:** findOrCreateAgentEntity is now 4-arg (admin, user, agentName, slug), slug-keyed (multi-agent-per-owner for Card 3). New `findOrCreateAgentEntityLazy(admin, user)` wrapper preserves one-agent-per-email for the /api/enrich + /api/keys lazy-mint paths (owner-keyed precheck + deterministic `<email-local>-agent` slug + hex-retry on cross-owner collision). `resolveAgentPrincipal` added (owner-default-or-team-repoint; returns null gracefully when owner has no human entity).
+- **§L seed-and-verify caught a real bug:** get-ranked-agents.ts embed `entity:entities(slug)` was ambiguous — agent_profiles has TWO FKs to entities (entity_id + principal_entity_id) → PostgREST **PGRST201** → silently-empty agents array → empty /talent?type=agent. Fixed with explicit FK hint `entity:entities!agent_profiles_entity_id_fkey(slug)`. Would have shipped a silently-empty directory without the headless catch.
+- **AgentOnboarding.tsx DELETED this commit** (advanced from Phase 7): it was a misleadingly-labeled builder-key generator with no real agent functionality. /dashboard now redirects `!profile` → /join; the vestigial `?agent=1` param is ignored (profiled users get the normal dashboard).
+- **§M.2 seed-and-verify (headless):** seeded the platform's first published agent via service-role:
+  - entities id=40 (kind=agent, slug=test-agent-phase5, owner=operator), agent_profiles id=1 (provider=claude, model=claude-opus-4-7, published=true, principal_entity_id=NULL), proof_receipts id=89 (agent-subject, atlas_inferred=[A4], v0.4, public, L1) — left as baseline data.
+  - Verified green (14/14): `/agent/test-agent-phase5` 200 + shipstacked:Agent JSON-LD + "Acts on its own behalf" (NULL-principal graceful degrade); `/talent?type=agent` shows the agent; `GET /api/v1/agent/<slug>` 200 (provider=claude, capabilities[2], principal:null, recent_receipts:1); `/atlas/roles/A4` renders the kind-aware `/agent/` subject link (§F.5 proven on prod data). Transient builder:rw key generated + deleted in-run.
+
 ## Phase 4 (completed, committed this session) — Team flow
 
 - §A–§M shipped. Plan: docs/audit/PHASE4_TEAM_FLOW.md (untracked; Phase 7 commits per pattern).
@@ -117,6 +130,17 @@ Shipped + headless-verified (seed-and-verify §M.2: team page, /talent?type=team
 4. **ConnectAnAgent `team:rw` key-gen UI** on `/team/<slug>/edit` (browser-paired) — generate a team:rw key through the card (DB-level constraint already proven; this verifies the UI path).
 5. **worksFor "Works with" card + JSON-LD on `/u/<username>`** (browser-paired) — **blocked until operator has a profile.** §M.2 §4 was deferred specifically because the operator has no profiles row. Open question post-Phase-4: should the operator dogfood Card 1 signup so this can be verified on their own profile.
 6. **`/team/[slug]/edit` member-remove action** (browser-paired) — link a member, then remove; confirm `profiles.team_entity_id` set back to NULL and member drops from the People list.
+
+## Phase 5 — deferred verifications
+
+Shipped + headless-verified (§M.2 seed-and-verify: agent page, /talent?type=agent, /api/v1/agent/<slug>, atlas kind-aware link, NULL-principal graceful degrade all green on prod data — entity #40, agent_profiles #1, proof_receipt #89). These remaining flows need a real browser session and were NOT run automatically:
+
+1. **Card 3 agent signup form end-to-end** (browser-paired) — `/join` Card 3 → fill form → POST `/api/join/agent` → redirect to `/agent/<slug>/edit`; confirm entity (kind=agent) + agent_profiles (published=false, principal_entity_id=NULL) rows.
+2. **Agent edit page** (browser-paired) — profile editor save + publish toggle + **principal repoint dropdown** (the operator admins Test Studio Phase4 / entity #39, so that team should appear as a repoint option — confirm selecting it sets agent_profiles.principal_entity_id, and the /agent page then shows "Acts on behalf of <team>" → /team/<slug>).
+3. **ConnectAnAgent `agent:rw` key-gen UI** on `/agent/<slug>/edit` (browser-paired) — generate an agent:rw key through the card (DB-level scope already proven via §L transient key; this verifies the UI path).
+4. **`/talent?type=agent` filter UX** (browser-paired) — provider / capabilities / verified chip filters (basic render verified in §L; full interactive UX deferred).
+5. **Agent profile contact CTA** (browser-paired) — set contact_email + contact_url in edit, confirm the mailto + external-link buttons render on /agent/<slug>.
+6. **`/dashboard?agent=1` → `/join` redirect** (browser-paired) — AgentOnboarding-deletion side effect: a logged-in user with no profile hitting `/dashboard?agent=1` should land on `/join` (not 500, not a blank onboarding shim).
 
 ## Deploy-time + manual verification checklist (do once, after current session ships)
 

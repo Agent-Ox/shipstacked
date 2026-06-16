@@ -242,20 +242,133 @@ export async function deleteEntity(admin: SupabaseClient, id: number): Promise<v
 }
 
 /**
- * Resolve the agent entity for this user, creating it if missing.
+ * Create an agent entity for Card 3 (Autonomous Agent).
  *
- * Batch 4 / Card 3 (D8=a). Unlike `findOrCreateHumanEntity`, agents:
- *   - have no V1 profile contract (no verbatim-username-as-slug rule)
- *   - may co-exist with a human entity owned by the same user (an agent is
- *     a distinct entity even if the operator behind it has a human profile)
+ * Phase 5 §D.1: like `findOrCreateTeamEntity` (Phase 4 §D.1), idempotency is
+ * keyed on SLUG, not owner_user_id — a user may own multiple agents, each with
+ * a distinct slug (registered via /api/join/agent, §E). The caller passes an
+ * explicit, pre-validated slug; there is no auto-derivation here.
  *
- * Slug is derived from user_metadata.full_name or email prefix.
+ * Resolution:
+ *   - Same owner re-submitting an existing slug → idempotent return (was_created=false).
+ *   - Slug already taken (by this or another owner, racing inserts) → the
+ *     underlying 23505 unique-violation is re-thrown with `code='23505'` intact
+ *     so the route can map it to a 409 conflict.
+ *
+ * Caller is responsible for the corresponding agent_profiles row.
+ *
+ * The lazy enrich/keys path (no Card-3 signup, one-agent-per-email) goes through
+ * `findOrCreateAgentEntityLazy` below, NOT this function directly.
  */
 export async function findOrCreateAgentEntity(
   admin: SupabaseClient,
   user: User,
+  agentName: string,
+  slug: string,
 ): Promise<FindOrCreateResult> {
-  // Existing agent entity for this owner?
+  const cleanName = agentName.trim();
+  if (!cleanName) throw new Error('agent name is required');
+  if (!slug) throw new Error('agent slug is required');
+
+  // Idempotent: this owner re-submitting the same slug returns the existing agent.
+  const { data: existing, error: existingErr } = await admin
+    .from('entities')
+    .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+    .eq('kind', 'agent')
+    .eq('slug', slug)
+    .eq('owner_user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  if (existingErr && existingErr.code !== 'PGRST116') {
+    throw new Error(`agent entity lookup failed: ${existingErr.message}`);
+  }
+  if (existing) return { entity: existing as EntityRow, was_created: false };
+
+  const row = {
+    external_id: entityExternalId(),
+    kind: 'agent' as const,
+    display_name: cleanName,
+    slug,
+    owner_user_id: user.id,
+  };
+
+  const { data: inserted, error: insertErr } = await admin
+    .from('entities')
+    .insert(row)
+    .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+    .single();
+
+  if (insertErr || !inserted) {
+    // 23505 = slug already taken (by this or another owner). Bubble up with the
+    // code intact so the route maps it to a 409 conflict (mirrors team factory).
+    if (insertErr?.code === '23505') {
+      const conflict: Error & { code?: string } = new Error('agent slug already taken');
+      conflict.code = '23505';
+      throw conflict;
+    }
+    throw new Error(`agent entity insert failed: ${insertErr?.message ?? 'unknown'}`);
+  }
+
+  return { entity: inserted as EntityRow, was_created: true };
+}
+
+/** Agent slug rule (Phase 5 §D.3 / Adjustment 3): 3–40 chars, [a-z0-9-], no
+ *  leading/trailing hyphen. Stricter than the generic entities slug. */
+const AGENT_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
+
+/** lowercase, strip non-alphanumeric except hyphens, collapse + trim hyphens,
+ *  cap at 40 chars (then re-trim a trailing hyphen left by the slice). */
+function sanitizeAgentSlug(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+}
+
+/** Display name for a lazily-minted agent (no Card-3 signup). Adjustment 3:
+ *  user_metadata.full_name, else "<email-local-part> agent", else "Agent". */
+function deriveAgentDisplayName(user: User): string {
+  const meta = user.user_metadata as Record<string, unknown> | null | undefined;
+  const fullName = typeof meta?.full_name === 'string' ? meta.full_name.trim() : '';
+  if (fullName) return fullName;
+  const prefix = (user.email?.split('@')[0] ?? '').trim();
+  return prefix ? `${prefix} agent` : 'Agent';
+}
+
+/** Deterministic lazy slug (Adjustment 3): <email-local-part>-agent, sanitized.
+ *  If the local part contributes < 3 usable chars, fall back to a stable
+ *  owner-keyed slug `agent-<first 8 of user.id>`. */
+function deriveAgentLazySlug(user: User): string {
+  const local = sanitizeAgentSlug(user.email?.split('@')[0] ?? '');
+  if (local.length >= 3) {
+    const base = sanitizeAgentSlug(`${local}-agent`);
+    if (AGENT_SLUG_RE.test(base)) return base;
+  }
+  const idPart = user.id.replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 8);
+  return `agent-${idPart}`;
+}
+
+/**
+ * Lazy agent-entity resolution for the non-signup paths (/api/enrich receipt
+ * attribution, /api/keys agent-mode key gen). Phase 5 §D.3 / Adjustment 3.
+ *
+ * Preserves the legacy "one agent per email/owner" guarantee: an owner-keyed
+ * pre-check returns any existing agent regardless of its slug, so repeat lazy
+ * mints never create duplicates (the slug-keyed primary alone would, since the
+ * derived slug can diverge from a previously hex-suffixed row). Multi-agent
+ * per owner is reserved for explicit Card-3 signups via the primary factory.
+ *
+ * Slug is derived deterministically from the email; on a cross-owner slug
+ * collision (23505) it retries ONCE with a 4-char hex suffix.
+ */
+export async function findOrCreateAgentEntityLazy(
+  admin: SupabaseClient,
+  user: User,
+): Promise<FindOrCreateResult> {
+  // One agent per owner on the lazy path — return any existing one by owner.
   const { data: existing, error: existingErr } = await admin
     .from('entities')
     .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
@@ -268,40 +381,19 @@ export async function findOrCreateAgentEntity(
   }
   if (existing) return { entity: existing as EntityRow, was_created: false };
 
-  const displayName = deriveDisplayName(user);
-  const slugBase = deriveSlugBase(user, displayName);
-  const slug = await generateUniqueSlug(admin, 'entities', slugBase);
-
-  const row = {
-    external_id: entityExternalId(),
-    kind: 'agent' as const,
-    display_name: displayName,
-    slug,
-    owner_user_id: user.id,
-  };
-
-  const { data: inserted, error: insertErr } = await admin
-    .from('entities')
-    .insert(row)
-    .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
-    .single();
-
-  if (insertErr || !inserted) {
-    if (insertErr?.code === '23505') {
-      // Race — another agent insert for the same owner just landed.
-      const { data: raceWinner } = await admin
-        .from('entities')
-        .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
-        .eq('owner_user_id', user.id)
-        .eq('kind', 'agent')
-        .limit(1)
-        .maybeSingle();
-      if (raceWinner) return { entity: raceWinner as EntityRow, was_created: false };
+  const displayName = deriveAgentDisplayName(user);
+  const slug = deriveAgentLazySlug(user);
+  try {
+    return await findOrCreateAgentEntity(admin, user, displayName, slug);
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === '23505') {
+      // Cross-owner slug collision — retry once with a short random suffix.
+      const hex = Math.random().toString(16).slice(2, 6);
+      const retrySlug = sanitizeAgentSlug(`${slug}-${hex}`);
+      return await findOrCreateAgentEntity(admin, user, displayName, retrySlug);
     }
-    throw new Error(`agent entity insert failed: ${insertErr?.message ?? 'unknown'}`);
+    throw err;
   }
-
-  return { entity: inserted as EntityRow, was_created: true };
 }
 
 /**
@@ -494,4 +586,52 @@ export async function resolveEntityKindForOwner(
   if (teamRow) return 'team'
 
   return null
+}
+
+/**
+ * Resolve the principal an agent acts on behalf of (Phase 5 §D.2).
+ *
+ * The principal is stored on agent_profiles.principal_entity_id:
+ *   - NOT NULL → that entity (a team the owner admins, or any human/team).
+ *   - NULL     → default to the agent owner's human entity.
+ *
+ * Returns null gracefully when:
+ *   - no agent_profiles row exists for this agent entity, OR
+ *   - an explicit principal points at a missing / non-human-non-team entity, OR
+ *   - the default path applies but the owner has no human entity (the
+ *     operator-owned seed-and-verify agent hits this — §L).
+ *
+ * Used by /agent/[slug], agent-org.ts JSON-LD, and /api/v1/agent[/slug].
+ */
+export async function resolveAgentPrincipal(
+  admin: SupabaseClient,
+  agentEntityId: number,
+): Promise<{ kind: 'human' | 'team'; entity_id: number; slug: string; display_name: string } | null> {
+  const { data: profile, error: profileErr } = await admin
+    .from('agent_profiles')
+    .select('principal_entity_id')
+    .eq('entity_id', agentEntityId)
+    .maybeSingle();
+  if (profileErr && profileErr.code !== 'PGRST116') {
+    throw new Error(`agent_profiles lookup failed: ${profileErr.message}`);
+  }
+  if (!profile) return null;
+
+  // Explicit principal → resolve it (must be human or team).
+  if (profile.principal_entity_id != null) {
+    const ent = await fetchEntityById(admin, profile.principal_entity_id);
+    if (ent && (ent.kind === 'human' || ent.kind === 'team')) {
+      return { kind: ent.kind, entity_id: ent.id, slug: ent.slug, display_name: ent.display_name };
+    }
+    return null; // dangling or wrong-kind principal — degrade gracefully
+  }
+
+  // Default → the agent owner's human entity.
+  const agentEnt = await fetchEntityById(admin, agentEntityId);
+  if (!agentEnt) return null;
+  const human = await fetchEntityByOwner(admin, agentEnt.owner_user_id); // kind='human'
+  if (human) {
+    return { kind: 'human', entity_id: human.id, slug: human.slug, display_name: human.display_name };
+  }
+  return null;
 }

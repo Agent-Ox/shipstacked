@@ -206,7 +206,11 @@ export default async function AtlasRolePage({
                   <div style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.15rem' }}>
                     by{' '}
                     <Link
-                      href={r.subject_kind === 'team' ? `/team/${r.subject_slug}` : `/u/${r.subject_slug}`}
+                      href={
+                        r.subject_kind === 'team' ? `/team/${r.subject_slug}` :
+                        r.subject_kind === 'agent' ? `/agent/${r.subject_slug}` :
+                        `/u/${r.subject_slug}`
+                      }
                       style={{ color: '#0071e3', textDecoration: 'none' }}
                     >
                       {r.subject_name}

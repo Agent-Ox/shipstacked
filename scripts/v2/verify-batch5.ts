@@ -621,8 +621,10 @@ async function main(): Promise<void> {
     agentUser = data!.user!
   }
   // Agent kind entity (no minimal profile creation here — /api/keys does that;
-  // findOrCreateAgentEntity alone tests the dormant kind value)
-  const { entity: agentEntity } = await findOrCreateAgentEntity(admin, agentUser)
+  // findOrCreateAgentEntity alone tests the dormant kind value).
+  // Phase 5 §D.1: now slug-keyed 4-arg. Idempotent against the existing
+  // test-batch5-agent entity owned by this same AGENT_EMAIL user.
+  const { entity: agentEntity } = await findOrCreateAgentEntity(admin, agentUser, 'test-batch5-agent', 'test-batch5-agent')
   console.log(`    agent auth: ${agentUser.id.slice(0, 8)}…`)
   console.log(`    agent entity: id=${agentEntity.id} kind=${agentEntity.kind} slug=${agentEntity.slug}`)
   const { count: agentRuns } = await admin

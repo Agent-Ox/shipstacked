@@ -1,22 +1,14 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import BuilderDashboardClient from './BuilderDashboardClient'
-import AgentOnboarding from './AgentOnboarding'
 import { listActiveCollections } from '@/lib/collections/collections'
 import { listMembershipsForProfile } from '@/lib/collections/consent'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ agent?: string }>
-}) {
+export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
-
-  const params = await searchParams
-  const agentMode = params.agent === '1'
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -24,10 +16,12 @@ export default async function DashboardPage({
     .eq('email', user.email)
     .maybeSingle()
 
-  // Agent mode: show onboarding screen regardless of profile state
-  // No profile + not agent mode: redirect to join
-  if (agentMode || !profile) {
-    return <AgentOnboarding />
+  // No profile yet → send to /join. The agent entry point is now Card 3
+  // (/join → /api/join/agent); the interim /dashboard?agent=1 AgentOnboarding
+  // shim was deleted in Phase 5 §M (a profiled user hitting ?agent=1 just gets
+  // the normal dashboard — the param is ignored).
+  if (!profile) {
+    redirect('/join')
   }
 
   // Normal dashboard

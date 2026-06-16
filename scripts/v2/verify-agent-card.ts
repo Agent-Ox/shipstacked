@@ -209,6 +209,11 @@ async function main(): Promise<void> {
       expect: 404,
       reason: 'unknown slug — proves team route family + published gate (Phase 4)',
     },
+    [`${base}/agent/<slug>`]: {
+      url: `${base}/agent/__beacon2_audit__`,
+      expect: 404,
+      reason: 'unknown slug — proves agent route family + published gate (Phase 5)',
+    },
     [`${base}/p/<slug>`]: {
       url: `${base}/p/__beacon2_audit__`,
       expect: 404,
@@ -407,6 +412,17 @@ async function main(): Promise<void> {
     pass(`fetch-team-profile skill present: ${teamSkill.name}`)
   } else {
     fail('skills[] missing fetch-team-profile (Phase 4 requirement)')
+  }
+
+  // ─── 6d. fetch-agent-profile skill (Phase 5 §K) — REQUIRED from Phase 5 ─
+  // Same self-healing pattern as 6b/6c: FAILS against prod until §M deploys
+  // the new skill, then flips green on deploy.
+  console.log('\n6d. fetch-agent-profile skill (Phase 5)')
+  const agentSkill = card.skills.find((s) => s.id === 'fetch-agent-profile')
+  if (agentSkill) {
+    pass(`fetch-agent-profile skill present: ${agentSkill.name}`)
+  } else {
+    fail('skills[] missing fetch-agent-profile (Phase 5 requirement)')
   }
 
   // ─── 7. Summary ────────────────────────────────────────────────────

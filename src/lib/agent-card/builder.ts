@@ -147,6 +147,18 @@ export function buildAgentCard(): AgentCard {
       outputModes: ['text/html'],
     }),
     fetchSkill({
+      id: 'fetch-agent-profile',
+      name: 'Fetch a public AI agent profile',
+      description:
+        'Fetch https://shipstacked.com/agent/<slug> → returns text/html with embedded shipstacked:Agent JSON-LD. ' +
+        'Lists the agent\'s provider, model, capabilities, focus, principal, and recent proof receipts. ' +
+        'Published agents only; unknown or unpublished slugs return 404 by design. ' +
+        'This is a plain HTTP GET; no A2A invocation.',
+      tags: ['shipstacked:Agent', 'agent', 'http-get'],
+      examples: [`GET ${CANONICAL_HOST}/agent/<slug>`],
+      outputModes: ['text/html'],
+    }),
+    fetchSkill({
       id: 'fetch-atlas-role',
       name: 'Fetch an Atlas role definition by id',
       description:

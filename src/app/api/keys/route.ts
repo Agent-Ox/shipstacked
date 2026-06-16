@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
 import { createHash, randomBytes } from 'crypto'
-import { findOrCreateAgentEntity } from '@/lib/entities'
+import { findOrCreateAgentEntityLazy } from '@/lib/entities'
 
 const admin = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     // Fire-and-forget — entity creation failure should not block key
     // generation (we can backfill later if needed).
     try {
-      await findOrCreateAgentEntity(db, user)
+      await findOrCreateAgentEntityLazy(db, user)
     } catch (e) {
       console.error('[keys] agent entity creation failed (non-blocking):', e)
     }
@@ -97,8 +97,8 @@ export async function POST(req: Request) {
 
   const name = body.name?.trim() || 'My agent'
 
-  // Phase 3: optional scope. Defaults to 'builder:rw' so the existing Card-3 /
-  // AgentOnboarding flow (which sends no scope) is unchanged.
+  // Phase 3: optional scope. Defaults to 'builder:rw' so any caller that sends
+  // no scope (e.g. a builder generating a key from the dashboard) is unchanged.
   const ALLOWED_SCOPES = ['builder:rw', 'buyer:rw', 'agent:rw', 'team:rw']
   const scope = ALLOWED_SCOPES.includes(body.scope) ? body.scope : 'builder:rw'
 

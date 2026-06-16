@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation'
 import posthog from 'posthog-js'
 import { CLUSTER_LABELS, SHIPPED_LABEL, bucketsForEvents } from '@/lib/ranking/facets'
 import type { RankedTeam } from '@/lib/ranking/get-ranked-teams'
+import type { RankedAgent } from '@/lib/ranking/get-ranked-agents'
 import { SaveButton } from './SaveButton'
+
+const PROVIDER_LABELS: Record<string, string> = {
+  claude: 'Claude', openai: 'OpenAI', cursor: 'Cursor', gemini: 'Gemini', custom: 'Custom', other: 'Other',
+}
 
 const PROFESSIONS = ['Developer', 'Designer', 'Product Manager', 'Consultant', 'Marketer', 'Operator', 'Founder', 'Other']
 const AVAILABILITIES = ['freelance', 'full-time', 'contract', 'part-time', 'open']
@@ -301,6 +306,52 @@ function TeamCard({ team }: { team: RankedTeam }) {
   )
 }
 
+function AgentCard({ agent }: { agent: RankedAgent }) {
+  const initials = agent.agent_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const caps = agent.capabilities || []
+  const providerLabel = PROVIDER_LABELS[agent.provider] ?? agent.provider
+  return (
+    <a href={`/agent/${agent.slug}`} className={agent.verified ? 'talent-card talent-card-verified' : 'talent-card'}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+        <div style={{ width: 48, height: 48, borderRadius: 12, flexShrink: 0, overflow: 'hidden', background: agent.logo_url ? 'transparent' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'white' }}>
+          {agent.logo_url ? <img src={agent.logo_url} alt={agent.agent_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{agent.agent_name}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#cffafe', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>🤖 {providerLabel}</span>
+            {agent.verified && <span style={{ fontSize: 10, fontWeight: 700, color: '#0071e3', background: '#e8f1fd', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>✓ Verified</span>}
+          </div>
+          {agent.focus && (
+            <div style={{ fontSize: 13, color: '#6e6e73', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agent.focus}</div>
+          )}
+        </div>
+        {agent.l1_receipt_count > 0 && (
+          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#1a7f37', lineHeight: 1 }}>{agent.l1_receipt_count}</div>
+            <div style={{ fontSize: 9, color: '#aeaeb2', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>shipped</div>
+          </div>
+        )}
+      </div>
+      {agent.description && (
+        <p style={{ fontSize: 13, color: '#3d3d3f', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', margin: 0, width: '100%' }}>
+          {agent.description}
+        </p>
+      )}
+      {caps.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, width: '100%' }}>
+          {caps.slice(0, 3).map((c) => <span key={c} style={{ fontSize: 11, padding: '0.2rem 0.55rem', background: '#cffafe', borderRadius: 980, color: '#0891b2', fontWeight: 500 }}>{c}</span>)}
+          {caps.length > 3 && <span style={{ fontSize: 11, padding: '0.2rem 0.55rem', background: '#f0f0f5', borderRadius: 980, color: '#6e6e73', fontWeight: 500 }}>+{caps.length - 3} more</span>}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.25rem', width: '100%' }}>
+        <span style={{ fontSize: 11, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>🤖 {providerLabel}</span>
+        <span style={{ fontSize: 12, color: '#0891b2', fontWeight: 500 }}>View agent →</span>
+      </div>
+    </a>
+  )
+}
+
 export default function TalentClient({
   type = 'builder',
   profiles = [], savedIds: initialSavedIds = [], isPaidHirer = false, isTeaser = false,
@@ -308,6 +359,7 @@ export default function TalentClient({
   filters = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '' },
   clusterFacets = [], shippedFacets = [],
   teams = [],
+  agents = [],
 }: {
   type?: 'builder' | 'team' | 'agent'
   profiles?: any[]
@@ -323,6 +375,7 @@ export default function TalentClient({
   clusterFacets?: FacetOpt[]
   shippedFacets?: FacetOpt[]
   teams?: RankedTeam[]
+  agents?: RankedAgent[]
 }) {
   const router = useRouter()
   useEffect(() => {
@@ -389,10 +442,10 @@ export default function TalentClient({
   )
 
   // ── Type facet (Phase 4 §I.4) — swaps the server data source via URL. ──
-  function goToType(t: 'builder' | 'team') {
+  function goToType(t: 'builder' | 'team' | 'agent') {
     startTransition(() => { router.push(t === 'builder' ? '/talent' : `/talent?type=${t}`) })
   }
-  const typeTab = (t: 'builder' | 'team', label: string) => (
+  const typeTab = (t: 'builder' | 'team' | 'agent', label: string) => (
     <button onClick={() => goToType(t)} style={{
       padding: '0.6rem 1rem', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
       fontSize: 15, fontWeight: type === t ? 700 : 500, color: type === t ? '#1d1d1f' : '#6e6e73',
@@ -413,6 +466,21 @@ export default function TalentClient({
   })
   const teamFiltersActive = teamServices.length > 0 || !!teamLocation || teamVerified
   const clearTeamFilters = () => { setTeamServices([]); setTeamLocation(''); setTeamVerified(false) }
+
+  // ── Agent filters (Phase 5 §I.3) — client-side, the agent set is small. ──
+  const [agentProviders, setAgentProviders] = useState<string[]>([])
+  const [agentCaps, setAgentCaps] = useState<string[]>([])
+  const [agentVerified, setAgentVerified] = useState(false)
+  const agentProviderOptions = Array.from(new Set(agents.map(a => a.provider).filter(Boolean))).sort()
+  const agentCapOptions = Array.from(new Set(agents.flatMap(a => a.capabilities || []))).sort()
+  const filteredAgents = agents.filter(a => {
+    if (agentVerified && !a.verified) return false
+    if (agentProviders.length > 0 && !agentProviders.includes(a.provider)) return false
+    if (agentCaps.length > 0 && !agentCaps.some(c => (a.capabilities || []).includes(c))) return false
+    return true
+  })
+  const agentFiltersActive = agentProviders.length > 0 || agentCaps.length > 0 || agentVerified
+  const clearAgentFilters = () => { setAgentProviders([]); setAgentCaps([]); setAgentVerified(false) }
 
   return (
     <>
@@ -441,10 +509,7 @@ export default function TalentClient({
       <div style={{ display: 'flex', gap: '0.25rem', marginBottom: '1.75rem', borderBottom: '1px solid #e0e0e5' }}>
         {typeTab('builder', 'Builders')}
         {typeTab('team', 'Teams')}
-        <button disabled title="Coming in Phase 5" style={{
-          padding: '0.6rem 1rem', border: 'none', background: 'none', cursor: 'not-allowed', fontFamily: 'inherit',
-          fontSize: 15, fontWeight: 500, color: '#c7c7cc', borderBottom: '2px solid transparent', marginBottom: -1,
-        }}>Agents (soon)</button>
+        {typeTab('agent', 'Agents')}
       </div>
 
       {type === 'builder' && (
@@ -677,12 +742,63 @@ export default function TalentClient({
       )}
 
       {type === 'agent' && (
-        <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '3rem', textAlign: 'center', marginTop: '1rem' }}>
-          <p style={{ fontSize: 28, marginBottom: '0.75rem' }}>🤖</p>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>Agent directory ships in Phase 5</p>
-          <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '1.25rem' }}>Until then, agents act via the API.</p>
-          <a href="/api-docs" style={{ display: 'inline-block', padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>API docs →</a>
-        </div>
+        <>
+          {/* Header */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Talent</p>
+            <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.4rem' }}>AI agents</h1>
+            <p style={{ fontSize: 15, color: '#6e6e73' }}>
+              {filteredAgents.length} agent{filteredAgents.length !== 1 ? 's' : ''}{agentFiltersActive ? ` matching · ${agents.length} total` : ''}
+            </p>
+          </div>
+
+          {/* Agent filters (client-side) */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            {agentProviderOptions.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#aeaeb2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Provider</span>
+                {agentProviderOptions.map(p => (
+                  <FilterChip key={p} label={PROVIDER_LABELS[p] ?? p} active={agentProviders.includes(p)} onClick={() => setAgentProviders(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p])} />
+                ))}
+              </div>
+            )}
+            {agentCapOptions.length > 0 && (
+              <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: 11, color: '#aeaeb2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Capabilities</span>
+                {agentCapOptions.map(c => (
+                  <FilterChip key={c} label={c} active={agentCaps.includes(c)} onClick={() => setAgentCaps(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])} />
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <FilterChip label="✓ Verified only" active={agentVerified} onClick={() => setAgentVerified(v => !v)} />
+              {agentFiltersActive && (
+                <button onClick={clearAgentFilters} style={{ fontSize: 12, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Clear all filters</button>
+              )}
+            </div>
+          </div>
+
+          {filteredAgents.length === 0 ? (
+            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '3rem', textAlign: 'center' }}>
+              <p style={{ fontSize: 28, marginBottom: '0.75rem' }}>🤖</p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.4rem' }}>{agents.length === 0 ? 'No registered agents yet' : 'No agents match these filters'}</p>
+              <p style={{ fontSize: 14, color: '#6e6e73', marginBottom: '1.25rem' }}>{agents.length === 0 ? 'Be the first — register an agent.' : 'Try removing a filter.'}</p>
+              {agentFiltersActive
+                ? <button onClick={clearAgentFilters} style={{ padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Clear filters</button>
+                : <a href="/join" style={{ display: 'inline-block', padding: '0.6rem 1.25rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none' }}>Register an agent →</a>}
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Ranked by proof of work</span>
+                <div style={{ flex: 1, height: '0.5px', background: '#e0e0e5' }} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1rem' }}>
+                {filteredAgents.map(a => <AgentCard key={a.id} agent={a} />)}
+              </div>
+            </>
+          )}
+        </>
       )}
     </>
   )

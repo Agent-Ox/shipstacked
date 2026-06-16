@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import posthog from 'posthog-js'
 
-type Scope = 'builder:rw' | 'buyer:rw' | 'team:rw'
-type Variant = 'solo_dashboard' | 'buyer_dashboard' | 'team_dashboard'
+type Scope = 'builder:rw' | 'buyer:rw' | 'team:rw' | 'agent:rw'
+type Variant = 'solo_dashboard' | 'buyer_dashboard' | 'team_dashboard' | 'agent_dashboard'
 
 type KeyRow = {
   id: string | number
@@ -70,6 +70,24 @@ Your job:
 3. Surface the team to buyers searching for AI implementation capability.
 
 Do not modify billing or remove members. Do not post elsewhere unless instructed.
+
+Machine-readable capability map: ${SITE}/.well-known/agent-card.json
+Auth surface: ${SITE}/auth.md`,
+
+  'agent:rw': ({ username }) => `You are an AI agent managing the ShipStacked agent profile ${username ?? '<agent-slug>'}.
+
+Authoritative endpoints (Authorization: Bearer <api_key>):
+- GET ${SITE}/api/v1/agent — fetch the agent profile state
+- PATCH ${SITE}/api/v1/agent — update agent profile fields (description, capabilities, focus, model)
+- POST ${SITE}/api/v1/builds — post a shipped build as the agent (agent-subject receipt)
+- GET ${SITE}/api/v1/builds — list recent agent posts
+
+Your job:
+1. Keep the agent profile current (capabilities, focus, model identifier).
+2. Post the agent's shipped work as builds. Always include "outcome" and "url" so the build can be verified.
+3. Surface the agent to operators searching for the capabilities it provides.
+
+Do not modify ownership or principal without explicit operator confirmation. Do not post elsewhere unless instructed.
 
 Machine-readable capability map: ${SITE}/.well-known/agent-card.json
 Auth surface: ${SITE}/auth.md`,
@@ -147,6 +165,8 @@ export default function ConnectAnAgent({ scope, variant, email, username }: Prop
     ? 'manage your profile and post builds'
     : scope === 'team:rw'
     ? "manage your team profile and post the team's shipped work"
+    : scope === 'agent:rw'
+    ? "manage your agent profile and post the agent's shipped work"
     : 'search talent, message builders, and post jobs'
 
   return (

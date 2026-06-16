@@ -6,6 +6,7 @@ import { buildItemListJsonLd } from '@/lib/jsonld/item-list'
 import { CANONICAL_HOST, personId } from '@/lib/jsonld/context'
 import { getRankedBuilders } from '@/lib/ranking/get-ranked-builders'
 import { getRankedTeams } from '@/lib/ranking/get-ranked-teams'
+import { getRankedAgents } from '@/lib/ranking/get-ranked-agents'
 import { CLUSTER_LABELS, CLUSTER_ORDER, SHIPPED_BUCKETS, bucketsForEvents } from '@/lib/ranking/facets'
 
 export const metadata: Metadata = {
@@ -42,12 +43,14 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     )
   }
 
-  // ── Agent directory — Phase 5 placeholder. ──
+  // ── Agent directory (Phase 5 §I.4). ──
   if (type === 'agent') {
+    const { ranked, belowThreshold } = await getRankedAgents()
+    const agents = [...ranked, ...belowThreshold]
     return (
       <div style={PAGE_WRAP}>
         <div style={PAGE_INNER}>
-          <TalentClient type="agent" />
+          <TalentClient type="agent" agents={agents} />
         </div>
       </div>
     )

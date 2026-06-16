@@ -25,7 +25,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { runRealWriteForOne } from '@/lib/enrichment/profile-adapter'
 import { authenticateApiKey } from '@/lib/apiAuth'
-import { resolveEntityKindForOwner, findOrCreateAgentEntity, findOrCreateHumanEntity, type EntityRow } from '@/lib/entities'
+import { resolveEntityKindForOwner, findOrCreateAgentEntityLazy, findOrCreateHumanEntity, type EntityRow } from '@/lib/entities'
 
 const ADMIN_EMAIL = 'oxleethomas+admin@gmail.com'
 
@@ -179,7 +179,8 @@ export async function POST(req: Request) {
   let entity: EntityRow
   try {
     if (kind === 'agent') {
-      const result = await findOrCreateAgentEntity(admin, targetUser)
+      // Lazy path: one agent per email, slug derived deterministically (§D.3).
+      const result = await findOrCreateAgentEntityLazy(admin, targetUser)
       entity = result.entity
     } else if (kind === 'team') {
       // Team-scoped key: resolve the team entity this user owns. Teams are not
