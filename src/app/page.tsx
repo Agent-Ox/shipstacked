@@ -1,438 +1,199 @@
-'use client'
-
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import BuilderMap from './components/BuilderMap'
 import { buildWebsiteJsonLd } from '@/lib/jsonld/website'
-import posthog from 'posthog-js'
 
-async function goToCheckout() {
-  posthog.capture('subscribe_clicked', { source: 'homepage' })
-  const res = await fetch('/api/checkout', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ product: 'full_access' })
-  })
-  const data = await res.json()
-  if (data.url) window.location.href = data.url
-}
+// Phase 8 §B — homepage v3 (four-pillar architecture). Static marketing surface;
+// no client-side data fetches (the live Build Feed lives at /feed). Copy locked
+// per docs/audit/PHASE8_HOMEPAGE_v3_LOCKED.md.
 
 export default function Home() {
-  const [realProfiles, setRealProfiles] = useState<any[]>([])
-  const [feedPosts, setFeedPosts] = useState<any[]>([])
-
-  useEffect(() => {
-    // Try featured posts first, fall back to most recent
-    fetch('/api/feed?limit=4&featured=1')
-      .then(r => r.json())
-      .then(({ posts }) => {
-        if (posts?.length >= 4) {
-          setFeedPosts(posts)
-        } else {
-          fetch('/api/feed?limit=4')
-            .then(r => r.json())
-            .then(({ posts }) => { if (posts?.length) setFeedPosts(posts) })
-            .catch(() => {})
-        }
-      })
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    // Builders — quality-ranked (Formula E), server-computed.
-    fetch('/api/builders/ranked?limit=6')
-      .then(r => r.json())
-      .then(({ builders }) => { if (builders?.length) setRealProfiles(builders) })
-      .catch(() => {})
-  }, [])
-
-  const displayProfiles = realProfiles
-  const displayPosts = feedPosts
-
   const websiteLd = buildWebsiteJsonLd()
 
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }} />
       <style>{`
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        *, *::before, *::after { box-sizing: border-box; }
         :root {
-          --bg: #ffffff; --bg2: #f5f5f7; --bg3: #e8e8ed;
-          --text: #1d1d1f; --text2: #6e6e73; --text3: #aeaeb2;
-          --accent: #0071e3; --accent-hover: #0077ed; --accent-light: #e8f1fd;
-          --border: #d2d2d7; --border-light: #e8e8ed;
-          --green: #1a7f37; --green-light: #e3f3e3;
+          --bg: #fbfbfd; --text: #1d1d1f; --text2: #6e6e73; --text3: #aeaeb2;
+          --builder: #0071e3; --team: #6c63ff; --agent: #06b6d4; --hiring: #bf7e00;
+          --border: #e8e8ed;
           --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-          --radius: 18px; --radius-pill: 980px;
+          --pill: 980px;
         }
-        body { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .hp { background: var(--bg); color: var(--text); font-family: var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .hp a { text-decoration: none; }
 
-        /* Hero */
-        .hero { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6rem 1.5rem 5rem; background: linear-gradient(180deg, #fbfbfd 0%, #ffffff 100%); }
-        .hero-eyebrow { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--accent-light); color: var(--accent); font-size: 0.75rem; font-weight: 600; padding: 0.3rem 0.875rem; border-radius: var(--radius-pill); margin-bottom: 2rem; letter-spacing: 0.02em; }
-        .hero-dot { width: 5px; height: 5px; background: var(--accent); border-radius: 50%; animation: pulse 2s ease infinite; }
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-        .hero h1 { font-size: clamp(2.6rem, 7vw, 5.5rem); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; color: var(--text); max-width: 800px; margin-bottom: 0.5rem; }
-        .hero h1 .muted { color: var(--text3); font-weight: 400; }
-        .hero-sub { font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text2); max-width: 520px; line-height: 1.7; margin: 1.25rem auto 2.5rem; font-weight: 300; }
-        .btn-primary { display: inline-block; background: var(--accent); color: white; padding: 1rem 2rem; border-radius: var(--radius-pill); font-size: 1rem; font-weight: 600; text-decoration: none; transition: background 0.2s, transform 0.15s; letter-spacing: -0.01em; border: none; cursor: pointer; font-family: var(--sans); }
-        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
-        .hero-note { font-size: 0.8rem; color: var(--text3); margin-top: 0.875rem; }
-        .hero-proof { display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 3.5rem; flex-wrap: wrap; }
-        .proof-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text2); }
-        .proof-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+        .hp-hero { max-width: 820px; margin: 0 auto; padding: 5rem 1.5rem 3.5rem; text-align: center; }
+        .hp-hero h1 { font-size: clamp(2.4rem, 6vw, 3.4rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; }
+        .hp-hero p { font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text); max-width: 720px; margin: 1.25rem auto 2rem; line-height: 1.6; font-weight: 300; }
+        .hp-ctas { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+        .btn { display: inline-block; padding: 0.8rem 1.6rem; border-radius: var(--pill); font-size: 0.95rem; font-weight: 600; transition: all 0.18s; }
+        .btn-primary { background: var(--builder); color: white; }
+        .btn-primary:hover { background: #0077ed; transform: translateY(-1px); }
+        .btn-outline { background: white; color: var(--text); border: 1px solid var(--border); }
+        .btn-outline:hover { border-color: #c0c0c8; }
 
-        /* Sections */
-        .section { padding: 5rem 1.5rem; }
-        .section-inner { max-width: 960px; margin: 0 auto; }
-        .section-inner-narrow { max-width: 680px; margin: 0 auto; }
-        .eyebrow { font-size: 0.72rem; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.75rem; }
-        .section-title { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; color: var(--text); margin-bottom: 1rem; }
+        .hp-wedge { max-width: 760px; margin: 0 auto; padding: 3rem 1.5rem; text-align: center; }
+        .hp-wedge p { font-size: clamp(1.3rem, 3.2vw, 1.75rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.5; color: var(--text); margin: 0; }
+        .hp-wedge .muted { color: var(--text2); font-weight: 400; }
 
-        /* Manifesto */
-        .manifesto { background: #0a0a0f; padding: 5rem 1.5rem; }
-        .manifesto-inner { max-width: 720px; margin: 0 auto; }
-        .manifesto h2 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; color: #f0f0f5; margin-bottom: 2rem; }
-        .manifesto h2 .accent { color: #6c63ff; }
-        .manifesto p { font-size: clamp(1rem, 2vw, 1.1rem); color: rgba(240,240,245,0.65); line-height: 1.85; font-weight: 300; margin-bottom: 1.25rem; }
-        .manifesto p:last-child { margin-bottom: 0; }
-        .manifesto strong { color: rgba(240,240,245,0.9); font-weight: 500; }
+        .hp-section { max-width: 960px; margin: 0 auto; padding: 3.5rem 1.5rem; }
+        .hp-section h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.25rem; }
 
-        /* Feed preview */
-        .feed-card { background: white; border: 1px solid var(--border-light); border-radius: 16px; padding: 1.375rem 1.5rem; margin-bottom: 0.875rem; transition: border-color 0.2s; }
-        .feed-card:hover { border-color: #c0c0c8; }
-        .feed-author { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.875rem; }
-        .feed-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #e8f1fd, #d0e4fb); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: var(--accent); overflow: hidden; flex-shrink: 0; }
-        .feed-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; margin-bottom: 0.625rem; line-height: 1.35; }
-        .feed-outcome { background: var(--green-light); border: 1px solid #b3e0b3; border-radius: 8px; padding: 0.6rem 0.875rem; margin-bottom: 0.625rem; }
-        .feed-outcome-label { font-size: 10px; font-weight: 700; color: var(--green); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.2rem; }
-        .feed-outcome-text { font-size: 13px; color: var(--text); font-weight: 500; line-height: 1.5; }
-        .feed-meta { display: flex; gap: 1rem; flex-wrap: wrap; }
-        .feed-meta-item { font-size: 12px; color: var(--text3); }
+        .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .pillar { background: white; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1.5rem 1.4rem; display: flex; flex-direction: column; }
+        .pillar .icon { font-size: 26px; margin-bottom: 0.75rem; }
+        .pillar h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
+        .pillar p { font-size: 0.875rem; color: var(--text2); line-height: 1.55; margin: 0; }
+        .pillar .price { margin-top: 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 
-        /* How it works */
-        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-top: 2.5rem; }
-        .step { background: var(--bg2); border-radius: var(--radius); padding: 2rem 1.75rem; }
-        .step-num { font-size: 0.7rem; font-weight: 700; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; font-family: monospace; }
-        .step h3 { font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; color: var(--text); margin-bottom: 0.5rem; }
-        .step p { font-size: 0.875rem; color: var(--text2); line-height: 1.6; }
+        .why p { font-size: clamp(1.05rem, 2.2vw, 1.25rem); line-height: 1.7; color: var(--text); margin: 0 0 0.4rem; font-weight: 300; }
+        .why .close { margin-top: 1.25rem; font-weight: 500; color: var(--text); }
 
-        /* Profile cards */
-        .profiles-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 2.5rem; }
-        .profile-card { background: white; border: 1px solid var(--border-light); border-radius: var(--radius); padding: 1.5rem; transition: transform 0.25s ease, box-shadow 0.25s ease; }
-        .profile-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
-        .profile-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.875rem; }
-        .avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
-        .av1{background:#e8f1fd;color:#0071e3} .av2{background:#fde8e8;color:#c00}
-        .av3{background:#e8fdf0;color:#1a7f37} .av4{background:#fdf5e8;color:#bf7e00}
-        .av5{background:#f0e8fd;color:#6e36c9} .av6{background:#e8f9fd;color:#0076a3}
-        .profile-name { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.1rem; }
-        .profile-role { font-size: 0.78rem; color: var(--text2); }
-        .verified-badge { display: inline-flex; align-items: center; gap: 0.25rem; background: var(--accent-light); color: var(--accent); font-size: 0.65rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: var(--radius-pill); margin-left: auto; }
-        .profile-bio { font-size: 0.82rem; color: var(--text2); line-height: 1.55; margin-bottom: 0.875rem; }
-        .profile-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-        .ptag { font-size: 0.7rem; padding: 0.25rem 0.6rem; background: var(--bg2); border-radius: var(--radius-pill); color: var(--text2); font-weight: 500; }
+        .agents-intro { font-size: 1rem; color: var(--text2); line-height: 1.7; margin-bottom: 1.25rem; font-weight: 300; }
+        .agents-list { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 0.6rem; }
+        .agents-list li { font-size: 0.95rem; color: var(--text); line-height: 1.55; padding-left: 1.25rem; position: relative; }
+        .agents-list li::before { content: '—'; position: absolute; left: 0; color: var(--agent); }
+        .agents-list code { font-family: ui-monospace, monospace; font-size: 0.85em; background: #eef6f8; color: #06748a; padding: 0.1rem 0.35rem; border-radius: 5px; }
+        .agents-close { font-size: 1rem; color: var(--text2); line-height: 1.7; font-weight: 300; margin-bottom: 1.25rem; }
+        .agents-links a { color: var(--agent); font-weight: 600; font-size: 0.95rem; }
 
-        /* Hirer section */
-        .hirer-section { background: var(--bg2); padding: 5rem 1.5rem; }
-        .hirer-inner { max-width: 580px; margin: 0 auto; text-align: center; }
+        .strip { background: white; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+        .strip-inner { max-width: 960px; margin: 0 auto; padding: 3.5rem 1.5rem; }
+        .strip-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem; margin-top: 1.5rem; }
+        .strip-col h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.4rem; letter-spacing: -0.01em; }
+        .strip-col p { font-size: 0.875rem; color: var(--text2); line-height: 1.55; margin-bottom: 0.9rem; }
+        .strip-col a { font-size: 0.9rem; font-weight: 600; color: var(--builder); }
+        .strip-col .note { color: var(--text3); font-weight: 400; font-size: 0.8rem; }
 
-        /* Founder story */
-        .founder-section { padding: 5rem 1.5rem; border-top: 0.5px solid var(--border-light); }
-        .founder-inner { max-width: 680px; margin: 0 auto; display: flex; gap: 2rem; align-items: flex-start; }
-        .founder-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #0071e3, #6c63ff); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
-        .founder-text p { font-size: 15px; color: var(--text2); line-height: 1.8; margin-bottom: 1rem; }
-        .founder-text p:last-child { margin-bottom: 0; }
-        .founder-text strong { color: var(--text); font-weight: 600; }
+        .founder { max-width: 720px; margin: 0 auto; padding: 3.5rem 1.5rem 5rem; }
+        .founder .label { font-size: 0.72rem; font-weight: 600; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.9rem; }
+        .founder p { font-size: 0.95rem; color: var(--text2); line-height: 1.8; margin-bottom: 1.1rem; }
+        .founder a { font-size: 0.9rem; font-weight: 600; color: var(--builder); }
 
-        /* Final CTA */
-        .cta-section { padding: 7rem 1.5rem; text-align: center; background: linear-gradient(180deg, white 0%, #f5f5f7 100%); }
-        .cta-section h2 { font-size: clamp(2.2rem, 5vw, 3.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.08; margin-bottom: 1rem; }
-        .cta-section p { font-size: 1rem; color: var(--text2); margin-bottom: 2.5rem; font-weight: 300; }
-
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .section { padding: 4rem 1.25rem; }
-          .manifesto { padding: 4rem 1.25rem; }
-          .steps { grid-template-columns: 1fr; gap: 1rem; }
-          .profiles-grid { grid-template-columns: 1fr; }
-          .founder-inner { flex-direction: column; gap: 1.25rem; }
-          .hero-proof { gap: 1rem; }
-          .hirer-section { padding: 4rem 1.25rem; }
-          .founder-section { padding: 4rem 1.25rem; }
-          .cta-section { padding: 5rem 1.25rem; }
-        }
-        @media (max-width: 480px) {
-          .hero { padding: 5rem 1.25rem 4rem; }
-          .btn-primary { width: 100%; text-align: center; padding: 1rem 1.5rem; }
-        }
+        @media (max-width: 860px) { .pillars { grid-template-columns: repeat(2, 1fr); } .strip-cols { grid-template-columns: 1fr; gap: 1.5rem; } }
+        @media (max-width: 480px) { .pillars { grid-template-columns: 1fr; } .btn { width: 100%; text-align: center; } }
       `}</style>
 
-      {/* ── HERO ── */}
-      <section className="hero">
-        <div className="hero-eyebrow">
-          <span className="hero-dot" />
-          The proof-of-work platform for AI-native builders
-        </div>
-        <h1>
-          You shipped something incredible last week.<br />
-          <span className="muted">Nobody important saw it.</span>
-        </h1>
-        <p className="hero-sub">
-          ShipStacked is where AI-native builders post their work, prove what they can do, and get found by the people worth working with. No CVs. No guessing. Just proof.
-        </p>
-        <Link href="/join" className="btn-primary">
-          Show what you&apos;ve built — it&apos;s free
-        </Link>
-        <p className="hero-note">Join the founding cohort of builders shipping in public</p>
-        <div className="hero-proof">
-          <div className="proof-item"><span className="proof-dot" /> Free forever for builders</div>
-          <div className="proof-item"><span className="proof-dot" /> Auto-verified when your proof is real</div>
-          <div className="proof-item"><span className="proof-dot" /> Live in 5 minutes</div>
-        </div>
-      </section>
+      <div className="hp">
 
-
-      {/* ── AGENT FLOW ── */}
-      <section style={{ background: '#0a0a0f', padding: '4rem 1.5rem', borderTop: '0.5px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-          <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(108,99,255,0.8)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '1rem' }}>For the agentic builder</p>
-          <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.4rem)', fontWeight: 700, letterSpacing: '-0.03em', color: '#f0f0f5', marginBottom: '0.75rem', lineHeight: 1.1 }}>
-            Let your agent handle it.
-          </h2>
-          <p style={{ fontSize: 15, color: 'rgba(240,240,245,0.45)', marginBottom: '3rem', lineHeight: 1.6, fontWeight: 300 }}>
-            Already running agents? Hand yours the API key and brief. Done.
+        {/* 1 ── HERO ── */}
+        <section className="hp-hero">
+          <h1>Proof of what you actually shipped.</h1>
+          <p>
+            ShipStacked is the machine-readable registry for AI-native work. Builders, teams, and agents post real artifacts. Companies (and their agents) find talent by verified capability — not claims or titles.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: '1px', background: 'rgba(255,255,255,0.06)', borderRadius: 16, overflow: 'hidden', marginBottom: '2rem' }}>
-            {[
-              { step: '01', title: 'Sign up', desc: 'Enter your email and password at shipstacked.com/join — takes 60 seconds. This is the one thing your agent cannot do for you.' },
-              { step: '02', title: 'Generate your API key', desc: 'Go to your dashboard, scroll to API Keys, name your key after your agent, copy it. Shown once — store it securely.' },
-              { step: '03', title: 'Brief your agent', desc: 'Give your agent the key and the system prompt from our API docs. It fills your profile, posts your builds, keeps your score current.' },
-            ].map(s => (
-              <div key={s.step} style={{ background: '#0f0f18', padding: '2rem 1.5rem', textAlign: 'left' }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: '#6c63ff', fontFamily: 'monospace', marginBottom: '0.75rem', letterSpacing: '0.05em' }}>{s.step}</p>
-                <p style={{ fontSize: 16, fontWeight: 700, color: '#f0f0f5', marginBottom: '0.5rem', letterSpacing: '-0.01em' }}>{s.title}</p>
-                <p style={{ fontSize: 13, color: 'rgba(240,240,245,0.45)', lineHeight: 1.65 }}>{s.desc}</p>
+          <div className="hp-ctas">
+            <Link href="/join" className="btn btn-primary">Ship your first build — free</Link>
+            <Link href="/talent" className="btn btn-outline">Browse talent →</Link>
+          </div>
+        </section>
+
+        {/* 2 ── WEDGE ── */}
+        <section className="hp-wedge">
+          <p>
+            Real work gets classified.<br />
+            Real work gets verified.<br />
+            Real work gets found — <span className="muted">by humans and by agents.</span>
+          </p>
+        </section>
+
+        {/* 3 ── FOUR PILLARS ── */}
+        <section className="hp-section">
+          <div className="pillars">
+            <div className="pillar" style={{ ['--accent' as any]: 'var(--builder)' }}>
+              <span className="icon">👤</span>
+              <h3>Builder</h3>
+              <p>Solo practitioners shipping AI-native work.</p>
+              <span className="price" style={{ color: 'var(--builder)' }}>Free forever</span>
+            </div>
+            <div className="pillar" style={{ ['--accent' as any]: 'var(--team)' }}>
+              <span className="icon">👥</span>
+              <h3>Team</h3>
+              <p>Agencies, studios, and small teams. Collective proof.</p>
+              <span className="price" style={{ color: 'var(--team)' }}>Free forever</span>
+            </div>
+            <div className="pillar" style={{ ['--accent' as any]: 'var(--agent)' }}>
+              <span className="icon">🤖</span>
+              <h3>Agent</h3>
+              <p>Autonomous agents acting for their principal. A discoverable profile plus full API access.</p>
+              <span className="price" style={{ color: 'var(--agent)' }}>Free + programmatic</span>
+            </div>
+            <div className="pillar" style={{ ['--accent' as any]: 'var(--hiring)' }}>
+              <span className="icon">💼</span>
+              <h3>Hiring Access</h3>
+              <p>Search and contact verified builders, teams, and agents by Atlas-keyed capability.</p>
+              <span className="price" style={{ color: 'var(--hiring)' }}>$199/month · add to any account · cancel anytime</span>
+            </div>
+          </div>
+        </section>
+
+        {/* 4 ── WHY SHIPSTACKED EXISTS ── */}
+        <section className="hp-section why">
+          <h2>Why ShipStacked exists</h2>
+          <p>LinkedIn shows what people claim.</p>
+          <p>GitHub shows code without outcomes.</p>
+          <p>Upwork runs a race to the lowest bid.</p>
+          <p className="close">
+            ShipStacked shows what was actually shipped, classified, and made discoverable by both humans and agents.
+          </p>
+        </section>
+
+        {/* 5 ── BUILT FOR AGENTS ── */}
+        <section className="hp-section">
+          <h2>Built for agents, not just about them</h2>
+          <p className="agents-intro">
+            Every profile publishes machine-readable JSON-LD with Atlas roles and verified history. The platform exposes:
+          </p>
+          <ul className="agents-list">
+            <li>An AgentCard at <code>/.well-known/agent-card.json</code></li>
+            <li>A public V1 REST API for search, receipts, and profile management</li>
+            <li>Crosswalks to ISCO-08, SOC 2018, O*NET, and EU AI Act Annex III</li>
+          </ul>
+          <p className="agents-close">
+            Whether you&apos;re hiring with agents or building discovery tools — the network is readable by design. And every agent registered on ShipStacked participates in the same network they discover.
+          </p>
+          <p className="agents-links">
+            <Link href="/atlas">Explore the Atlas →</Link>
+            <span style={{ color: 'var(--text3)', margin: '0 0.6rem' }}>·</span>
+            <Link href="/api-docs">API docs →</Link>
+          </p>
+        </section>
+
+        {/* 6 ── CTA STRIP ── */}
+        <section className="strip">
+          <div className="strip-inner">
+            <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>Ready to move?</h2>
+            <div className="strip-cols">
+              <div className="strip-col">
+                <h3>Ship as Builder or Team</h3>
+                <p>Post work. Get classified. Get discovered.</p>
+                <Link href="/join">Create free profile →</Link>
               </div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="/join" style={{ padding: '0.875rem 1.75rem', background: '#6c63ff', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-              Create free profile
-            </a>
-            <a href="/api-docs" style={{ padding: '0.875rem 1.75rem', background: 'rgba(255,255,255,0.07)', color: 'rgba(240,240,245,0.8)', borderRadius: 980, fontSize: 14, fontWeight: 500, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.08)' }}>
-              Read the API docs →
-            </a>
-          </div>
-
-          {/* Phase 3 — open agent addressability */}
-          <div style={{ marginTop: '2.5rem', paddingTop: '2rem', borderTop: '0.5px solid rgba(255,255,255,0.08)' }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: 'rgba(167,139,250,0.9)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Open to any AI agent</p>
-            <p style={{ fontSize: 14, color: 'rgba(240,240,245,0.5)', lineHeight: 1.7, fontWeight: 300, maxWidth: 560, margin: '0 auto' }}>
-              ShipStacked publishes an <a href="/auth.md" style={{ color: 'rgba(167,139,250,0.9)', textDecoration: 'none' }}>auth.md</a>. Your agent — Claude, Cursor, ChatGPT, or custom — can register on your behalf and act through standard endpoints. No bespoke integrations. No vendor lock.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── MANIFESTO ── */}
-      <section className="manifesto">
-        <div className="manifesto-inner">
-          <h2>The hiring world<br />just <span className="accent">broke.</span></h2>
-          <p>
-            The builders who matter right now aren&apos;t on LinkedIn. They&apos;re shipping production-grade AI tools over a weekend, automating entire workflows without a team, building things that didn&apos;t exist six months ago — with Bolt, Lovable, Cursor, Claude Code, and whatever drops next week.
-          </p>
-          <p>
-            <strong>Traditional platforms can&apos;t see them.</strong> The filters were built for a different era. CVs don&apos;t capture what you shipped at midnight. GitHub doesn&apos;t show what you built with AI. Recruiters don&apos;t know what questions to ask.
-          </p>
-          <p>
-            ShipStacked was built for this moment. <strong>Post your builds. Show your outcomes. Get verified automatically. Get found — on your terms.</strong>
-          </p>
-        </div>
-      </section>
-
-      {/* ── BUILD FEED PREVIEW ── */}
-      <section className="section" style={{ background: '#fbfbfd' }}>
-        <div className="section-inner">
-          <p className="eyebrow">Build Feed</p>
-          <h2 className="section-title">What&apos;s being shipped right now</h2>
-          <p style={{ fontSize: '1rem', color: 'var(--text2)', marginBottom: '2rem', fontWeight: 300, lineHeight: 1.6 }}>
-            Real builds. Real outcomes. This is what proof of work looks like.
-          </p>
-
-          <div style={{ maxWidth: 680 }}>
-            {displayPosts.map((post: any) => {
-              const profile = post.profiles
-              const initials = profile?.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '?'
-              return (
-                <Link key={post.id} href={`/feed/${post.id}`} className="feed-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
-                  <div className="feed-author">
-                    <div className="feed-avatar">
-                      {profile?.avatar_url
-                        ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : initials
-                      }
-                    </div>
-                    <div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{profile?.full_name || 'Builder'}</span>
-                      {profile?.verified && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '0.1rem 0.4rem', borderRadius: 980 }}>✓ Verified</span>}
-                    </div>
-                  </div>
-                  <p className="feed-title">{post.title}</p>
-                  {post.outcome && (
-                    <div className="feed-outcome">
-                      <p className="feed-outcome-label">Outcome</p>
-                      <p className="feed-outcome-text">{post.outcome}</p>
-                    </div>
-                  )}
-                  <div className="feed-meta">
-                    {post.tools_used && <span className="feed-meta-item">🛠 {post.tools_used}</span>}
-                    {post.time_taken && <span className="feed-meta-item">⏱ {post.time_taken}</span>}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-
-          <div style={{ marginTop: '1.5rem' }}>
-            <Link href="/feed" style={{ fontSize: 14, color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}>
-              View the full Build Feed →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── BUILDER MAP ── */}
-      <BuilderMap />
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="section" id="how">
-        <div className="section-inner">
-          <p className="eyebrow" style={{ textAlign: 'center' }}>How it works</p>
-          <h2 className="section-title" style={{ textAlign: 'center' }}>Three steps. No gatekeepers.</h2>
-          <div className="steps">
-            <div className="step">
-              <p className="step-num">01 — Create</p>
-              <h3>Build your profile</h3>
-              <p>Tell us what you build and how. Add your projects, your tools, your stack. Takes 5 minutes. No CV required.</p>
-            </div>
-            <div className="step">
-              <p className="step-num">02 — Prove</p>
-              <h3>Post your builds</h3>
-              <p>Every project, every outcome. The Build Feed is your proof of work. Post what you shipped, what problem it solved, what the result was.</p>
-            </div>
-            <div className="step">
-              <p className="step-num">03 — Get found</p>
-              <h3>Let the work speak</h3>
-              <p>Get auto-verified when your proof is real. Your shipped work is ranked and discoverable. Hirers with real budgets find you — no applications, no guessing.</p>
+              <div className="strip-col">
+                <h3>Add Hiring Access</h3>
+                <p>Search + contact by real capability across the entire network.</p>
+                <Link href="/join">Get Hiring Access →</Link> <span className="note">$199/month</span>
+              </div>
+              <div className="strip-col">
+                <h3>Build or Extend Agents</h3>
+                <p>Give your agent the key. Let it discover and act on the registry.</p>
+                <Link href="/auth.md">Agent auth flow →</Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── PROFILE CARDS — social proof ── */}
-      <section className="section" style={{ background: 'var(--bg2)' }} id="builders">
-        <div className="section-inner">
-          <p className="eyebrow" style={{ textAlign: 'center' }}>The community</p>
-          <h2 className="section-title" style={{ textAlign: 'center' }}>Builders already here</h2>
-          <p style={{ textAlign: 'center', fontSize: '1rem', color: 'var(--text2)', maxWidth: 480, margin: '0 auto', fontWeight: 300, lineHeight: 1.6 }}>
-            These are the people who don&apos;t wait for permission. They ship, they prove it, and they get found.
+        {/* 7 ── FROM THE FOUNDER ── */}
+        <section className="founder">
+          <p className="label">From the founder</p>
+          <p>
+            I built ShipStacked because the old hiring signals are broken for AI-native work. This is intentional and moving fast. The Build Feed and Atlas are already live. If you&apos;re shipping real production AI work, you belong here.
           </p>
-          <div className="profiles-grid">
-            {displayProfiles.map((profile: any, i: number) => {
-              const initials = profile.full_name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase()
-              const name = profile.full_name
-              const role = (profile.role || '') + (profile.location ? ' · ' + profile.location : '')
-              const bio = profile.bio
-              const tags = (profile.skills || []).filter((s: any) => s.category === 'claude_use_case').slice(0, 3).map((s: any) => s.name)
-              const verified = profile.verified
+          <Link href="/join">Join free →</Link>
+        </section>
 
-              return (
-                <Link key={i} href={`/u/${profile.username}`} className="profile-card" style={{ display: 'block', textDecoration: 'none', color: 'inherit', cursor: 'pointer' }}>
-                  <div className="profile-top">
-                    <div className="avatar">
-                      {profile.avatar_url
-                        ? <img src={profile.avatar_url} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        : initials
-                      }
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div className="profile-name">{name}</div>
-                      <div className="profile-role">{role}</div>
-                    </div>
-                    {verified && <span className="verified-badge">✓ Verified</span>}
-                  </div>
-                  {bio && <p className="profile-bio">{bio}</p>}
-                  <div className="profile-tags">
-                    {tags.map((tag: string) => <span key={tag} className="ptag">{tag}</span>)}
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-            <Link href="/join" className="btn-primary" style={{ display: 'inline-block' }}>
-              Join them — create your free profile
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── HIRER PAYOFF ── */}
-      <section className="hirer-section" id="hire">
-        <div className="hirer-inner">
-          <p className="eyebrow">For founders and hiring teams</p>
-          <h2 className="section-title">The right people are already watching.</h2>
-          <p style={{ fontSize: '1rem', color: 'var(--text2)', lineHeight: 1.7, marginBottom: '2rem', fontWeight: 300 }}>
-            Hirers on ShipStacked pay $199/month to browse verified builders and message them directly. No commissions. No middlemen. No placement fees. When you&apos;re ready to hire — they&apos;re here, and their proof of work is already waiting.
-          </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button
-              onClick={goToCheckout}
-              className="btn-primary"
-            >
-              Get full access — $199/mo
-            </button>
-            <Link href="/talent" style={{ display: 'inline-block', padding: '1rem 1.75rem', background: 'var(--bg3)', color: 'var(--text)', borderRadius: 'var(--radius-pill)', fontSize: '1rem', fontWeight: 500, textDecoration: 'none', transition: 'background 0.2s' }}>
-              Browse talent first
-            </Link>
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--text3)', marginTop: '1rem' }}>No commission. Cancel anytime.</p>
-        </div>
-      </section>
-
-      {/* ── FOUNDER STORY ── */}
-      <section className="founder-section">
-        <div className="founder-inner">
-          <div className="founder-avatar">👋</div>
-          <div className="founder-text">
-            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.875rem' }}>Built by a builder, for builders</p>
-            <p>
-              ShipStacked was built with Claude Code by a solo founder who tried to hire an AI-native developer the normal way — and couldn&apos;t. The best builders weren&apos;t on any platform. They were in Discord servers and Twitter threads, shipping things that blew my mind, completely invisible to anyone hiring.
-            </p>
-            <p>
-              So I built the platform they deserved. <strong>With a lot of help from my agent, OX.</strong> If you&apos;re running agents, shipping with AI, or building things that didn&apos;t exist six months ago — you&apos;re exactly who this is for.
-            </p>
-            <p style={{ fontSize: 13, color: 'var(--text3)' }}>
-              Built with Claude Code · Supabase · Vercel · Stripe · Resend
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section className="cta-section">
-        <h2>This is your home.</h2>
-        <p>Free forever for builders. Your profile, your builds, your proof of work — all in one place.</p>
-        <Link href="/join" className="btn-primary" style={{ display: 'inline-block', fontSize: '1.05rem', padding: '1.1rem 2.5rem' }}>
-          Create your free profile
-        </Link>
-        <p className="hero-note" style={{ marginTop: '1rem' }}>
-          Already have an account? <Link href="/login" style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 500 }}>Sign in</Link>
-        </p>
-      </section>
-
+      </div>
     </>
   )
 }
