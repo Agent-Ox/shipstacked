@@ -117,9 +117,63 @@ End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLA
 3. ✅ DONE — §F via approach (a) DB-simulation (sk_live blocker → no Stripe calls). **Real-Stripe verification queued as Phase 8.5** (architect to draft). §F findings all clean.
 4. ✅ DONE — §G Buyer-only Card 4 fresh signup (DB-simulation). Clean; 1 MINOR + 1 NOTE queued (see §G results).
 5. ✅ DONE — §H cross-cutting checks (read-only). Clean; 2 MINOR (atlas og:image, title-dup) + 2 NOTE (contact asymmetry, practitioners empty copy) queued.
-6. **← NEXT: §I** — findings consolidation across all blocks. Awaiting architect review before starting.
-7. §J — in-session fixes (≥ the §E.7 BLOCKER if not done in step 1).
+6. ✅ DONE — §I findings consolidation (see "## §I — Findings consolidation" below). Zero open BLOCKER; 1 open SERIOUS (§B silent-enrich) + contact-gating asymmetry need operator decisions; 3 surgical §J MINORs recommended.
+7. **← NEXT: §J** — in-session fixes (architect decides scope; recommended: /hirer sub-check, /atlas og:image, title-dup). Awaiting review.
 8. §Z — bulk-delete all `audit-2026-06-16-*` via paste-back DDL; verify counts match the §A baseline.
+
+## §I — Findings consolidation (Site Audit §B–§H synthesis)
+
+Decision-ready synthesis of every finding across the four-persona + cross-cutting audit. No new investigation; no fixes applied yet (those are §J, gated on architect/operator review). **Headline: zero open BLOCKER, one open SERIOUS (§B silent-enrich-failure) needing triage. Site works end-to-end for anonymous visitors and all four personas. The one hard launch gate is Phase 8.5 (real-Stripe verification).**
+
+### Master findings table
+
+| SEVERITY | BLOCK/STEP | FINDING | STATUS | DISPOSITION |
+|----------|-----------|---------|--------|-------------|
+| BLOCKER | §B.4 | Anthropic API credits empty → 24d of zero enrichment; audit run #6 first failure | Topped up mid-audit; zero real-user blast radius | **CLOSED** |
+| BLOCKER | §E.3 | `/api/agent/auth/claim/complete` 500s for new users (no profile post-entity-create) | Fixed, verified local+prod | **CLOSED** (`e2e360b`) |
+| BLOCKER | §F pre-flight | `STRIPE_SECRET_KEY` is `sk_live_`; live Checkout→webhook→insert path never tested end-to-end | §F simulated via DB; real path untested | **Phase 8.5** (pre-launch BLOCKER) |
+| SERIOUS | §B `/api/v1/builds` | Returns `build_posted:true` even when background enrich fails silently — false success signal to API callers | Open | **OPERATOR DECISION → §J or Phase 9** (not pre-dispositioned; needs triage) |
+| SERIOUS | §E.1 | auth.md issues `builder:rw`/`buyer:rw` only — no `agent:rw`, no Agent-pillar (`kind='agent'`) self-registration | Open (documented) | **Phase 9** |
+| SERIOUS | §F / §H.1 | **Contact-gating asymmetry**: builder contact paywalled (Full Access); team + agent contact public ungated mailto/URL. Marketing implies all three gated at $199/mo | Open | **OPERATOR DECISION** (cross-cutting, pre-launch) |
+| MINOR | §G.3 | `/hirer` page sub-check (`page.tsx:12-19`) lacks the `current_period_end` clause `getEntityModes` has (`user.ts:42`) — past-period active sub shows full dashboard while gate says hirer:false | Open | **§J** (surgical) |
+| MINOR | §H.3 | `/atlas` missing `og:image` + `twitter:image` — social shares show no card image | Open | **§J** (surgical) |
+| MINOR | §H.3 | Title-suffix duplication: `/atlas` + `/api-docs` render `… \| ShipStacked \| ShipStacked` | Open | **§J** (surgical) |
+| MINOR | §D.3 | Agent provider enum stored as `claude`, plan/UX said `anthropic` | Open | **§J** (1-line) or doc |
+| NOTE | §F | API scope is subscription-independent → a canceled subscriber's `buyer:rw` key keeps working (search route checks scope only, not sub) — "cancellation leak" | Open | **Phase 9** |
+| NOTE | §G.3 | Minting an API key flips a buyer-only user's `builder` mode on via a hidden `published=false` profile — latent builder identity | Open | **Phase 9** |
+| NOTE | §D | `agent_profiles.capabilities` (self-declared strings) ≠ receipt-derived Atlas roles | Open | **Phase 9** (doc/clarity) |
+| NOTE | §H.4 | Practitioners empty-state copy inconsistent across roles (some show a prompt, others a bare empty section) | Open | **Phase 9** (polish) |
+| NOTE | §F.3 | Builder-self absent from buyer search = ranking threshold (builder branch returns only `ranked`), NOT self-exclusion | Documented; no action | — |
+
+### Grouped by disposition
+
+**A. CLOSED during audit (2):** §B.4 Anthropic credits (topped up); §E.3 auth.md OTP complete 500 (`e2e360b`, verified local+prod).
+
+**B. §J surgical in-session candidates (3 confirmed + 1 optional) — all independent, no ordering dependency:**
+1. `/hirer` sub-check — add the `current_period_end` clause to match `getEntityModes` (single file, `src/app/hirer/page.tsx`).
+2. `/atlas` `og:image` + `twitter:image` — add to the page metadata (single file).
+3. Title-suffix duplication — strip the redundant `| ShipStacked` from `/atlas` + `/api-docs` page titles (the layout template already appends it).
+4. _(optional)_ §D provider enum `claude`→`anthropic` (or document the intended value).
+
+**C. Phase 9+ architectural deferrals (5):** §E.1 auth.md Agent-pillar creation; §F API-scope cancellation leak; §G.3 buyer-only latent builder identity; §D capabilities-vs-Atlas-roles clarity; §H.4 practitioners empty-state copy.
+
+**D. Pre-launch BLOCKER (1):** Phase 8.5 — real-Stripe lifecycle verification (full spec already in RESUME_HERE).
+
+**E. Operator decisions required (2):** (1) **Contact-gating asymmetry** — is team+agent public contact intended, or should all three sit behind Hiring Access as marketing implies? (2) **§B `/api/v1/builds` silent-enrich-failure** — is a `build_posted:true` on a failed enrich acceptable at launch, or must the response surface enrich status? (decide §J vs Phase 9).
+
+### §J fix-scope recommendation
+
+- **Ship this session (surgical, low-risk, no decision needed):** the 3 confirmed §J MINORs (B.1–B.3 above). Independent single-file edits; commit per phase pattern with tsc+build gates; spot-check the touched surfaces.
+- **Hold for operator decision before any fix:** contact-gating asymmetry (product call); §B silent-enrich-failure (scope call — surgical "return enrich status" vs Phase 9 async-pipeline rework).
+- **Dependencies:** none among the 3 surgical fixes. The §D enum tweak is optional and independent.
+
+### Launch-readiness gate
+
+- **MUST before outreach (hard gate):** ✅ **Phase 8.5 real-Stripe verification PASS** (live Checkout→webhook→subscription-insert→gate-flip is the one untested money path). Resolve the **contact-gating asymmetry** operator decision (intended, or fix before launch). Triage the **§B silent-enrich-failure** SERIOUS (accept or fix).
+- **SHOULD before outreach (high-value, surgical):** the 3 §J MINOR fixes — `/hirer` divergence (a real correctness edge on missed-webhook), `/atlas` og:image (social sharing), title-dup (SEO/polish).
+- **CAN wait (post-launch):** all Phase 9 NOTEs (auth.md agent-pillar, cancellation leak, latent builder identity, capabilities-vs-roles doc, practitioners copy) + §D enum.
+- **Cleanup gate:** §Z must run (delete all `audit-2026-06-16-*`; re-verify §A baseline: profiles 67 · entities team 2 · agent 2 · subs active 11 · api_keys 48 · receipts 79) before/at launch — the audit added live rows (entities 44–47, 2 simulated subs, multiple keys/profiles, 3 agent_registrations).
+- **Bottom line:** the platform is functionally launch-ready for all four personas pending **one hard gate (Phase 8.5)** + **two operator decisions**. No structural rebuild required.
 
 ## Phase 8.5 — Real-Stripe lifecycle verification (PRE-LAUNCH BLOCKER)
 
