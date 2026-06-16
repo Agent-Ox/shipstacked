@@ -90,6 +90,16 @@ End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLA
   - **§G.3 buyer-only user model:** auth.users + `entities(kind='human', profile_id=null)` + `role='client'`. **No `profiles` row** until they mint an API key — `api_keys.profile_id` is a NOT NULL FK, so key-gen forces a minimal `published=false` profile (mirrors `/api/keys` agent-mode). Dashboard: `/hirer` with `role='client'` + no sub → dedicated `<BuyerOnlyEmptyState>` (not bounced to `/hirers#pricing`); with sub → full hirer dashboard (jobs/applications/employer_profiles). `getEntityModes` → builder:false (no profile), client:true, hirer:true-when-subscribed. **Unavailable vs builder+hiring:** no public `/u/<username>`, not in talent directory (no published profile), no proof-of-work surface — pure demand-side.
   - _Queued MINOR (§G.3):_ `/hirer` page sub-check (`page.tsx:12-19`) lacks the `current_period_end` clause that `getEntityModes` has (`user.ts:42`) — a sub with `status='active'` but past `current_period_end` would show the full `/hirer` dashboard while `getEntityModes` says hirer:false. Divergence; low-risk (webhook flips status to `canceled` on deletion) but worth unifying.
   - _NOTE (§G.3):_ minting an API key flips a buyer-only user's `builder` mode on (`hasProfile=true`) via the hidden `published=false` profile. Hidden from public surfaces by the published-gate, but the model now carries a latent builder identity.
+- **§H Cross-cutting checks — COMPLETE / clean (read-only, no writes). 2 MINOR + 2 NOTE queued.**
+  - **§H.1 anon flow — PASS.** All 14 homepage links resolve (2 clean canonical 308s: `/for-hirers`→`/hirers`, `/signup`→`/join`, both final 200). All 3 pillar profiles render anon 200 (`/u/`, `/team/`, `/agent/`). `/login` form renders (email+password). `/join` client-renders 4 cards (source-confirmed; client component so not in SSR HTML). **0 dead `href="#"` anchors** (Phase 8 §F Block 1 fix holds). Footer = all real routes.
+    - _NOTE (contact-gating asymmetry — extends the §F public-mailto NOTE):_ **builder** contact is subscription-gated (`/u/[username]:341-360` — anon sees "🔒 Contact details visible to Full Access subscribers" → `/hirers#pricing`; subscribers get `MessageButton`); **team** (`/team/[slug]:325-334`) AND **agent** (`/agent/[slug]:294-307`) contact are **public ungated** mailto/URL. So supply contact is paywalled for builders but free for teams+agents. Confirm intended pre-launch.
+  - **§H.2 sign-in/out — PASS.** `/dashboard` anon → 307→`/login`; `/api/logout` → `supabase.auth.signOut()` + redirect `/` (NavBar links it). Full session-cookie round-trip + Block 3 realtime nav = **browser-paired** (builder password not recorded; reset would be a write — audit is read-only).
+  - **§H.3 marketing pages — PASS w/ 2 MINOR.** `/`, `/how-it-works`, `/faq`, `/pricing`, `/atlas`, `/api-docs` all 200 + unique titles; sampled internal links all 200 (`/dashboard` 307 = expected gate). `/auth.md` 200 `text/markdown` ("# ShipStacked Agent Registration"). No `<img>` tags (CSS/SVG — no broken-image risk).
+    - _MINOR:_ **`/atlas` has no `og:image` and no `twitter:image`** — social shares show no card image (every other HTML page has og:title/image/description).
+    - _MINOR:_ **title-suffix duplication** — `/atlas` renders `…mapped | ShipStacked | ShipStacked` and `/api-docs` renders `Builder API | ShipStacked | ShipStacked` (page-level title already carries the suffix, then the layout template appends `| ShipStacked` again). `/faq`/`/pricing` have a softer brand redundancy (`— ShipStacked … | ShipStacked`).
+  - **§H.4 empty states — PASS.** `/talent?cluster=Z` → 200 "No builders match"; zero-receipt team 42 + agent 43 → 200 (receipts/PoW sections conditional); unknown atlas role (`ZZ99`/`G9`) → **404** (graceful); valid-but-unused roles (A1/B1/D2/E1/F1/G1…) → 200 empty practitioners section.
+    - _NOTE (low):_ practitioners empty-state copy inconsistent across roles — some valid-unused roles show a "no practitioners" prompt, others just an empty section.
+  - **§H.5 mobile markers — PASS.** Every page (`/`, 4 Phase-8, `/atlas`, `/talent`) has `<meta name="viewport">` + ≥1 `@media` rule.
 
 **Audit artifacts accumulated (clean at §Z; respect FK order):**
 - auth.users: `cb76662c` (builder), `c954352c` (team admin), `13a81dc9` (agent owner), `f66d3639` (otp-owner orphan), `da2ca1fa` (otp-owner-v2, §E.7 local verify), `8aa9f478` (otp-owner-v3, §E.7 prod verify), `3c6bed47` (buyer-only, §G)
@@ -106,8 +116,8 @@ End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLA
 2. ✅ DONE — §E.3–§E.5 re-verified green with fresh users (v2 local, v3 prod). Orphan `f66d3639` left stuck-pending for §Z.
 3. ✅ DONE — §F via approach (a) DB-simulation (sk_live blocker → no Stripe calls). **Real-Stripe verification queued as Phase 8.5** (architect to draft). §F findings all clean.
 4. ✅ DONE — §G Buyer-only Card 4 fresh signup (DB-simulation). Clean; 1 MINOR + 1 NOTE queued (see §G results).
-5. **← NEXT: §H** — cross-cutting checks. Awaiting architect review before starting.
-6. §I — findings consolidation.
+5. ✅ DONE — §H cross-cutting checks (read-only). Clean; 2 MINOR (atlas og:image, title-dup) + 2 NOTE (contact asymmetry, practitioners empty copy) queued.
+6. **← NEXT: §I** — findings consolidation across all blocks. Awaiting architect review before starting.
 7. §J — in-session fixes (≥ the §E.7 BLOCKER if not done in step 1).
 8. §Z — bulk-delete all `audit-2026-06-16-*` via paste-back DDL; verify counts match the §A baseline.
 
