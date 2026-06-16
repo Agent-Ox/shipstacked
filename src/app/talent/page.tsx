@@ -125,10 +125,11 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const allBuilders = [...ranked, ...belowThreshold] as any[]
   const totalPublished = allBuilders.length
 
-  // Phase 6 §G.1: cluster filter migrated to the matching engine (L1-only,
-  // consistent with /api/v1/talent/search). RankedBuilder has no entity_id, so
-  // resolve profile.id -> entity_id, then keep builders whose entity is in the
-  // L1 Atlas-match set for the cluster.
+  // Phase 6 §G.1 + Phase 7 §D: ONE matching-engine call (L1-only, all clusters)
+  // serves BOTH the cluster filter and the facet counts — same definition as the
+  // team/agent branches and /api/v1/talent/search. RankedBuilder has no
+  // entity_id, so resolve profile.id -> entity_id to key the cluster filter.
+  const humanMatches = await findAtlasMatches(admin, { subjectKind: 'human' })
   let clusterMatchedProfiles: Set<string> | null = null
   if (filterCluster) {
     const profIds = allBuilders.map((p: any) => p.id)
@@ -137,8 +138,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
       const { data: profRows } = await admin.from('profiles').select('id, entity_id').in('id', profIds)
       for (const r of (profRows ?? [])) if (r.entity_id != null) entityByProfile.set(r.id, r.entity_id)
     }
-    const matches = await findAtlasMatches(admin, { cluster: filterCluster, subjectKind: 'human' })
-    const matchedIds = new Set(matches.map(m => m.subject_id))
+    const matchedIds = new Set(humanMatches.filter(m => m.cluster === filterCluster).map(m => m.subject_id))
     clusterMatchedProfiles = new Set(
       [...entityByProfile.entries()].filter(([, eid]) => matchedIds.has(eid)).map(([pid]) => pid),
     )
@@ -159,11 +159,14 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     profiles = [...profiles].sort((a: any, b: any) => Date.parse(b.created_at) - Date.parse(a.created_at))
   }
 
-  // Facet chips: render values present in the full published set; counts reflect
-  // the current filtered set ("Operators (3)" when another filter narrows it).
-  const clusterFacets = CLUSTER_ORDER
-    .filter(c => allBuilders.some((p: any) => (p.atlasClusters || []).includes(c)))
-    .map(c => ({ value: c, label: CLUSTER_LABELS[c], count: profiles.filter((p: any) => (p.atlasClusters || []).includes(c)).length }))
+  // Cluster facet counts from the matching engine (Phase 7 §D) — global distinct
+  // L1-matched human subjects per cluster, identical definition to team/agent and
+  // to the cluster filter itself. Replaces the legacy all-public atlasClusters
+  // count that could overstate clickable results. clusterFacetsFromMatches drops
+  // zero-count clusters and orders A–G.
+  const clusterFacets = clusterFacetsFromMatches(humanMatches)
+  // Shipped facet chips: render values present in the full published set; counts
+  // reflect the current filtered set.
   const shippedFacets = SHIPPED_BUCKETS
     .filter(b => allBuilders.some((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)))
     .map(b => ({ value: b.key, label: b.label, count: profiles.filter((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)).length }))

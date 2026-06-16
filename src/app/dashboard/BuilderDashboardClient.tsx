@@ -73,7 +73,6 @@ export default function BuilderDashboardClient({
   distinctHosts,
   lastShippedAt,
   provenPostCount,
-  agentMode = false,
   activeCollections = [],
   memberships = [],
 }: {
@@ -87,7 +86,6 @@ export default function BuilderDashboardClient({
   distinctHosts: number
   lastShippedAt: string | null
   provenPostCount: number
-  agentMode?: boolean
   activeCollections?: Array<{ slug: string; title: string; description: string | null }>
   memberships?: Array<{ collection_slug: string; opted_in_at: string; source: 'dashboard' | 'link' }>
 }) {

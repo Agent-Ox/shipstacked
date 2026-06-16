@@ -55,7 +55,31 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 - **Git-commit identity (NOT the auth account):** `ox@agentagous.com` (Thomas Oxlee). Used for commit attribution only — there is no auth.users row with this email.
 - **No `profiles` row yet** — operator has not done Card 1 (builder) signup. Consequences: no `/u/<username>` page, cannot own a builder profile, several Phase 4 builder-side flows (worksFor, IdentityPicker) can't be dogfooded by the operator until they sign up. Open question post-Phase-4: should the operator dogfood Card 1.
 
+## Security maintenance log
+
+- **CRON_SECRET rotated 2026-06-16 (Phase 7 §E pre-flight).** The old value had been hardcoded in source historically, rotated to `process.env.CRON_SECRET` in commit `551baff`, but the literal string was still present in committed public docs (`docs/audit/TIER_4_DISCOVERY.md`, `TIER_4_RECONCILIATION.md`). The Vercel env value was rotated + redeployed; the old value was verified dead (POST with the old `x-cron-secret` header to `…/api/hire-confirm/nudge` → 401). The literal is now inert historical noise everywhere. Untracked-doc copies were redacted before staging (Phase 7 §E); tracked-doc copies remain as inert historical strings (scrub deferred — see Phase 7 deferred verifications).
+
 ## In-flight phases
+
+## Phase 7 (completed, committed this session) — State restoration + cleanup
+
+- Lean cleanup of deferred items across Phases 1-6. Plan: docs/audit/PHASE7_CLEANUP.md (committed this phase).
+- **§A discovery surfaced two urgent items:**
+  - **CRON_SECRET** old literal value present in 5 about-to-be-staged untracked docs + 2 already-tracked public docs → **ROTATED mid-phase** in Vercel + redeployed; old value verified dead (401). See Security maintenance log above.
+  - **67 non-null `velocity_score` values** on profiles (0 src readers, 0 migration refs, 1 diagnostic script ref) → trips the §C safety gate (required zero non-null AND zero readers). **Drop DEFERRED.**
+- **§C velocity_score drop — DEFERRED.** 67 non-null legacy V1 values. Future: drop with operator confirmation OR migrate to `legacy_velocity_score`. Not blocking outreach.
+- **§D builder cluster facet count parity** — counts now matching-engine-derived via `clusterFacetsFromMatches({subjectKind:'human'})` (L1-only, global distinct subjects per cluster), aligned with team/agent across all three pillars. Was: legacy all-public `atlasClusters` derivation (could overstate).
+- **§E 44 docs committed verbatim** (23 docs/audit + 15 docs/v2 + 6 docs/handover), with redaction: 5 files had the old CRON_SECRET literal → `<ROTATED_CRON_SECRET_REDACTED>`; 2 files had real builder emails (10 distinct personal addresses) → `<redacted-email>`. All 7 carry a top-of-file redaction note. Sensitivity scan confirmed zero secret + zero third-party PII in the staged set.
+- **§F 2 audit scripts tracked** (`audit-direction.ts`, `audit-ground-truth.ts`); `audit-profiles.ts` was already tracked.
+- **§G rename** `deriveTeamSlug` → `deriveSignupSlug` (1 def + 2 callers, all in `src/app/join/page.tsx`; dual-use team+agent).
+- **§H dead `agentMode` prop removed** from `BuilderDashboardClient.tsx` (Phase 5 §M.2 orphan: no body usage, caller stopped passing it).
+- **§I/§J** four static gates green (tsc, build, velocity=0, verify-agent-card 10 skills); cluster facet renders cleanly with L1-only counts.
+
+## Phase 7 — deferred verifications
+
+1. **Builder cluster facet count visual UX** — counts may visibly differ from the Phase 6 ship (L1-only derivation vs legacy all-public). Operator-when-convenient.
+2. **velocity_score column drop OR migrate to `legacy_velocity_score`** — destructive DDL; requires operator confirmation (67 non-null values).
+3. **Pre-existing public exposure scrub** — `TIER_4_DISCOVERY.md` + `TIER_4_RECONCILIATION.md` (inert rotated CRON_SECRET string) + `SEED_JOB_TEARDOWN_DISCOVERY.md` (real builder emails) are already tracked/public. Future decision: leave-as-archive OR `git filter-repo`/BFG history rewrite. Operator-only call; not blocking outreach.
 
 ## Phase 6 (completed, committed this session) — Atlas wiring proper
 
@@ -162,7 +186,7 @@ Shipped + headless-verified (§J 25/25: view, matching engine, all 5 surface pat
 
 1. **`/talent?type=team&cluster=<X>` facet UX** (browser-paired) — click the Atlas cluster chips, confirm URL nav + active-chip highlight + result filtering feel right.
 2. **`/talent?type=agent&cluster=<X>` facet UX** (browser-paired) — same.
-3. **Builder cluster facet count parity** (Phase 7 cleanup) — builder facet *counts* still use the legacy all-public `atlasClusters` derivation while the *filter* is now L1-only matching engine. A builder with non-L1 cluster work could show a count that overstates clickable results. Align builder facet counts with the matching engine for parity with team/agent.
+3. ~~**Builder cluster facet count parity**~~ — **CLOSED in Phase 7 §D.** Builder facet counts now derive from the matching engine (`clusterFacetsFromMatches({subjectKind:'human'})`), L1-only, aligned with team/agent. Count == filter definition.
 4. **JSON-LD `knowsAbout` external validation** — run a real `/agent/<slug>`, `/team/<slug>`, `/u/<username>` URL through Google Rich Results test or schema.org validator; confirm `knowsAbout` Atlas URLs parse cleanly.
 5. **`/atlas/roles/[id]` Practitioners UX** (browser-paired) — live browse (not just curl): grid layout, icons, receipt-count chips, the cluster overflow link at the 20 cap.
 6. **Materialized-view migration design** — N/A while the view is regular (always-fresh). If receipts cross ~10K and Phase 7+ migrates to materialized for scale, an automated REFRESH trigger (on receipt insert/update/delete) must be designed first.

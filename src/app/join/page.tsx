@@ -55,8 +55,10 @@ function tog<T>(arr: T[], setArr: (v: T[]) => void, val: T) {
 // Team slug contract — mirrors the server-side SLUG_RE in /api/join/team (Phase 4 §E).
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/ // 3–40 chars, kebab-case
 
-// Auto-derive a kebab-case slug from a team name (Phase 4 §E.2 DECISION 1).
-function deriveTeamSlug(name: string): string {
+// Auto-derive a kebab-case slug from a signup name. Used by both Card 2 (team)
+// and Card 3 (agent) signup flows — the sanitization is identical (Phase 4 §E.2;
+// renamed from deriveTeamSlug to reflect dual-use in Phase 7 §G).
+function deriveSignupSlug(name: string): string {
   const base = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -575,7 +577,7 @@ export default function JoinPage() {
         <input autoComplete="organization" type="text" placeholder="Acme AI Studio" value={teamName} onChange={e => {
           const v = e.target.value
           setTeamName(v)
-          if (!slugManuallyEdited) setTeamSlug(deriveTeamSlug(v))
+          if (!slugManuallyEdited) setTeamSlug(deriveSignupSlug(v))
         }} style={inputStyle} />
       </div>
       <div style={{ marginBottom: '1.25rem' }}>
@@ -617,7 +619,7 @@ export default function JoinPage() {
         <input autoComplete="off" type="text" placeholder="Atlas Researcher" value={agentName} onChange={e => {
           const v = e.target.value
           setAgentName(v)
-          if (!agentSlugManuallyEdited) setAgentSlug(deriveTeamSlug(v))
+          if (!agentSlugManuallyEdited) setAgentSlug(deriveSignupSlug(v))
         }} style={inputStyle} />
       </div>
       <div style={{ marginBottom: '1.25rem' }}>

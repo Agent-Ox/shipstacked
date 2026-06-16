@@ -1,0 +1,1589 @@
+================================================================================
+SHIPSTACKED DISTRIBUTION INTELLIGENCE REPORT
+AI-Native Builder Surface Area Map
+Prepared by Ox — May 4, 2026
+================================================================================
+
+
+================================================================================
+PART 1: SURFACE-BY-SURFACE MAP
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 1 — BUILD & SHIP SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. GITHUB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Code hosting / open-source ecosystem
+
+Core behaviors:
+- Commit work publicly to build a visible contribution graph
+- Star and fork others' repos as social currency
+- Publish projects as proof-of-work artifacts
+- Maintain open-source packages that others depend on
+- Signal expertise through repo quality and README depth
+
+Builder stage: Building → Showcasing → Reputation
+
+Scale: 100M+ registered users; ~15-20M active AI/ML repos
+
+Signal density: EXTREME
+Top 10% cluster here by default. Commit frequency, repo stars, and dependency
+count are hard, unfakeable signals. A builder with 50+ stars on an AI agent
+framework repo is provably credible.
+
+Visibility mechanics:
+- Star counts and trending repos (GitHub Explore)
+- Follower graphs
+- Organisation membership (being in anthropics-labs org = signal)
+- Dependency trees (if your package is a dependency, you're credible)
+- Contribution graphs (green squares = active)
+
+Monetisation mechanics:
+- GitHub Sponsors (direct)
+- Indirectly: recruiters mine GitHub constantly
+- OSS maintainers command premium consulting rates
+
+Accessibility: Fully open with REST + GraphQL API
+
+Data exhaust:
+- Repo activity, commit history, languages, star counts
+- Contributor graphs, org membership, dependency trees
+- README content (rich for parsing tech stack signals)
+- User emails often in public commits or profile bios
+- Extremely rich and fully accessible
+
+ShipStacked leverage:
+SUPPLY: Scrape repos tagged with AI agent frameworks — LangChain, CrewAI,
+AutoGen, n8n, Composio, Semantic Kernel, smolagents. Filter by: 10+ stars,
+commit in last 30 days, owner has no corporate affiliation = indie builder.
+DEMAND: Post job opportunities as GitHub Discussions in active agent repos.
+IDENTITY: "Import your GitHub" as profile seed — auto-populate ShipStacked
+from repos, languages, contribution history, star counts.
+
+Tactical entry points:
+- GitHub Actions integration: badge/link that auto-posts shipped projects
+  to ShipStacked on deploy
+- GitHub Apps marketplace listing: "Add to ShipStacked" as one-click install
+- Search: github.com/search?q=topic:ai-agent&sort=stars&o=desc — run this
+  weekly, outreach to top new entrants
+- GraphQL API: pull all users who starred key repos (CrewAI, AutoGen) —
+  these are your warmest leads
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. HUGGING FACE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: AI model hub / ML community
+
+Core behaviors:
+- Upload fine-tuned models and publish model cards
+- Create Spaces (live Gradio/Streamlit demos)
+- Publish datasets with documentation
+- Collaborate on ML experiments
+- Benchmark models on leaderboards
+
+Builder stage: Building → Showcasing → Reputation
+
+Scale: 5M+ models, 500K+ Spaces, 50K+ active orgs
+
+Signal density: EXTREME
+A Space with 1,000+ likes = elite builder. Model download counts are
+unfakeable proof of real-world usage. HF is where ML builders live.
+
+Visibility mechanics:
+- Trending models (homepage)
+- Trending Spaces (homepage)
+- Like and download counts
+- Leaderboard rankings (LMSYS, Open LLM Leaderboard)
+- Organisation membership
+
+Monetisation mechanics:
+- HF Inference API credits
+- ZeroGPU compute grants
+- Enterprise licensing of private models
+- Consultancy driven by HF credibility
+
+Accessibility: Fully open; Hub API is public and well-documented
+
+Data exhaust:
+- Hub API: author, likes, downloads, tags, model cards, Space metadata
+- Leaderboard data publicly accessible
+- Dataset authors and download stats
+- All queryable without authentication for public assets
+
+ShipStacked leverage:
+SUPPLY: Scrape top Space creators sorted by likes in last 6 months — these
+are credible, active builders with real users but no identity layer outside HF.
+IDENTITY: "Import your HF profile" — models, Spaces, download counts as
+verified credentials on ShipStacked profile.
+DEMAND: HF Space authors are chronically undermonetised — job listings
+targeted here land on people actively wanting work.
+
+Tactical entry points:
+- HF Hub API: huggingface.co/api/spaces?sort=likes&limit=500
+- Auto-generate ShipStacked profiles for top 500 Space creators
+- "Claim your ShipStacked profile" cold email to unclaimed profiles
+- "Verified AI builder" badge that HF activity feeds into as a score component
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. REPLIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Cloud IDE / vibe coding platform
+
+Core behaviors:
+- Fork and modify existing Repls (zero setup friction)
+- Instant deploys with shareable URLs
+- Share Repls as live demos in communities
+- Build without local environment configuration
+
+Builder stage: Learning → Building → Showcasing
+
+Scale: 30M+ users; heavily skewed toward new builders and students
+
+Signal density: MEDIUM
+High volume but lower average depth. Top 10% use it for prototyping and demos,
+not as their primary build environment. Signal: builders with 100+ forks of
+their Repls are creating real value.
+
+Visibility mechanics:
+- Replit Community (public feed)
+- Trending Repls
+- Featured on homepage
+- Social shares of Repl preview URLs
+
+Monetisation mechanics:
+- Replit Bounties (gig-style work for builders)
+- Replit deployments (revenue for Replit, not builders)
+- Builders sell products built on Replit externally
+
+Accessibility: Open; public Repls discoverable
+
+Data exhaust:
+- Public Repls searchable with tags, fork counts, run counts
+- Community posts scrapeable
+- Bounty listings publicly visible
+
+ShipStacked leverage:
+SUPPLY: Target Replit users graduating to "real" projects — these are builders
+on the cusp who need an identity layer. Filter by: Repls with 50+ forks.
+DEMAND: Replit Bounties is weak monetisation — ShipStacked jobs are a
+superior alternative for builders ready to level up.
+IDENTITY: Demo link from Replit embeds directly on ShipStacked profile
+as a live project showcase.
+
+Tactical entry points:
+- "Publish to ShipStacked" button from Repl share page (partnership)
+- Scrape trending Repls tagged with AI/agent — outreach to creators
+- Replit Bounties board as demand signal: what are people paying for?
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. VERCEL / NETLIFY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Deployment platform
+
+Core behaviors:
+- Ship fast, iterate publicly
+- Share preview URLs as demos
+- Use for front-end + API routes + edge functions
+- GitHub integration makes deploy history public by default
+
+Builder stage: Building → Showcasing
+
+Scale: Vercel: 4M+ teams; Netlify: 3M+ developers
+
+Signal density: HIGH
+Anyone deploying on Vercel is past the "just learning" phase. A deploy = a
+real product exists. This is a hard signal.
+
+Visibility mechanics:
+- Share deploy URLs
+- GitHub integration exposes deploy activity in repo
+- Preview URLs are shareable without auth
+
+Monetisation mechanics:
+- None direct for builders
+- But deploy = live product = potential revenue
+
+Accessibility: Vercel has open API; deployment metadata partially accessible
+
+Data exhaust:
+- Vercel API for authenticated users
+- Public deploy URLs as signal (not mass-queryable)
+
+ShipStacked leverage:
+IDENTITY: "Verified live deploy" badge on ShipStacked profiles linked to
+Vercel/Netlify URLs. Employers see: not just a GitHub repo — an actual running
+product. This is the credibility gap ShipStacked closes.
+
+Tactical entry points:
+- Vercel integration: detect deploys and prompt "Add to ShipStacked portfolio"
+- Vercel Marketplace listing: one-click connect
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. LOVABLE / BOLT / CURSOR / WINDSURF (VIBE CODING TOOLS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: AI-assisted IDE / app builder
+
+Core behaviors:
+- Prompt → generate → deploy (often in under an hour)
+- Rapid prototyping without deep coding knowledge
+- Share screenshots and demo GIFs on Twitter/X immediately after build
+- The act of building is inherently public and social
+
+Builder stage: Learning → Building → Showcasing
+
+Scale:
+- Lovable: ~1M+ users
+- Bolt: significant (StackBlitz ecosystem)
+- Cursor: 500K+ paying users
+- Windsurf: fast-growing, strong enterprise traction
+
+Signal density: MEDIUM
+Extremely high volume; quality varies wildly. Top 10% here ship to production
+with real users. Most are exploring. Signal filter: does the thing they built
+have an actual domain and paying users?
+
+Visibility mechanics:
+- Twitter/X is the primary showcase surface — these tools are social by design
+- Reddit posts ("I built X in 2 hours with Cursor")
+- Product Hunt launches
+
+Monetisation mechanics:
+- None within the tools themselves
+- Builders sell SaaS apps they've built externally
+- Consulting and "build it for you" services
+
+Accessibility: No public APIs; social sharing creates scraping surface on X
+
+Data exhaust:
+- Twitter/X: search "built with Lovable", "made with Bolt", "shipped with Cursor"
+- Reddit: r/cursor, r/lovabledev
+- These searches surface active builders at the moment of showcase
+
+ShipStacked leverage:
+SUPPLY: Monitor Twitter for "built with [tool]" posts — these are builders
+at peak showcase intent. Reach out immediately.
+IDENTITY: ShipStacked becomes the destination link these builders drop in
+their launch tweets — not Linktree, not a blank GitHub.
+DEMAND: Vibe coders have zero credibility infrastructure. ShipStacked gives
+them a professional identity for the first time.
+
+Tactical entry points:
+- "Built with Lovable? Add it to ShipStacked" — partnership for export button
+- Twitter monitoring: automated outreach at the moment of build-showcase
+- Offer ShipStacked as the canonical link-in-bio for vibe coders
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. N8N / MAKE / ZAPIER (AUTOMATION BUILDERS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: No-code/low-code automation platforms
+
+Core behaviors:
+- Build and publish workflow templates
+- Solve business problems without writing code
+- Share automations in community forums
+- Sell templates or offer automation-as-a-service
+
+Builder stage: Learning → Building → Monetising
+
+Scale:
+- n8n: 50K+ GitHub stars, 400K+ community members
+- Make: 500K+ users
+- Zapier: 6M+ users (though lower builder signal density)
+
+Signal density: HIGH for n8n community; MEDIUM for Make/Zapier
+n8n skews toward advanced technical operators who build real production systems.
+Zapier skews more consumer. n8n community forum is where the serious ones live.
+
+Visibility mechanics:
+- Template marketplace (n8n, Make)
+- Community forums (Discourse for n8n)
+- YouTube tutorials
+- Reddit (r/n8n, r/MakeAutomation)
+
+Monetisation mechanics:
+- Selling workflow templates on Gumroad or direct
+- Offering automation services as freelancer
+- Agency model: build automations for SMBs
+
+Accessibility: n8n fully open-source; Make/Zapier closed but community public
+
+Data exhaust:
+- n8n community: forum posts, template authors, stars
+- Make community publicly accessible
+- Reddit communities scrapeable via API
+
+ShipStacked leverage:
+SUPPLY: n8n template authors are building real systems — import template
+portfolio as proof-of-work on ShipStacked.
+DEMAND: Automation builders freelance heavily but have no credibility layer
+outside Upwork. ShipStacked fills that gap.
+IDENTITY: "Automation builder" as a distinct profile type on ShipStacked
+with template count and deployment count as verified credentials.
+
+Tactical entry points:
+- n8n community: post "Automation builders — claim your ShipStacked profile"
+- Template author scrape from n8n marketplace → cold outreach
+- n8n workflow node: auto-post completed projects to ShipStacked
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. MCP ECOSYSTEM (MODEL CONTEXT PROTOCOL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Emerging machine-to-machine protocol / infrastructure
+
+Core behaviors:
+- Build MCP servers that expose tools to AI hosts (Claude, Cursor, Windsurf)
+- Publish to GitHub with topic:mcp-server tag
+- Get adopted by other developers and AI applications
+- Build infrastructure that other agents consume
+
+Builder stage: Building → Reputation (early days)
+
+Scale: Anthropic launched Nov 2024; 1,000+ MCP servers now on GitHub.
+Growing at ~50 new repos per week.
+
+Signal density: MAXIMUM
+Anyone building MCP servers right now is at the absolute frontier. This is
+where the best 0.1% of AI-native builders are working. If you have a popular
+MCP server (100+ GitHub stars), you are elite.
+
+Visibility mechanics:
+- GitHub trending (topic:mcp-server)
+- Awesome-MCP lists (community curated)
+- Adoption by host applications (Claude Desktop, Cursor)
+- Twitter/X posts when MCP servers get featured
+
+Monetisation mechanics:
+- Mostly reputation-driven today
+- Early commercial MCP servers emerging (paid tiers)
+- Consulting driven by MCP credibility
+
+Accessibility: Fully open; GitHub API returns everything
+
+Data exhaust:
+- GitHub search: topic:mcp-server returns full list with stars, authors, dates
+- Author contact info often in README or GitHub profile
+- Adoption metrics visible through dependent repos
+
+ShipStacked leverage:
+SUPPLY: Scrape topic:mcp-server RIGHT NOW — 1,000 repos, owner emails in
+READMEs, barely anyone recruiting here. This is the single highest-signal
+low-competition acquisition vector available.
+IDENTITY: "MCP verified builder" badge on ShipStacked — a credential that
+means something to employers in 2026.
+DEMAND: MCP builders are building the infrastructure layer; companies
+building on MCP desperately need these people.
+
+Tactical entry points:
+- GitHub API: api.github.com/search/repositories?q=topic:mcp-server&sort=stars
+- Personal outreach: "You're building MCP infrastructure. ShipStacked wants
+  to feature you as a founding builder."
+- Create the canonical "MCP builders" leaderboard on ShipStacked — builders
+  will link to it, employers will bookmark it
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. NPM / PYPI (PACKAGE REGISTRIES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Package distribution ecosystem
+
+Core behaviors:
+- Publish libraries and tools for others to use
+- Maintain open-source packages with versioning
+- Build reputation through download counts and dependent projects
+
+Builder stage: Building → Reputation → Scaling
+
+Scale: npm: 3M+ packages; PyPI: 500K+ packages
+
+Signal density: EXTREME for package authors
+Download counts are unfakeable hard proof-of-work. A PyPI package with
+100K weekly downloads means real people are depending on your code.
+
+Visibility mechanics:
+- Download counts (public)
+- Dependent package counts
+- GitHub linked repo stars
+- npmjs.com trending section
+
+Monetisation mechanics:
+- Indirect: package author credibility drives consulting and job offers
+- GitHub Sponsors tied to packages
+- OSS maintainers command $200-500/hr consulting rates
+
+Accessibility: npm registry and PyPI JSON APIs fully public, no auth required
+
+Data exhaust:
+- npm: registry.npmjs.org/-/v1/search?text=keywords:ai-agent
+- PyPI: pypi.org/pypi/{package}/json
+- Download counts, author info, dependency trees — all public
+
+ShipStacked leverage:
+SUPPLY: Scrape AI-tagged packages from npm/PyPI, rank by weekly downloads,
+identify authors — these are builders with real-world usage metrics.
+IDENTITY: "My packages" section on ShipStacked profile with live download
+counts pulled from registry APIs — this is verifiable proof-of-work that
+no CV or LinkedIn profile can match.
+
+Tactical entry points:
+- npm search: keywords:langchain OR keywords:ai-agent OR keywords:llm
+- Filter: weekly downloads > 1,000, updated in last 90 days
+- Author email in package.json — direct outreach vector
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. AGENTOPS / LANGSMITH / LANGFUSE (AGENT OBSERVABILITY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Agent monitoring and debugging infrastructure
+
+Core behaviors:
+- Instrument production agents with tracing
+- Debug trace failures in LLM pipelines
+- Optimise agent performance and cost
+- Monitor production deployments
+
+Builder stage: Building → Scaling
+
+Signal density: EXTREME
+If you're using observability tooling, you're running agents in production.
+This is the clearest possible signal that someone is a serious, active
+AI builder — not a learner, not a hobbyist.
+
+Accessibility: Partially open; GitHub repos public
+
+ShipStacked leverage:
+IDENTITY: "Verified production agent builder" badge sourced from LangSmith or
+Langfuse integration data. This credential means: I run real agents at scale.
+PARTNERSHIP: AgentOps / Langfuse → "Export your agent portfolio to ShipStacked"
+— one-click profile creation with production metrics as the proof-of-work.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. COMPOSIO / RELEVANCE AI / CREWAI CLOUD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Agent deployment platforms
+
+Core behaviors:
+- Deploy agents connected to 250+ external tools/APIs
+- Productise automations for clients
+- Build and sell agent workflows
+
+Builder stage: Building → Monetising
+
+Signal density: EXTREME
+Deployment = production use = real builder. Composio specifically attracts
+sophisticated builders integrating complex tool ecosystems.
+
+ShipStacked leverage:
+- Deployed agent count as a ShipStacked credibility metric
+- Partnership: "Deploy with Composio → Showcase on ShipStacked"
+- Composio community is a high-signal acquisition pool
+
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 2 — SOCIAL & SHOWCASE SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. TWITTER / X
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Social platform / real-time showcase
+
+Core behaviors:
+- Build-in-public threads with screenshots and metrics
+- Demo GIFs and video clips of live products
+- Launch tweets with Product Hunt and Stripe links
+- Reply to influential AI accounts to gain visibility
+- #buildinpublic, #vibecoding, #aiagents, #shipitmindset
+
+Builder stage: All stages — especially Showcasing and Reputation
+
+Scale: 600M+ users; AI/builder community ~2-5M active accounts
+
+Signal density: EXTREME
+Twitter is the primary reputation layer for AI builders. Follower count +
+engagement rate + tweet quality = the most legible credibility signal in
+this community. Everyone who matters is here.
+
+Visibility mechanics:
+- Hashtag discovery (#buildinpublic is the canonical one)
+- Replies to influential accounts (Andrej Karpathy, Greg Brockman, etc.)
+- Viral threads (metrics, breakthroughs, launches)
+- Quote tweets from larger accounts
+
+Monetisation mechanics:
+- X Premium subscriptions
+- Sponsored posts
+- Driving traffic to external products
+- Course and newsletter sales
+
+Accessibility: API available ($100/mo basic tier); scraping possible but
+rate-limited. Nitter mirrors provide scrape-friendly access.
+
+Data exhaust:
+- Profile data, tweet history, follower/following graphs
+- Engagement metrics (likes, retweets, replies)
+- Hashtag streams in real time
+
+ShipStacked leverage:
+SUPPLY: #buildinpublic is the single most valuable acquisition stream —
+monitor it daily, find active builders, reach out personally.
+IDENTITY: ShipStacked profile should replace Linktree as the link in bio
+for AI builders. It's proof-of-work, not just a list of links.
+DEMAND: Employers scout Twitter for talent — ShipStacked becomes the
+conversion layer when they find a builder they want to hire.
+
+Tactical entry points:
+- Automated monitoring: search "built with" OR "just shipped" OR "launched"
+  + AI keywords daily
+- Reach out within 24h of a builder's launch tweet — highest intent moment
+- Auto-share to X when a builder gets hired via ShipStacked (viral loop)
+- "Verified by ShipStacked" badge that builders add to their Twitter bio
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. PRODUCT HUNT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Product launch platform
+
+Core behaviors:
+- Launch products to collect early users and upvotes
+- Write maker stories and respond to comments
+- Hunt and upvote others' products (reciprocal)
+- Use as VC visibility and press trigger
+
+Builder stage: Showcasing → Monetising
+
+Scale: 8M+ users; 1,000-2,000 launches per week
+
+Signal density: HIGH
+Everyone who launches here is shipping. Maker status = proof of work.
+A product with 500+ upvotes = validated market interest.
+
+Visibility mechanics:
+- Daily ranking (top 5 get email newsletter, massive exposure)
+- Maker comment quality (visible signal of competence)
+- Hunter network (who hunts you matters)
+
+Monetisation mechanics:
+- Direct product sales driven by PH traffic
+- B2B lead generation
+- VC inbound post-launch
+
+Accessibility: Public API; maker profiles publicly visible
+
+Data exhaust:
+- PH API returns: products, makers, upvotes, launch dates, comments
+- All maker profiles linkable to external profiles
+
+ShipStacked leverage:
+SUPPLY: Every PH maker who launched an AI product in 2024-25 is a target.
+API pull → email outreach → "Claim your ShipStacked profile."
+IDENTITY: "Verified PH maker" badge importable from launch data — upvote
+count as a credibility metric on ShipStacked profile.
+ATTENTION: ShipStacked should launch on Product Hunt — this is not optional.
+Time it for maximum impact (Tuesday 12:01 AM PST).
+
+Tactical entry points:
+- PH API: producthunt.com/v2/api/graphql — query AI-tagged products last 12mo
+- Scrape maker profiles from top 100 AI launches
+- "Built on Product Hunt? Add it to ShipStacked" campaign
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. INDIEHACKERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Community / forum for bootstrappers and indie founders
+
+Core behaviors:
+- Share revenue milestones publicly ($1K MRR, $10K MRR)
+- Discuss strategies and tactics in forum threads
+- Write founder interviews (selected by IH team)
+- Follow others' journeys as accountability
+
+Builder stage: Building → Monetising → Scaling
+
+Scale: 200K+ members
+
+Signal density: EXTREME
+If someone posts a revenue milestone, they're earning. This is the
+highest-intent builder community on the internet. No fake signals —
+public revenue = real business.
+
+Visibility mechanics:
+- Forum upvotes
+- Milestone posts (heavily promoted by IH)
+- Featured interviews (email newsletter, homepage)
+- "Products" page (all products listed with revenue data if disclosed)
+
+Monetisation mechanics:
+- Direct product revenue (discussed and celebrated publicly)
+- Consulting driven by IH credibility
+
+Accessibility: Mostly public; profile pages and forum scrapeable
+
+Data exhaust:
+- Revenue figures self-reported (searchable)
+- Product links, founder profiles
+- Forum content accessible via scraping
+
+ShipStacked leverage:
+SUPPLY: IH members are building products alone and will need hiring
+infrastructure as they grow. Perfect future employer pipeline.
+IDENTITY: ShipStacked as the "professional profile" for IH builders —
+IH shows revenue, ShipStacked shows how they built it.
+DEMAND: IH founders hiring their first engineer are ideal employers.
+
+Tactical entry points:
+- Post on IH about ShipStacked — instant credibility and community distribution
+- Scrape milestone posts → identify builders who are earning → outreach
+- "Verified indie builder" badge that IH revenue data feeds into
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. HACKER NEWS (SHOW HN)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Forum / community (YC-adjacent)
+
+Core behaviors:
+- Show HN posts to announce new projects
+- Technical discussions that establish credibility
+- Ask HN for feedback on products and ideas
+- "Who is hiring" threads (monthly employer signal)
+
+Builder stage: Showcasing → Reputation
+
+Scale: 10M+ monthly visitors; 500K+ registered accounts
+
+Signal density: EXTREME
+HN is the most technically rigorous audience on the internet. A Show HN
+with 100+ points means your project passed a very high bar. HN credibility
+is a reliable proxy for builder quality.
+
+Visibility mechanics:
+- Upvotes on Show HN posts
+- Comment quality (visible signal)
+- Front page = significant tech media amplification
+
+Data exhaust:
+- Algolia HN API: hn.algolia.com/api/v1/search?tags=show_hn&query=AI+agent
+- Full post history, comment threads, user profiles accessible
+
+ShipStacked leverage:
+SUPPLY: Pull all Show HN posts tagged with AI/agent topics from last 12 months.
+Builders who post Show HN are self-selecting as people who want visibility.
+IDENTITY: "Featured on Hacker News" badge with upvote count on ShipStacked.
+This is a signal employers deeply trust.
+
+Tactical entry points:
+- HN Algolia API: free, full historical access, search by topic
+- Show HN posts with 50+ points in last 12 months = priority outreach targets
+- ShipStacked should post its own Show HN when ready
+
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 3 — COMMUNITY & PRIVATE SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. DISCORD (AI/BUILDER COMMUNITIES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Private real-time community
+
+Core behaviors:
+- Ask for help in technical channels
+- Share builds in #showcase or #builds channels
+- Find collaborators and give peer feedback
+- Stay updated on framework releases and breaking changes
+
+Builder stage: Learning → Building → Collaborating
+
+Key servers and scale:
+- OpenAI Developers: 200K+ members
+- Hugging Face: 80K+ members
+- LangChain: 50K+ members
+- CrewAI: 30K+ members
+- AI Tinkerers: 20K+ members
+- All-in-One Person (Liam Ottley): 100K+ members
+- Buildspace: alumni community
+- various vibe coding servers
+
+Signal density: EXTREME within specific servers
+LangChain and CrewAI Discord have the best AI agent builders on the planet
+active daily. The #showcase channels are the highest-signal acquisition
+vectors that exist. A builder who posts in LangChain #showcase has shipped
+something real and wants it seen.
+
+Visibility mechanics:
+- #showcase channel posts
+- Role assignments (earned by contribution)
+- Server-specific reputation systems
+- DM culture (warm introductions)
+
+Accessibility: Open to join; Discord API available for bots
+
+ShipStacked leverage:
+SUPPLY: #showcase channels in LangChain, CrewAI, HF — monitor these
+manually and through bots. Every showcase post is a warm lead.
+BOT: Deploy ShipStacked bot to high-signal servers:
+  "/shipstack — Get your free builder profile. We import your GitHub."
+DEMAND: Job listings posted in community channels by ShipStacked
+  employers as a free community service.
+
+Tactical entry points:
+- Join all high-signal servers, monitor #showcase daily
+- Build Discord bot: "React with 🚀 to add this project to ShipStacked"
+- Partner with server admins: ShipStacked sponsors community events
+- No-permission: create a ShipStacked channel in your own server,
+  invite builders to cross-post their showcases
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+16. REDDIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Forum community
+
+Key subreddits:
+- r/LocalLLaMA: 250K+ (extremely technical, actual builders)
+- r/MachineLearning: 3M+ (mixed; researchers + builders)
+- r/SideProject: 180K+ (builders wanting visibility)
+- r/entrepreneur: 3M+ (monetisation-focused)
+- r/ChatGPT: 5M+ (mostly consumers)
+- r/AutoGPT: 100K+
+
+Core behaviors:
+- "I built this" posts seeking validation and early users
+- Ask questions, critique tools, seek technical help
+- Post launch announcements
+
+Builder stage: Learning → Showcasing → Seeking feedback
+
+Signal density:
+- r/LocalLLaMA: EXTREME (runs local models = serious technical depth)
+- r/SideProject: HIGH (wants visibility = showcasing intent)
+- r/MachineLearning: MEDIUM (mix of researchers and builders)
+- Others: LOW to MEDIUM
+
+Data exhaust:
+- Reddit API (PRAW): $0.24/1K calls; full historical access
+- r/SideProject "I built this" posts = ready-made supply list
+
+ShipStacked leverage:
+SUPPLY: Pull all r/SideProject + r/LocalLLaMA "I built this" posts
+from last 6 months. Authors are builders explicitly seeking visibility.
+IDENTITY: Comment on "I built this" posts: "Great build — here's your
+ShipStacked profile: [link]" (auto-generated from their links).
+INTELLIGENCE: Reddit tells you what builders are frustrated about.
+Use this for product development.
+
+Tactical entry points:
+- PRAW: search r/SideProject for "built" + AI keywords, last 180 days
+- Comment genuinely on r/LocalLLaMA — credibility in this sub is valuable
+- r/entrepreneur "Who wants feedback" threads — identify builders with products
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+17. SLACK (PRIVATE BUILDER GROUPS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Private professional community
+
+Key communities:
+- Lenny's Community: ~$300/yr, 30K+ product builders
+- On Deck alumni: curated, invitation-based
+- YC alumni network: the most valuable startup network in existence
+- Ramen Club: bootstrapped founders
+- AI Camp: AI-focused operators
+
+Builder stage: All stages; skewed toward experienced and monetising
+
+Signal density: EXTREME — these are curated. Presence = earned.
+
+Accessibility: Invite-only; no public data
+
+ShipStacked leverage:
+These cannot be scraped or automated. They require warm introductions.
+- Identify which communities ShipStacked's founding members are in
+- Get ShipStacked posted in these communities by a trusted member
+- YC alumni specifically: if you can get one YC founder to endorse ShipStacked,
+  it cascades through the network
+
+Tactical entry points:
+- Thomas's personal network is the key asset here — not automation
+- Identify 5 people in these communities who will post about ShipStacked
+  in exchange for lifetime access or equity
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+18. TELEGRAM (AI BUILDER CHANNELS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Messaging / community channels
+
+Core behaviors:
+- Follow channels for AI news and tool releases
+- Share resources and tutorials in group chats
+- Coordinate on projects and find collaborators
+
+Scale: AI-focused Telegram groups range 10K to 500K members per group
+
+Signal density: MEDIUM — lower barrier than Discord = more noise.
+But some groups (crypto-adjacent AI builders, specific tool communities)
+are very active and technically deep.
+
+Data exhaust: Public Telegram channels fully scrapeable via Telegram API
+
+ShipStacked leverage:
+- Build a ShipStacked Telegram channel: post job opportunities + builder spotlights
+- Scrape public AI builder channels for active contributors
+- Monitor channels for builder announcements
+
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 4 — FREELANCE & MONETISATION SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+19. UPWORK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Freelance marketplace
+
+Core behaviors:
+- Post proposals for AI automation and agent contracts
+- Build reputation through completed jobs and reviews
+- Specialise in specific stacks (LangChain, n8n, GPT API integration)
+- Upsell from hourly to fixed-price retainers
+
+Builder stage: Monetising → Scaling
+
+Scale: 18M+ freelancers; AI automation category growing 300%+ YoY
+
+Signal density: HIGH for freelance intent
+If someone has 50+ completed AI automation jobs on Upwork with 4.9+ rating,
+they are active, skilled, and battle-tested. Job completion = proof of work.
+
+Visibility mechanics:
+- Job Success Score (JSS)
+- Completed job count
+- Specialisation badges ("Expert-Vetted")
+- Search ranking in category
+
+Monetisation mechanics:
+- Direct project fees ($25-250/hr for AI builders)
+- Long-term retainer contracts
+
+Accessibility: Profiles publicly viewable; no official API but scrapeable
+
+Data exhaust:
+- Freelancer profiles: skills, hourly rate, job history, reviews, portfolio
+- Category search: upwork.com/search/profiles/?q=ai+agent&category_uid=...
+
+ShipStacked leverage:
+SUPPLY: Upwork AI builders are the highest-intent supply — they want better,
+higher-quality, better-paying work. ShipStacked offers exactly this.
+POSITIONING: "Upwork but for AI-native roles" — premium positioning,
+no race-to-bottom on price.
+NARRATIVE: "Graduate from Upwork" — use ShipStacked to build reputation
+that attracts $150K/yr roles instead of $50/hr gig contracts.
+
+Tactical entry points:
+- Scrape Upwork: search AI automation, LLM development, agent builders
+- Filter: 10+ jobs, 4.8+ rating, active in last 30 days = active builder
+- Cold outreach: "Your Upwork profile is strong. Here's what ShipStacked
+  can do for your career."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+20. TOPTAL / ARC.DEV / CONTRA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Vetted freelance networks
+
+Core behaviors:
+- Pass rigorous screening to access premium clients
+- Work at $80-250+/hr with Fortune 500 companies
+- Build reputation within platform for higher-value assignments
+
+Scale:
+- Toptal: claims top 3%; ~10K active freelancers
+- Arc.dev: 190K+ engineers
+- Contra: 400K+ freelancers
+
+Signal density:
+- Toptal: EXTREME (if you passed screening, you're elite)
+- Arc.dev: HIGH
+- Contra: HIGH
+
+Accessibility: Toptal fully closed; Arc/Contra public profiles
+
+Data exhaust: Arc and Contra profiles publicly accessible and scrapeable
+
+ShipStacked leverage:
+DIFFERENTIATION: ShipStacked must offer something these platforms don't:
+AI-native proof-of-work that includes agent deployments, GitHub activity,
+hackathon wins — not just a CV and skill test.
+SUPPLY: Arc/Contra profiles → import to ShipStacked as verified work history.
+POSITIONING: ShipStacked is not a screening platform — it's an identity
+layer. Builders can be on both Toptal AND ShipStacked.
+
+Tactical entry points:
+- Scrape Arc.dev profiles tagged with AI/ML/LLM
+- Contra public profiles: same approach
+- Outreach: "Your Arc profile is on ShipStacked — claim it and we'll
+  connect you with employers who specifically want AI builders."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+21. FIVERR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Gig marketplace
+
+Core behaviors:
+- Create gigs for AI chatbots, automation, agent builds
+- Optimise gig title/description for Fiverr search
+- Upsell basic → standard → premium packages
+- Collect reviews to rise in rankings
+
+Builder stage: Monetising (early stage)
+
+Scale: 4M+ sellers; AI automation category growing rapidly
+
+Signal density: MEDIUM
+Lower barrier = more noise. But active sellers with 50+ reviews and
+4.9+ rating are real builders earning real money.
+
+Data exhaust: Gig pages publicly accessible; review counts, pricing,
+delivery time all visible
+
+ShipStacked leverage:
+NARRATIVE: "Fiverr to full-time" — use ShipStacked to build a professional
+identity and exit the race-to-bottom gig economy.
+SUPPLY: Fiverr AI builders want to escape price pressure — ShipStacked
+offers access to employers who pay $100-200/hr, not $50 fixed.
+
+Tactical entry points:
+- Scrape Fiverr: search AI automation, LLM integration — filter by reviews
+- Outreach: same "upgrade your career" narrative
+
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 5 — LEARNING & CERTIFICATION SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+22. HACKATHONS (DEVPOST / LABLAB.AI / ETHGLOBAL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Events / competitions
+
+Core behaviors:
+- Build full projects under 24-72hr time pressure
+- Submit with demo, GitHub, and description
+- Form teams and meet collaborators
+- Win prizes and gain visibility
+
+Builder stage: Building → Showcasing → Reputation
+
+Scale:
+- Devpost: 1M+ users; 30K+ hackathons hosted
+- Lablab.ai: 80K+ AI hackathon participants
+- ETHGlobal: 50K+ participants
+
+Signal density: EXTREME
+Hackathon submitters are proven shippers — they built something real under
+pressure, in public, with a deadline. Winners are elite. This is the
+best quality signal available outside of actual production deployments.
+
+Visibility mechanics:
+- Public project pages with demo links and GitHub
+- Winner announcements
+- Prize categories (best use of X API, etc.)
+
+Accessibility: Devpost public API; Lablab.ai projects fully public
+
+Data exhaust:
+- Devpost API: all projects, team members, submission dates, prizes won
+- Lablab.ai: public project listings with participant profiles
+
+ShipStacked leverage:
+SUPPLY: Every Devpost AI track submitter from 2024-25 is a target.
+Auto-generate ShipStacked profiles from their submission data.
+DEMAND: Hackathon winners are exactly what employers want —
+builders who ship fast and work under pressure.
+ACQUISITION: "You submitted to [hackathon]. Your project is on ShipStacked
+— claim your profile." Zero friction, high conversion.
+
+Tactical entry points:
+- Devpost API: devpost.com/software/search?challenge_type=online
+  Filter: AI track, 2024-2025, has prize winner
+- Lablab.ai: scrape participant profiles from public hackathon pages
+- Sponsor 1 Lablab.ai hackathon: winner profiles auto-created on ShipStacked,
+  ShipStacked logo on winner announcements
+- ETHGlobal: similar approach for AI + blockchain builders (emerging overlap)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+23. BUILDSPACE (NIGHTS & WEEKENDS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Cohort-based builder accelerator
+
+Core behaviors:
+- 6-week sprints: build a real project, ship it, demo it
+- Cohort community for accountability and feedback
+- Demo Day at the end: public showcase of work
+
+Builder stage: Building → Showcasing
+
+Scale: 100K+ alumni
+
+Signal density: EXTREME
+Buildspace alumni are the canonical AI-native builders — they self-selected
+into a competitive program specifically to ship. Alumni who completed a
+cohort are proven shippers by definition.
+
+ShipStacked leverage:
+SUPPLY: Buildspace alumni = exactly the supply ShipStacked needs.
+PARTNERSHIP: "Export your Buildspace project to ShipStacked" — official
+partnership for alumni at cohort end.
+ACQUISITION: Sponsor Demo Day; ShipStacked profiles created for all
+presenters with demo video and GitHub embedded.
+
+Tactical entry points:
+- Reach out to Buildspace team directly — partnership pitch
+- Scrape public alumni projects from Buildspace community
+- Offer Buildspace alumni "Founding Builder" status on ShipStacked
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+24. DEEPLEARNING.AI / FAST.AI / COURSERA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Category: Online learning platforms
+
+Core behaviors:
+- Complete structured courses with certificates
+- Apply skills in projects
+- Network in course forums and Discord communities
+
+Builder stage: Learning → Building (transition point)
+
+Scale: DeepLearning.AI: 7M+ learners; fast.ai: 500K+
+
+Signal density: MEDIUM
+Completion signals skill acquisition but not shipping. Useful as the
+start of the funnel — intercept at the "now what?" moment post-certificate.
+
+ShipStacked leverage:
+ACQUISITION: Certificate import as ShipStacked credentials.
+INTERCEPT: At course completion: "Now build something real.
+Add it to ShipStacked." This is where learning converts to doing.
+
+Tactical entry points:
+- Partner with DeepLearning.AI for post-completion profile creation
+- Certificate verification API (if available)
+
+
+────────────────────────────────────────────────────────────────────────────────
+TIER 6 — CONTENT & NEWSLETTER SURFACES
+────────────────────────────────────────────────────────────────────────────────
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+25. YOUTUBE (AI BUILDER CHANNELS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Key channels: AI Jason, Matt Wolfe, David Ondrej, Nicholas Renotte,
+Liam Ottley, Sam Witteveen
+
+Core behaviors:
+- Watch tutorials to learn new techniques
+- Build-along projects
+- Subscribe to stay updated on new tools
+
+Builder stage: Learning → Building
+
+Signal density: LOW to MEDIUM (mostly consumers here, not builders)
+But — the builders who CREATE YouTube content are high signal.
+YouTube tutorial creators in AI space have 10K-500K subscribers
+and are extremely influential.
+
+ShipStacked leverage:
+- YouTube tutorial creators are influencers ShipStacked needs on its side
+- Offer "ShipStacked verified" badge for builders they feature
+- Sponsor AI YouTube channels: "Find builders like this on ShipStacked"
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+26. SUBSTACK / NEWSLETTERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Key newsletters: The Neuron, The Rundown AI, Ben's Bites, TLDR AI,
+Lenny's Newsletter, Cerebral Valley, Nathan Lands
+
+Core behaviors:
+- Stay updated on AI news and tool releases
+- Discover new builders and products
+- Find jobs (some newsletters have job sections)
+
+Builder stage: All stages (consumption surface, not production)
+
+Signal density: HIGH for newsletter writers; MEDIUM for readers
+
+ShipStacked leverage:
+- Advertise in TLDR AI, The Neuron, Ben's Bites — direct reach to builders
+- ShipStacked weekly "Builder Signal" newsletter:
+  Top builders this week, new projects, opportunities
+  This creates a distribution channel ShipStacked owns
+- Newsletter writers who cover AI builders are press targets
+
+
+================================================================================
+PART 2: CLUSTER MAP
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+🔥 HIGH SIGNAL — Dense with Top 10% Builders
+────────────────────────────────────────────────────────────────────────────────
+
+  GitHub (AI agent repos)             Hard commit signals, framework usage
+  Hugging Face (Spaces + models)      ML-specific, ships real demos with users
+  LangChain / CrewAI Discord          Active practitioners, daily production work
+  MCP ecosystem (GitHub)              Bleeding edge, 0.1% of builders
+  Buildspace alumni                   Self-selected, cohort-graduated shippers
+  Hackathon winners (Devpost/Lablab)  Proven under pressure, submitted publicly
+  npm/PyPI package authors            Real-world usage metrics, download proof
+  IndieHackers (revenue posters)      Earning money = real builder
+  AgentOps / LangSmith users          Production agents = credibility signal
+  Hacker News (Show HN)               Technical rigour bar is extremely high
+  Toptal vetted pool                  Top 3% screening passed
+
+────────────────────────────────────────────────────────────────────────────────
+📊 HIGH VOLUME — Large but Mixed Quality
+────────────────────────────────────────────────────────────────────────────────
+
+  Twitter/X (#buildinpublic)          Volume enormous; signal/noise varies wildly
+  Replit                              30M users, but most are learning
+  Fiverr                              4M sellers; wide quality spectrum
+  Reddit (r/MachineLearning)          3M members; mostly researchers and lurkers
+  Upwork (AI automation)              High volume; needs quality filtering
+  Lovable/Bolt/Cursor users           Fast-growing; vibe coders of all levels
+  LinkedIn                            Huge; mostly talkers, not shippers
+  Coursera/DeepLearning.AI            Learners pre-transition, not builders yet
+  YouTube (viewers)                   Consumption surface, not production
+
+────────────────────────────────────────────────────────────────────────────────
+💰 HIGH INTENT — Actively Trying to Earn Money
+────────────────────────────────────────────────────────────────────────────────
+
+  Upwork (active AI bidders)          Submitting proposals = earning intent
+  IndieHackers (milestone posters)    Measuring revenue publicly = committed
+  Toptal / Arc.dev                    Applied specifically to earn premium rates
+  Contra                              Building freelance profile to earn
+  Fiverr (active sellers with reviews) Gigs + reviews = intent to transact
+  n8n template marketplace sellers    Actively selling workflows
+  AI Twitter (product launch tweets)  Launching = selling = earning intent
+
+────────────────────────────────────────────────────────────────────────────────
+💎 UNDEREXPLOITED — Low Competition, High Upside
+────────────────────────────────────────────────────────────────────────────────
+
+  MCP server builders (GitHub)        1,000+ servers; almost no one recruiting here
+  Lablab.ai hackathon winners         AI-specific; barely anyone hiring here
+  n8n community template authors      Monetising without identity layer
+  Hugging Face Space creators         Often completely invisible to employers
+  AgentOps / LangSmith users          Production signal; no identity layer exists
+  Telegram AI builder groups          Scrapeable; almost no recruitment happening
+  Devpost AI track winners 2024-25    Archived, findable; nobody is following up
+  npm AI-tagged package authors       Download signal is public; no one acts on it
+  r/LocalLLaMA active posters         Technical depth; no recruitment happening
+
+────────────────────────────────────────────────────────────────────────────────
+🔒 CLOSED / HARD TO ACCESS — But Strategically Valuable
+────────────────────────────────────────────────────────────────────────────────
+
+  YC alumni Slack                     Most valuable startup network; invite-only
+  On Deck alumni network              Top builder community; strictly gated
+  Toptal vetted pool                  Internal database; screening required
+  Lenny's Community Slack             $300/yr; curated product professionals
+  Anthropic / OpenAI internal Slacks  Staff builders; no external access
+  Private Discord servers             Must earn invitation
+  AI company team networks            Only accessible via warm introduction
+
+
+================================================================================
+PART 3: BUILDER LIFECYCLE MAP
+================================================================================
+
+WHERE PEOPLE START
+─────────────────
+  YouTube tutorials (fast.ai, DeepLearning.AI, Nicholas Renotte)
+  Reddit (r/MachineLearning, r/LocalLLaMA — asking beginner questions)
+  Replit (first working code without local setup friction)
+  Discord (LangChain, OpenAI dev — asking for help in #general)
+  Coursera / DeepLearning.AI (structured learning with certificates)
+
+WHERE THEY LEVEL UP
+────────────────────
+  GitHub (commit daily; build first real project with a README)
+  Hugging Face (first model fine-tune or Space demo)
+  Hackathons (Lablab.ai, Devpost — pressure cooker with peers)
+  Buildspace (structured 6-week sprint with accountability)
+  n8n / Make (first automation that actually saves someone time)
+  Local model experimentation (r/LocalLLaMA → LM Studio → Ollama)
+
+WHERE THEY GAIN ATTENTION
+──────────────────────────
+  Twitter/X — #buildinpublic threads are the primary attention surface
+  Product Hunt — launch for early users and press visibility
+  IndieHackers — milestone posts get featured and drive credibility
+  Reddit — "I built this" posts in r/SideProject and r/LocalLLaMA
+  Hacker News — Show HN posts that survive the front page
+  Discord — #showcase channels in high-signal servers
+
+WHERE THEY EARN MONEY
+──────────────────────
+  Upwork / Contra / Fiverr — first freelance dollars
+  Gumroad — selling templates, prompts, workflow packages
+  Stripe on their own product — recurring SaaS revenue (IH milestone)
+  Full-time job via inbound — LinkedIn recruiter finds GitHub; Twitter DM
+  Consulting via warm intros — Twitter DMs, Discord connections
+  Hackathon prizes — non-trivial amounts ($5K-$50K for major competitions)
+
+WHERE THEY BUILD REPUTATION
+────────────────────────────
+  GitHub — stars, followers, contribution graph
+  Twitter/X — follower count and engagement rate
+  Hugging Face — model downloads and Space likes
+  npm / PyPI — weekly download counts
+  Hackathon wins — public, verifiable, prestigious
+  IndieHackers — revenue milestones and interviews
+  Podcast appearances — Lex, 20VC, various AI podcasts
+  HN front page — technical credibility signal
+
+
+================================================================================
+PART 4: STRUCTURAL GAPS
+================================================================================
+
+GAP 1: PROOF OF WORK IS FRAGMENTED ACROSS 15+ PLATFORMS
+─────────────────────────────────────────────────────────
+A builder's real work lives simultaneously on GitHub, Hugging Face, Devpost,
+npm, Upwork, Twitter, and Discord. No single view exists. Employers can't see
+the full picture. Builders can't leverage their cumulative reputation. Every
+platform is a silo that hoards the signal.
+
+ShipStacked is the aggregation layer. One profile. Every signal.
+
+GAP 2: IDENTITY IS NON-PORTABLE
+────────────────────────────────
+GitHub profile doesn't talk to Upwork profile. Upwork history doesn't connect
+to Hugging Face. HF doesn't know about Devpost wins. Reputation earned on one
+platform does not compound on another. Builders start from zero every time they
+enter a new context. This is economically inefficient for builders and
+epistemically inefficient for employers.
+
+ShipStacked makes reputation portable.
+
+GAP 3: MONETISATION IS INEFFICIENT FOR THE BEST BUILDERS
+──────────────────────────────────────────────────────────
+The best AI builders find jobs via cold inbound on Twitter or LinkedIn —
+luck-dependent, noisy, and slow. The worst builders clog Upwork with $15/hr
+bids. There is no quality-filtered market that routes premium demand to premium
+supply at premium rates. The market clears at the wrong price because signal
+is absent.
+
+ShipStacked is the quality-filtered market.
+
+GAP 4: DEMAND IS DISCONNECTED FROM ACTUAL PROOF-OF-WORK SIGNALS
+─────────────────────────────────────────────────────────────────
+Employers read CVs and LinkedIn profiles. The actual signals that predict
+builder quality — GitHub commit frequency, HF download counts, hackathon wins,
+production agent deployments, npm package usage — are either invisible to
+employers or require hours of manual research per candidate. Most employers
+don't know these signals exist, let alone how to read them.
+
+ShipStacked makes proof-of-work legible to employers automatically.
+
+GAP 5: VIBE CODERS HAVE NO CREDIBILITY LAYER
+──────────────────────────────────────────────
+Someone who built 10 production apps in Lovable with real paying users has
+no mechanism to prove that outside of showing someone their Stripe dashboard.
+Cursor, Windsurf, and Bolt don't emit signals that employers trust. The vibe
+coder category is growing 10x faster than any other builder category — and
+has no identity infrastructure. They are commercially credible but
+professionally invisible.
+
+ShipStacked is the credibility layer for vibe builders.
+
+GAP 6: THE "GRADUATED FREELANCER" HAS NO UPGRADE PATH
+───────────────────────────────────────────────────────
+A builder who has completed 50 Upwork AI jobs and wants a $150K/yr role
+cannot communicate that quality signal on LinkedIn. Their proof lives on
+Upwork in a format employers dismiss. The demand (well-funded startups, scale-
+ups) lives on LinkedIn, Angellist, and direct connections. No bridge exists
+between proven freelance output and premium employment opportunity.
+
+ShipStacked is the bridge.
+
+GAP 7: HACKATHON OUTPUT DECAYS
+────────────────────────────────
+A builder wins a Lablab.ai hackathon in November. By February, the project
+page is buried, the team has dispersed, and the win is effectively invisible.
+The proof-of-work event happened but was never captured in a durable,
+employer-accessible format. Hackathon wins should be permanent credentials.
+They aren't.
+
+ShipStacked makes hackathon wins permanent and employer-legible.
+
+
+================================================================================
+PART 5: SHIPSTACKED DISTRIBUTION STRATEGY
+================================================================================
+
+THESIS
+──────
+ShipStacked does not build another platform. It builds a proof-of-work graph
+that sits on top of every existing platform and makes builder reputation
+portable, verifiable, and employer-legible.
+
+Do not compete with GitHub. Make GitHub contribution history mean something
+in the job market. Do not compete with Upwork. Make Upwork work history
+portable to premium employers. Do not compete with Discord. Make Discord
+showcase activity visible to people with hiring budgets.
+
+ShipStacked is the layer between proof of work and economic opportunity.
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 1: CREDIBILITY INFRASTRUCTURE (Months 1–2)
+────────────────────────────────────────────────────────────────────────────────
+
+Goal: 1,000 high-signal builder profiles, claimed and active
+
+TACTIC 1: GitHub import + AI Builder Score
+  - Pull repos, languages, commit frequency, stars from GitHub API
+  - Auto-generate a ShipStacked profile from public data
+  - Score on four axes:
+      Recency: commits in last 30 days
+      AI-relevance: framework tags (LangChain, CrewAI, AutoGen, etc.)
+      Social proof: repo stars + forks
+      Output volume: number of shipped repos
+  - Publish the score publicly
+  - The score is the hook — builders want to know where they rank
+  - Builders who see their profile will claim it and improve it
+
+TACTIC 2: MCP Server Builder Outreach — Start This Week
+  - GitHub API: search topic:mcp-server, sort by stars, pull all owners
+  - ~1,000 repos; owner contact in README or GitHub profile bio
+  - Personal outreach (not automated): "You're building MCP infrastructure.
+    ShipStacked wants you as a founding builder."
+  - These are the 0.1%. Getting 50 of them on ShipStacked makes it
+    credible to the entire AI builder community.
+
+TACTIC 3: Hackathon Winner Import — Devpost + Lablab
+  - Devpost API: pull all AI-track winners from 2024–2025
+  - Auto-generate profiles from submission data (project + team + GitHub)
+  - Email: "You won [Hackathon Name]. Your project is on ShipStacked.
+    Claim your profile — it's free."
+  - Opt-in by claiming = high-quality, verified supply
+  - No friction. No form. Just click.
+
+TACTIC 4: Hugging Face Space Creator Outreach
+  - HF Hub API: top 500 Space creators by likes (last 6 months)
+  - These builders have live demos, real users, and measurable credibility
+  - They have no identity layer outside HF
+  - ShipStacked offer: HF profile + GitHub + demos in one employer-legible link
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 2: DEMAND INJECTION (Months 2–3)
+────────────────────────────────────────────────────────────────────────────────
+
+Goal: Real employer demand flowing to ShipStacked profiles
+
+TACTIC 1: Employer Activation (ShipStacked Full Access — already on Stripe)
+  - First 50 employers via warm intros and Thomas's network
+  - Pitch: "GitHub + Upwork history + hackathon wins, unified. Better
+    signal than a CV. Better than LinkedIn for AI builders."
+  - Target: Series A/B startups with AI engineering roles open,
+    AI-native companies, agencies that subcontract AI work
+
+TACTIC 2: Reverse Job Listing
+  - Instead of "post a job, wait" — ShipStacked proactively matches
+    builder profiles to employer requirements
+  - Employers describe what they need; ShipStacked surfaces ranked profiles
+  - Speed of match is the moat (LinkedIn: weeks; ShipStacked: minutes)
+
+TACTIC 3: Twitter Hire Loop
+  - When a builder gets hired via ShipStacked → auto-tweet option:
+    "Just landed [role] via @ShipStacked 🚀"
+  - Every hire becomes a referral event
+  - Social proof loop: builders see peers getting hired = FOMO = sign up
+
+TACTIC 4: Discord Bot (No Permission Required)
+  - Build ShipStacked bot; deploy to LangChain, CrewAI, HF servers
+  - Command: /shipstack → "Get your free profile. We import your GitHub."
+  - Showcase reaction: builders react 🚀 to add project to ShipStacked
+  - Zero friction, high-signal community access
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 3: ATTENTION REDIRECTION (Months 3–5)
+────────────────────────────────────────────────────────────────────────────────
+
+Goal: ShipStacked becomes the URL builders drop everywhere
+
+TACTIC 1: Replace Linktree in Bio
+  - ShipStacked profiles display: GitHub activity heatmap, HF models,
+    live Vercel deploys, Upwork job count, hackathon wins, employment history
+  - This is better than Linktree for AI builders — it's evidence, not links
+  - Viral mechanic: every builder who drops their ShipStacked link
+    exposes a new employer to the platform
+
+TACTIC 2: Verified Badge Ecosystem (No Permission Versions)
+  - "Verified by ShipStacked" badge for GitHub profile READMEs
+  - Browser extension: overlay ShipStacked score on GitHub/HF profiles
+    (shows employers the signal when they're already browsing)
+  - Partnership targets: Lovable, Bolt, Devpost for official integrations
+  - No-permission version ships first; partnerships follow traction
+
+TACTIC 3: Builder Signal Newsletter (Weekly)
+  - Content: top builders by activity this week, new projects, opportunities
+  - Targeted at employers and investors (not builders — builders are supply)
+  - Creates weekly reason for builders to stay active (might be featured)
+  - Distribution: Substack, cross-post to r/MachineLearning, AI Twitter
+  - Target: 10K employer/investor subscribers by Month 5
+
+TACTIC 4: Buildspace / Hackathon Cohort Integration
+  - At demo day / project submission → "Export to ShipStacked"
+  - Partnership pitch: ShipStacked handles builder identity so they don't
+  - Sponsor one Devpost or Lablab hackathon: winner profiles auto-created,
+    ShipStacked logo on winner announcements
+
+────────────────────────────────────────────────────────────────────────────────
+PHASE 4: NETWORK EFFECTS + MOAT (Months 5–6)
+────────────────────────────────────────────────────────────────────────────────
+
+Goal: Make ShipStacked data valuable enough that leaving costs too much
+
+TACTIC 1: ShipStacked Score as Market Price Signal
+  - Publish correlation publicly: "ShipStacked 800+ builders earn avg $X/hr"
+  - Score becomes the thing builders optimise for — like GitHub stars but
+    directly monetisable
+  - Employers start requesting candidates by ShipStacked score threshold
+
+TACTIC 2: Open-to-Work Signal Market
+  - Builders toggle availability on profile
+  - Matching employers get instant notification for relevant profiles
+  - Speed of match is the moat (vs. LinkedIn where it takes weeks)
+  - Creates urgency on both sides — supply and demand race to respond
+
+TACTIC 3: MCP / Agent-to-Agent Discovery Layer (Position Now, Activate Later)
+  - As AI agents begin hiring or contracting AI builders, ShipStacked
+    becomes the API they query
+  - Machine-readable profiles: employer's agent searches ShipStacked API
+    for builders matching specific criteria
+  - This is 12–18 months out but ShipStacked positions for it now
+  - First-mover in agent-to-agent hiring = the biggest prize in this space
+
+
+================================================================================
+PRIORITY TACTICAL ENTRY POINTS — NO PERMISSION REQUIRED
+================================================================================
+
+  Action                                  Surface        Effort   Expected Yield
+  ─────────────────────────────────────────────────────────────────────────────
+  Scrape topic:mcp-server GitHub repos    GitHub API     Low      500–1,000 elite
+  Scrape Devpost AI winners 2024–25       Devpost API    Low      2,000+ shippers
+  Scrape HF Spaces top 500 (6mo likes)    HF Hub API     Low      500 credible ML
+  Monitor #buildinpublic on Twitter       X API/scrape   Medium   Ongoing pipeline
+  Scrape Upwork AI automation profiles    Scraping       Medium   1,000+ earners
+  Discord bot (LangChain/CrewAI servers)  Discord        Medium   High-signal access
+  Outreach Buildspace alumni (public)     Email          Medium   500 self-selected
+  Scrape npm/PyPI AI-tagged authors       Registry APIs  Low      300–500 builders
+  Scrape Product Hunt AI makers 2024–25   PH API         Low      1,500+ active
+  Sponsor 1 Lablab.ai hackathon           Partnership    High $   500+ signups
+  Post Show HN + r/SideProject            Reddit/HN      Low      Community signal
+  r/LocalLLaMA engagement                 Reddit         Low      Credibility + leads
+
+
+================================================================================
+6-MONTH OUTCOME MAP
+================================================================================
+
+  Month   Milestone
+  ─────   ─────────────────────────────────────────────────────────────────────
+  1       1,000 builder profiles claimed (GitHub/Devpost/HF auto-import)
+          MCP server builder outreach complete — 50+ founding builders signed
+          ShipStacked score live and public
+
+  2       50 employer accounts paying (Full Access)
+          First matches happening; first hires in pipeline
+          Discord bot live in LangChain + CrewAI servers
+
+  3       Twitter/Discord presence established
+          Newsletter at 5,000 employer/investor subscribers
+          ShipStacked profile URLs appearing in builder bios
+          Product Hunt launch
+
+  4       "ShipStacked score" discussed in AI builder communities
+          Press coverage (journalist outreach campaign active)
+          Devpost + Buildspace integration live
+
+  5       5,000 builder profiles; 200 employer accounts
+          Integration live: Devpost, Buildspace, n8n
+          Browser extension shipped — overlays scores on GitHub/HF
+
+  6       First £/$50K MRR
+          Network effects visible: new builders join because employers are here
+          Agent-to-agent API in development
+          ShipStacked score referenced by employers as screening criterion
+
+
+================================================================================
+THE THREE MOVES THAT MATTER MOST RIGHT NOW
+================================================================================
+
+1. MCP SERVER SCRAPE — This week
+   GitHub API: topic:mcp-server, sort by stars.
+   Personal outreach to top 100 owners.
+   These builders have no identity layer, enormous credibility, and nobody
+   else is talking to them. First mover here = category ownership.
+
+2. DEVPOST AI TRACK WINNER IMPORT — This week
+   Auto-generate 2,000+ profiles from hackathon submission data.
+   "Claim your profile" email is the activation mechanism.
+   Zero friction. Proof-of-work already exists. ShipStacked just surfaces it.
+
+3. HUGGING FACE SPACE CREATOR OUTREACH — This month
+   HF Hub API, top 500 by likes (6 months).
+   These builders have real demos, real users, and zero employer visibility.
+   They are supply waiting to be connected to demand.
+
+================================================================================
+END OF REPORT
+ShipStacked Distribution Intelligence — May 2026
+================================================================================
