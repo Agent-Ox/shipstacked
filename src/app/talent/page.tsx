@@ -8,6 +8,7 @@ import { getRankedBuilders } from '@/lib/ranking/get-ranked-builders'
 import { getRankedTeams } from '@/lib/ranking/get-ranked-teams'
 import { getRankedAgents } from '@/lib/ranking/get-ranked-agents'
 import { CLUSTER_LABELS, CLUSTER_ORDER, SHIPPED_BUCKETS, bucketsForEvents } from '@/lib/ranking/facets'
+import { findAtlasMatches } from '@/lib/atlas/matching'
 
 export const metadata: Metadata = {
   title: 'AI-Native Builder Directory | ShipStacked',
@@ -23,6 +24,26 @@ export const metadata: Metadata = {
 const PAGE_WRAP: React.CSSProperties = { minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', overflowX: 'hidden' }
 const PAGE_INNER: React.CSSProperties = { maxWidth: 1000, margin: '0 auto', padding: '4rem 1.5rem 5rem' }
 
+function adminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+}
+
+// Build cluster facet chips for a pillar from its full Atlas-match set
+// (distinct subjects per cluster, L1-only). CLUSTER_ORDER + CLUSTER_LABELS keep
+// the curated A–G vocabulary; clusters with zero subjects are dropped.
+function clusterFacetsFromMatches(
+  matches: Array<{ cluster: string; subject_id: number }>,
+): Array<{ value: string; label: string; count: number }> {
+  const bySet: Record<string, Set<number>> = {}
+  for (const m of matches) (bySet[m.cluster] ??= new Set()).add(m.subject_id)
+  return CLUSTER_ORDER
+    .filter((c) => bySet[c]?.size)
+    .map((c) => ({ value: c, label: CLUSTER_LABELS[c], count: bySet[c].size }))
+}
+
 export default async function TalentPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | undefined }> }) {
   const params = await searchParams
 
@@ -30,27 +51,41 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const rawType = params.type
   const type: 'builder' | 'team' | 'agent' = rawType === 'team' || rawType === 'agent' ? rawType : 'builder'
 
-  // ── Team directory — public, client-side filtered (§I.5). ──
+  // ── Team directory — Atlas cluster filter via matching engine (§G.1). ──
   if (type === 'team') {
+    const cluster = params.cluster || ''
+    const admin = adminClient()
     const { ranked, belowThreshold } = await getRankedTeams()
-    const teams = [...ranked, ...belowThreshold]
+    let teams = [...ranked, ...belowThreshold]
+    const allMatches = await findAtlasMatches(admin, { subjectKind: 'team' })
+    if (cluster) {
+      const matched = new Set(allMatches.filter(m => m.cluster === cluster).map(m => m.subject_id))
+      teams = teams.filter(t => matched.has(t.entity_id))
+    }
     return (
       <div style={PAGE_WRAP}>
         <div style={PAGE_INNER}>
-          <TalentClient type="team" teams={teams} />
+          <TalentClient type="team" teams={teams} clusterFacets={clusterFacetsFromMatches(allMatches)} activeCluster={cluster} />
         </div>
       </div>
     )
   }
 
-  // ── Agent directory (Phase 5 §I.4). ──
+  // ── Agent directory — Atlas cluster filter via matching engine (§G.2). ──
   if (type === 'agent') {
+    const cluster = params.cluster || ''
+    const admin = adminClient()
     const { ranked, belowThreshold } = await getRankedAgents()
-    const agents = [...ranked, ...belowThreshold]
+    let agents = [...ranked, ...belowThreshold]
+    const allMatches = await findAtlasMatches(admin, { subjectKind: 'agent' })
+    if (cluster) {
+      const matched = new Set(allMatches.filter(m => m.cluster === cluster).map(m => m.subject_id))
+      agents = agents.filter(a => matched.has(a.entity_id))
+    }
     return (
       <div style={PAGE_WRAP}>
         <div style={PAGE_INNER}>
-          <TalentClient type="agent" agents={agents} />
+          <TalentClient type="agent" agents={agents} clusterFacets={clusterFacetsFromMatches(allMatches)} activeCluster={cluster} />
         </div>
       </div>
     )
@@ -67,10 +102,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const admin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const admin = adminClient()
 
   // Check paid hirer subscription
   let isPaidHirer = false
@@ -93,14 +125,33 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const allBuilders = [...ranked, ...belowThreshold] as any[]
   const totalPublished = allBuilders.length
 
+  // Phase 6 §G.1: cluster filter migrated to the matching engine (L1-only,
+  // consistent with /api/v1/talent/search). RankedBuilder has no entity_id, so
+  // resolve profile.id -> entity_id, then keep builders whose entity is in the
+  // L1 Atlas-match set for the cluster.
+  let clusterMatchedProfiles: Set<string> | null = null
+  if (filterCluster) {
+    const profIds = allBuilders.map((p: any) => p.id)
+    const entityByProfile = new Map<string, number>()
+    if (profIds.length > 0) {
+      const { data: profRows } = await admin.from('profiles').select('id, entity_id').in('id', profIds)
+      for (const r of (profRows ?? [])) if (r.entity_id != null) entityByProfile.set(r.id, r.entity_id)
+    }
+    const matches = await findAtlasMatches(admin, { cluster: filterCluster, subjectKind: 'human' })
+    const matchedIds = new Set(matches.map(m => m.subject_id))
+    clusterMatchedProfiles = new Set(
+      [...entityByProfile.entries()].filter(([, eid]) => matchedIds.has(eid)).map(([pid]) => pid),
+    )
+  }
+
   // Filters applied in JS (small dataset; keeps one ranking source of truth).
   // `verified` is a filter + badge only — no longer a sort key (D3).
   let profiles = allBuilders
   if (filterVerified) profiles = profiles.filter((p: any) => p.verified)
   if (filterProfession) profiles = profiles.filter((p: any) => p.primary_profession === filterProfession)
   if (filterAvailability) profiles = profiles.filter((p: any) => p.availability === filterAvailability)
-  // Batch 8 facets — ANY-match: builder kept if any of their clusters / shipped buckets match.
-  if (filterCluster) profiles = profiles.filter((p: any) => (p.atlasClusters || []).includes(filterCluster))
+  // Cluster — matching engine (L1-only, §G.1). Shipped stays JS (bucketsForEvents).
+  if (filterCluster) profiles = profiles.filter((p: any) => clusterMatchedProfiles?.has(p.id))
   if (filterShipped) profiles = profiles.filter((p: any) => bucketsForEvents(p.eventTypes || []).includes(filterShipped))
 
   // Default sort is the quality order from getRankedBuilders; "newest" overrides.

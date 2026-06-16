@@ -38,6 +38,8 @@ export interface TeamOrgInput {
   l1_receipt_count: number
   /** Published linked members, by username (→ Person @id references). */
   members: Array<{ username: string }>
+  /** Phase 6 §I — Atlas role IDs → knowsAbout URLs. Caller passes deduped+sorted. */
+  atlasRoles?: string[]
 }
 
 export interface TeamOrgJsonLd {
@@ -52,6 +54,7 @@ export interface TeamOrgJsonLd {
   sameAs?: string[]
   address?: { '@type': 'PostalAddress'; addressLocality: string }
   member?: Array<{ '@type': 'Person'; '@id': string }>
+  knowsAbout?: string[]
   'shipstacked:services'?: string[]
   'shipstacked:teamSize'?: string
   'shipstacked:verified': boolean
@@ -100,6 +103,11 @@ export function buildTeamOrgJsonLd(team: TeamOrgInput): TeamOrgJsonLd {
   // src/lib/jsonld/person.ts at /u/<username> (Invariant #5).
   if (team.members.length > 0) {
     out.member = team.members.map((m) => ({ '@type': 'Person' as const, '@id': personId(m.username) }))
+  }
+
+  // Atlas roles → knowsAbout URLs (Phase 6 §I). Emitted only when non-empty.
+  if (team.atlasRoles && team.atlasRoles.length > 0) {
+    out.knowsAbout = team.atlasRoles.map((role) => `${CANONICAL_HOST}/atlas/roles/${role}`)
   }
 
   return out

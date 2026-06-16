@@ -1,8 +1,9 @@
 /**
  * Collection JSON-LD projection.
  *
- * Wraps Beacon 1's buildPersonJsonLd output (UNTOUCHED — reused
- * byte-unchanged) inside a schema.org/ItemList. The collection metadata
+ * Wraps Beacon 1's buildPersonJsonLd output inside a schema.org/ItemList.
+ * (Phase 6 §I.1: buildPersonJsonLd moved positional→options-object; this caller
+ * passes no atlasRoles, so its emission stays byte-unchanged.) The collection metadata
  * (title, description) comes from the CollectionRow passed in — NOT
  * from any code constant. Slugs are data.
  */
@@ -36,7 +37,8 @@ export function buildCollectionJsonLd(
   const itemListElement = data.builders.map((b, idx) => ({
     '@type': 'ListItem' as const,
     position: idx + 1,
-    item: buildPersonJsonLd(b.profile, b.entity, b.skills, b.projects, b.github),
+    // Phase 6 §I.1: positional→options refactor; emission unchanged (no atlasRoles passed).
+    item: buildPersonJsonLd({ profile: b.profile, entity: b.entity, skills: b.skills, projects: b.projects, github: b.github }),
   }))
 
   const out: CollectionJsonLd = {

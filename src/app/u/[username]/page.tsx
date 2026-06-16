@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import ShareButtons from './ShareButtons'
 import { ProfileViewTracker, MessageButton } from './ProfileAnalytics'
 import { buildPersonJsonLd } from '@/lib/jsonld/person'
+import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { createClient } from '@supabase/supabase-js'
 
@@ -137,8 +138,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       .maybeSingle()
     linkedEntity = entityRow ?? null
   }
-  const jsonLd = buildPersonJsonLd(
-    {
+  // Phase 6 §I: Atlas roles for this builder → knowsAbout URLs. Deduped + sorted
+  // role IDs; service-role client (the subject_atlas_roles view may not be
+  // granted to anon). Empty when no entity / no L1 receipts.
+  let builderAtlasRoles: string[] = []
+  if (profile.entity_id) {
+    const atlasAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const rows = await getAtlasRolesForSubject(atlasAdmin, profile.entity_id)
+    builderAtlasRoles = [...new Set(rows.map((r) => r.atlas_role))].sort()
+  }
+
+  const jsonLd = buildPersonJsonLd({
+    profile: {
       username: profile.username,
       full_name: profile.full_name,
       role: profile.role,
@@ -158,22 +172,23 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       languages: profile.languages,
       entity_id: profile.entity_id,
     },
-    linkedEntity,
-    (skills ?? []).map((s: any) => ({ name: s.name })),
-    (projects ?? []).map((p: any) => ({
+    entity: linkedEntity,
+    skills: (skills ?? []).map((s: any) => ({ name: s.name })),
+    projects: (projects ?? []).map((p: any) => ({
       title: p.title,
       description: p.description,
       outcome: p.outcome,
       project_url: p.project_url,
     })),
-    githubData ? {
+    github: githubData ? {
       github_username: githubData.github_username,
       repos_count: githubData.repos_count,
       commits_90d: githubData.commits_90d,
       top_languages: githubData.top_languages,
     } : null,
-    worksWithTeam?.slug ?? null,
-  )
+    worksForTeamSlug: worksWithTeam?.slug ?? null,
+    atlasRoles: builderAtlasRoles,
+  })
 
   return (
     <>

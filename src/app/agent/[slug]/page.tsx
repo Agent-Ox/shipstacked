@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildAgentOrgJsonLd } from '@/lib/jsonld/agent-org'
 import { resolveAgentPrincipal } from '@/lib/entities'
+import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -145,6 +146,10 @@ export default async function AgentProfilePage({ params }: { params: Promise<{ s
     ? principal.kind === 'team' ? `/team/${principal.slug}` : `/u/${principal.slug}`
     : null
 
+  // Phase 6 §I: Atlas roles for this agent → knowsAbout URLs (deduped + sorted).
+  const agentAtlasRows = await getAtlasRolesForSubject(admin, entity.id)
+  const agentAtlasRoles = [...new Set(agentAtlasRows.map((r) => r.atlas_role))].sort()
+
   const jsonLd = buildAgentOrgJsonLd({
     slug: entity.slug,
     agent_name: profile.agent_name,
@@ -157,6 +162,7 @@ export default async function AgentProfilePage({ params }: { params: Promise<{ s
     principal: principal ? { kind: principal.kind, slug: principal.slug } : null,
     verified: profile.verified,
     l1_receipt_count: l1Count,
+    atlasRoles: agentAtlasRoles,
   })
 
   return (

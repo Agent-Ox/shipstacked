@@ -12,6 +12,7 @@ import {
   extractAdjacentRoleIds,
 } from '@/lib/atlas/roles'
 import { atlasRoleCanonicalUrl, atlasRoleJsonLd } from '@/lib/atlas/jsonld'
+import { getPractitionersAtRole } from '@/lib/atlas/matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,6 +89,9 @@ export default async function AtlasRolePage({
   if (!role) notFound()
 
   const recent = await getRecentReceiptsAtRole(admin, role.role_id, role.atlas_version)
+  // Practitioners at this role (Phase 6 §H) — version-scoped to match the
+  // receipts list. Subjects with ≥1 L1 public receipt at this role, top 20.
+  const practitioners = await getPractitionersAtRole(admin, role.role_id, { atlasVersion: role.atlas_version })
   const jsonLd = atlasRoleJsonLd(role, recent)
   const canonical = atlasRoleCanonicalUrl(role.role_id, role.atlas_version)
 
@@ -185,6 +189,48 @@ export default async function AtlasRolePage({
                 </li>
               )}
             </ul>
+          </Section>
+        )}
+
+        {practitioners.length > 0 && (
+          <Section label="Practitioners">
+            <p style={{ fontSize: 13, color: '#6e6e73', margin: '0 0 0.75rem' }}>
+              People, teams, and agents shipping work in this role.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))', gap: '0.5rem' }}>
+              {practitioners.map((p) => {
+                const href =
+                  p.subject_kind === 'team' ? `/team/${p.subject_slug}` :
+                  p.subject_kind === 'agent' ? `/agent/${p.subject_slug}` :
+                  `/u/${p.subject_slug}`
+                const icon = p.subject_kind === 'team' ? '👥' : p.subject_kind === 'agent' ? '🤖' : '👤'
+                return (
+                  <Link
+                    key={p.subject_id}
+                    href={href}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.6rem', padding: '0.6rem 0.85rem', background: 'white', border: '1px solid #ececf0', borderRadius: 10, textDecoration: 'none' }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                      <span aria-hidden="true" style={{ flexShrink: 0 }}>{icon}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.display_name}</span>
+                    </span>
+                    <span
+                      title={`${p.receipt_count} receipt${p.receipt_count === 1 ? '' : 's'} at this role`}
+                      style={{ flexShrink: 0, fontSize: 12, color: '#6e6e73', background: '#f4f4f6', borderRadius: 999, padding: '0.1rem 0.55rem', fontWeight: 600 }}
+                    >
+                      {p.receipt_count}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+            {practitioners.length >= 20 && (
+              <p style={{ margin: '0.75rem 0 0' }}>
+                <Link href={`/talent?cluster=${role.cluster}`} style={{ color: '#0071e3', textDecoration: 'none', fontSize: 13 }}>
+                  View all {role.cluster}-cluster practitioners →
+                </Link>
+              </p>
+            )}
           </Section>
         )}
 

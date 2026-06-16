@@ -58,7 +58,7 @@ export async function getRankedBuilders(
     admin.from('profiles').select(PROFILE_FIELDS).eq('published', true),
     admin
       .from('proof_receipts')
-      .select('subject_id, atlas_confidence, verification_level, event_type, artifacts, issued_at, atlas_inferred')
+      .select('subject_id, atlas_confidence, verification_level, event_type, artifacts, issued_at, atlas_inferred, atlas_confirmed')
       .eq('visibility', 'public'),
   ])
 
@@ -78,10 +78,17 @@ export async function getRankedBuilders(
     if (list) list.push(rec)
     else receiptsByEntity.set(key, [rec])
 
-    // Facet derivation (Batch 8) — distinct Atlas clusters + event types per entity.
+    // Facet derivation (Batch 8; cluster fix Phase 6 §D) — distinct Atlas
+    // clusters + event types per entity. Clusters derive from atlas_confirmed
+    // UNION atlas_inferred via clusterOf (curated A–G gating, NOT charAt(0)).
+    // Closes the long-standing atlas_inferred-only known issue (RESUME_HERE.md).
     let f = facetsByEntity.get(key)
     if (!f) { f = { clusters: new Set(), events: new Set() }; facetsByEntity.set(key, f) }
     if (r.event_type) f.events.add(r.event_type)
+    for (const role of (Array.isArray(r.atlas_confirmed) ? r.atlas_confirmed : [])) {
+      const c = clusterOf(role)
+      if (c) f.clusters.add(c)
+    }
     for (const role of (Array.isArray(r.atlas_inferred) ? r.atlas_inferred : [])) {
       const c = clusterOf(role)
       if (c) f.clusters.add(c)

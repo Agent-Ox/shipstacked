@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildTeamOrgJsonLd } from '@/lib/jsonld/team-org'
+import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 
 export const dynamic = 'force-dynamic'
 
@@ -142,6 +143,10 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
   const memberList = (members ?? []) as Array<{ id: string; username: string; full_name: string | null; role: string | null; avatar_url: string | null }>
   const initials = profile.team_name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
+  // Phase 6 §I: Atlas roles for this team → knowsAbout URLs (deduped + sorted).
+  const teamAtlasRows = await getAtlasRolesForSubject(admin, entity.id)
+  const teamAtlasRoles = [...new Set(teamAtlasRows.map((r) => r.atlas_role))].sort()
+
   const jsonLd = buildTeamOrgJsonLd({
     slug: entity.slug,
     team_name: profile.team_name,
@@ -155,6 +160,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
     verified: profile.verified,
     l1_receipt_count: l1Count,
     members: memberList.map((m) => ({ username: m.username })),
+    atlasRoles: teamAtlasRoles,
   })
 
   return (

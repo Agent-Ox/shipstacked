@@ -57,6 +57,20 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 
 ## In-flight phases
 
+## Phase 6 (completed, committed this session) — Atlas wiring proper
+
+- §C–§I shipped clean. Plan: docs/audit/PHASE6_ATLAS_WIRING.md (untracked; Phase 7 commits per pattern).
+- DDL applied to prod DB before commit: **`subject_atlas_roles` regular VIEW** (NOT materialized). Canonical migration: supabase/migrations/20260616125219_subject_atlas_roles_view.sql.
+- **§A surfaced 5 plan corrections, all locked + applied:** (1) regular view not materialized — §A.7 data (77 public receipts) made materialization an unjustified staleness footgun; (2) `clusterOf` not `charAt(0)` — codebase has curated A–G gating in facets.ts; (3) `atlas_version` column on the view — role page is version-scoped; (4) zero-confirmed-roles forward-compat note (atlas_confirmed unpopulated on prod, Q1(c) deferred); (5) `buildPersonJsonLd` positional→options-object refactor.
+- **§D cluster-derivation fix** across getRankedBuilders/Teams/Agents: `atlas_confirmed UNION atlas_inferred` via clusterOf. Receipt SELECT extended to fetch `atlas_confirmed` (was inferred-only — plan oversight caught). Forward-correct; byte-identical today (confirmed arm empty).
+- **§E** `src/lib/atlas/matching.ts`: `findAtlasMatches`, `getPractitionersAtRole`, `getAtlasRolesForSubject` (version-scoped; secondary `entities` query for display_name, NOT an embed — Phase 5 §L PGRST201 lesson applied since views carry no FK metadata).
+- **§F** `/api/v1/talent/search` migrated JS-filter → SQL-keyed matching engine; added `?type=team` / `?type=agent`. type=builder response shape preserved. Two intentional filter shifts (locked): L1-only matching (was all-public), role-precedence when cluster+role both passed (was AND).
+- **§G** all three `/talent` type branches migrated to the matching engine (builder consistency + team/agent activation); server-driven `?cluster=` nav + per-pillar `<ClusterStrip>` facet on team/agent tabs.
+- **§H** `/atlas/roles/[id]` Practitioners section above receipts: top-20 subjects, kind icons (👤/👥/🤖), receipt counts, overflow link at the cap.
+- **§I** `buildPersonJsonLd` → options-object; `buildTeamOrgJsonLd`/`buildAgentOrgJsonLd` extended with `atlasRoles` input + `knowsAbout` output (machine-resolvable `…/atlas/roles/<role>` URLs, deduped+sorted). Collections caller wrapped positional→options, emission byte-identical.
+- **§J 25/25 headless verifications passed** incl. negative-test (cluster=B excludes the agent). Baselines reused: entity #39 (team) + #40 (agent) + 10 humans at A4; view = 85 rows, A4 = 11 distinct subjects across all three pillars.
+- **Known-issue CLOSED:** the atlas_inferred-only cluster derivation (was in Known issues below) is fixed in §D.
+
 ## Phase 5 (completed, committed this session) — Autonomous Agent flow
 
 - §C–§K shipped clean. Plan: docs/audit/PHASE5_AGENT_FLOW.md (untracked; Phase 7 commits per pattern).
@@ -142,6 +156,17 @@ Shipped + headless-verified (§M.2 seed-and-verify: agent page, /talent?type=age
 5. **Agent profile contact CTA** (browser-paired) — set contact_email + contact_url in edit, confirm the mailto + external-link buttons render on /agent/<slug>.
 6. **`/dashboard?agent=1` → `/join` redirect** (browser-paired) — AgentOnboarding-deletion side effect: a logged-in user with no profile hitting `/dashboard?agent=1` should land on `/join` (not 500, not a blank onboarding shim).
 
+## Phase 6 — deferred verifications
+
+Shipped + headless-verified (§J 25/25: view, matching engine, all 5 surface paths, JSON-LD knowsAbout, negative cluster filter — all green on prod data). These need a real browser / external validator and were NOT run automatically:
+
+1. **`/talent?type=team&cluster=<X>` facet UX** (browser-paired) — click the Atlas cluster chips, confirm URL nav + active-chip highlight + result filtering feel right.
+2. **`/talent?type=agent&cluster=<X>` facet UX** (browser-paired) — same.
+3. **Builder cluster facet count parity** (Phase 7 cleanup) — builder facet *counts* still use the legacy all-public `atlasClusters` derivation while the *filter* is now L1-only matching engine. A builder with non-L1 cluster work could show a count that overstates clickable results. Align builder facet counts with the matching engine for parity with team/agent.
+4. **JSON-LD `knowsAbout` external validation** — run a real `/agent/<slug>`, `/team/<slug>`, `/u/<username>` URL through Google Rich Results test or schema.org validator; confirm `knowsAbout` Atlas URLs parse cleanly.
+5. **`/atlas/roles/[id]` Practitioners UX** (browser-paired) — live browse (not just curl): grid layout, icons, receipt-count chips, the cluster overflow link at the 20 cap.
+6. **Materialized-view migration design** — N/A while the view is regular (always-fresh). If receipts cross ~10K and Phase 7+ migrates to materialized for scale, an automated REFRESH trigger (on receipt insert/update/delete) must be designed first.
+
 ## Deploy-time + manual verification checklist (do once, after current session ships)
 
 These accumulated through Session N+1 — none are blocking outreach but each is a 1-2 minute check that closes a real gap.
@@ -184,7 +209,7 @@ Full 5-scenario Stripe CLI test plan deferred to a later session. Code shipped S
 
 ## Known issues
 
-- **`getRankedBuilders` derives `atlasClusters` from `atlas_inferred` only** (not `atlas_confirmed`). `/api/v1/talent/search` (Phase 3) inherits this behavior for parity with the `/talent` UI. Phase 6 (Atlas wiring) revisits.
+- ~~**`getRankedBuilders` derives `atlasClusters` from `atlas_inferred` only**~~ — **CLOSED in Phase 6 §D.** All three ranking helpers now derive clusters from `atlas_confirmed UNION atlas_inferred` via clusterOf; receipt SELECT fetches both columns. Output is byte-identical today (confirmed arm empty on prod) but forward-correct once classification UX lands.
 
 ## Analytics
 

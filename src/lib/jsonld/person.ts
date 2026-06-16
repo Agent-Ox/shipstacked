@@ -115,14 +115,18 @@ function nonEmpty(s: string | null | undefined): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-export function buildPersonJsonLd(
-  profile: PersonProfileInput,
-  entity: PersonEntityInput | null,
-  skills: PersonSkillInput[],
-  projects: PersonProjectInput[],
-  github: PersonGithubInput | null,
-  worksForTeamSlug?: string | null,
-): PersonJsonLd {
+export function buildPersonJsonLd(opts: {
+  profile: PersonProfileInput
+  entity: PersonEntityInput | null
+  skills: PersonSkillInput[]
+  projects: PersonProjectInput[]
+  github: PersonGithubInput | null
+  worksForTeamSlug?: string | null
+  /** Phase 6 §I — Atlas role IDs (e.g. ['A4','B3']) merged into knowsAbout as
+   *  machine-resolvable URLs. Caller passes a deduped, sorted array. */
+  atlasRoles?: string[]
+}): PersonJsonLd {
+  const { profile, entity, skills, projects, github, worksForTeamSlug, atlasRoles } = opts
   const url = personId(profile.username)
 
   const sameAs = [
@@ -132,9 +136,12 @@ export function buildPersonJsonLd(
     profile.website_url,
   ].map(nonEmpty).filter((u): u is string => !!u)
 
-  const knowsAbout = Array.from(
-    new Set(skills.map(s => nonEmpty(s.name)).filter((n): n is string => !!n)),
-  )
+  // Skills (deduped names) + Atlas role URLs (Phase 6 §I). No cross-overlap
+  // (names vs URLs), so a plain concat preserves both.
+  const knowsAbout = [
+    ...Array.from(new Set(skills.map(s => nonEmpty(s.name)).filter((n): n is string => !!n))),
+    ...(atlasRoles ?? []).map(role => `${CANONICAL_HOST}/atlas/roles/${role}`),
+  ]
 
   const subjectOf = projects
     .filter(p => nonEmpty(p.title) && nonEmpty(p.project_url) && nonEmpty(p.outcome))

@@ -360,6 +360,7 @@ export default function TalentClient({
   clusterFacets = [], shippedFacets = [],
   teams = [],
   agents = [],
+  activeCluster = '',
 }: {
   type?: 'builder' | 'team' | 'agent'
   profiles?: any[]
@@ -376,6 +377,7 @@ export default function TalentClient({
   shippedFacets?: FacetOpt[]
   teams?: RankedTeam[]
   agents?: RankedAgent[]
+  activeCluster?: string
 }) {
   const router = useRouter()
   useEffect(() => {
@@ -445,6 +447,29 @@ export default function TalentClient({
   function goToType(t: 'builder' | 'team' | 'agent') {
     startTransition(() => { router.push(t === 'builder' ? '/talent' : `/talent?type=${t}`) })
   }
+  // Atlas cluster facet for team/agent tabs (Phase 6 §G.2) — server-driven via
+  // URL ?cluster=, since per-subject Atlas roles live server-side (the matching
+  // engine), not in the client-loaded set. Builder cluster facet is separate
+  // (legacy facets.ts path, untouched).
+  function goCluster(c: string) {
+    const next = activeCluster === c ? '' : c
+    const qs = new URLSearchParams()
+    qs.set('type', type)
+    if (next) qs.set('cluster', next)
+    startTransition(() => { router.push(`/talent?${qs.toString()}`) })
+  }
+  const ClusterStrip = () => (
+    clusterFacets.length > 0 ? (
+      <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 11, color: '#aeaeb2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Atlas</span>
+        <FilterChip label="Any" active={!activeCluster} onClick={() => goCluster('')} />
+        {clusterFacets.map(f => (
+          <FilterChip key={f.value} label={`${f.label} (${f.count})`} active={activeCluster === f.value} onClick={() => goCluster(f.value)} />
+        ))}
+      </div>
+    ) : null
+  )
+
   const typeTab = (t: 'builder' | 'team' | 'agent', label: string) => (
     <button onClick={() => goToType(t)} style={{
       padding: '0.6rem 1rem', border: 'none', background: 'none', cursor: 'pointer', fontFamily: 'inherit',
@@ -699,6 +724,9 @@ export default function TalentClient({
             </p>
           </div>
 
+          {/* Atlas cluster filter (Phase 6 §G.2) */}
+          <ClusterStrip />
+
           {/* Team filters (client-side) */}
           <div style={{ marginBottom: '1.5rem' }}>
             {serviceOptions.length > 0 && (
@@ -751,6 +779,9 @@ export default function TalentClient({
               {filteredAgents.length} agent{filteredAgents.length !== 1 ? 's' : ''}{agentFiltersActive ? ` matching · ${agents.length} total` : ''}
             </p>
           </div>
+
+          {/* Atlas cluster filter (Phase 6 §G.2) */}
+          <ClusterStrip />
 
           {/* Agent filters (client-side) */}
           <div style={{ marginBottom: '1.5rem' }}>

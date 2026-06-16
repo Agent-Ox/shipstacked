@@ -29,7 +29,7 @@ export interface RankedAgent {
   logo_url: string | null
   verified: boolean
   l1_receipt_count: number
-  atlas_clusters: string[]   // distinct Atlas clusters across the agent's receipts (atlas_inferred only — known issue)
+  atlas_clusters: string[]   // distinct Atlas clusters across the agent's receipts (atlas_confirmed UNION atlas_inferred via clusterOf — Phase 6 §D)
   quality_score: number | null
   ranked: boolean
 }
@@ -56,7 +56,7 @@ export async function getRankedAgents(
       .eq('published', true),
     admin
       .from('proof_receipts')
-      .select('subject_id, atlas_confidence, verification_level, event_type, artifacts, issued_at, atlas_inferred')
+      .select('subject_id, atlas_confidence, verification_level, event_type, artifacts, issued_at, atlas_inferred, atlas_confirmed')
       .eq('visibility', 'public'),
   ])
 
@@ -79,8 +79,14 @@ export async function getRankedAgents(
 
     if (r.verification_level === L1) l1ByEntity.set(key, (l1ByEntity.get(key) ?? 0) + 1)
 
+    // Cluster fix (Phase 6 §D): atlas_confirmed UNION atlas_inferred via
+    // clusterOf (curated A–G gating). Was atlas_inferred-only (known issue).
     let cset = clustersByEntity.get(key)
     if (!cset) { cset = new Set(); clustersByEntity.set(key, cset) }
+    for (const role of (Array.isArray(r.atlas_confirmed) ? r.atlas_confirmed : [])) {
+      const c = clusterOf(role)
+      if (c) cset.add(c)
+    }
     for (const role of (Array.isArray(r.atlas_inferred) ? r.atlas_inferred : [])) {
       const c = clusterOf(role)
       if (c) cset.add(c)

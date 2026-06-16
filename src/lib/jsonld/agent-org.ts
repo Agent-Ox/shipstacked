@@ -40,6 +40,8 @@ export interface AgentOrgInput {
   principal: AgentPrincipal | null
   verified: boolean
   l1_receipt_count: number
+  /** Phase 6 §I — Atlas role IDs → knowsAbout URLs. Caller passes deduped+sorted. */
+  atlasRoles?: string[]
 }
 
 export interface AgentOrgJsonLd {
@@ -50,6 +52,7 @@ export interface AgentOrgJsonLd {
   url: string
   description?: string
   image?: string
+  knowsAbout?: string[]
   'shipstacked:provider': string
   'shipstacked:model'?: string
   'shipstacked:capabilities'?: string[]
@@ -97,6 +100,11 @@ export function buildAgentOrgJsonLd(agent: AgentOrgInput): AgentOrgJsonLd {
     const principalUrl =
       agent.principal.kind === 'team' ? teamOrgId(agent.principal.slug) : personId(agent.principal.slug)
     out['shipstacked:principalOf'] = { '@id': principalUrl }
+  }
+
+  // Atlas roles → knowsAbout URLs (Phase 6 §I). Emitted only when non-empty.
+  if (agent.atlasRoles && agent.atlasRoles.length > 0) {
+    out.knowsAbout = agent.atlasRoles.map((role) => `${CANONICAL_HOST}/atlas/roles/${role}`)
   }
 
   return out
