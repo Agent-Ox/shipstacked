@@ -60,17 +60,49 @@ export async function POST(req: Request) {
     authUser = created.user
   }
 
+  let entityResult
   try {
-    await findOrCreateHumanEntity(admin, authUser)
+    entityResult = await findOrCreateHumanEntity(admin, authUser)
   } catch (err) {
     return NextResponse.json({ error: 'Entity creation failed' }, { status: 500 })
   }
 
-  const { data: profile } = await admin
+  let { data: profile } = await admin
     .from('profiles')
     .select('id')
     .eq('user_id', authUser.id)
     .maybeSingle()
+
+  // New (browserless) users have no V1 profile: findOrCreateHumanEntity's Path 4
+  // creates the entity with profile_id=null but never inserts a profiles row, so
+  // the key (FK → profiles.id) had nothing to attach to → the 500 below. Mirror
+  // the proven /api/keys agent-mode pattern: create a minimal published=false
+  // profile (username derived from email), then bind it bidirectionally to the
+  // entity (entities.ts contract: profiles.entity_id ↔ entities.profile_id).
+  if (!profile) {
+    const slugBase = reg.email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20)
+    const username = slugBase + Math.floor(Math.random() * 999)
+    const { data: newProfile, error: profileErr } = await admin
+      .from('profiles')
+      .insert({
+        user_id: authUser.id,
+        email: reg.email,
+        username,
+        full_name: '',
+        published: false,
+      })
+      .select('id')
+      .single()
+    if (profileErr || !newProfile) {
+      return NextResponse.json({ error: 'Profile creation failed' }, { status: 500 })
+    }
+    profile = newProfile
+
+    await admin.from('profiles').update({ entity_id: entityResult.entity.id }).eq('id', profile.id)
+    await admin.from('entities').update({ profile_id: profile.id }).eq('id', entityResult.entity.id)
+  }
+
+  // Final safety net — unreachable for new users post-fix, kept defensively.
   if (!profile) {
     return NextResponse.json({ error: 'Profile row missing post-entity-create' }, { status: 500 })
   }
