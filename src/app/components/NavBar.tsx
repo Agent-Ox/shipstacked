@@ -34,14 +34,18 @@ export default function NavBar() {
   const isHomepage = pathname === '/'
 
   const getMenuLinks = () => {
-    // ---- Unauthenticated homepage ----
-    if (isHomepage && !navUser) {
+    // ---- Unauthenticated (any page) ----
+    // Phase 8 §F Block 1: one marketing menu for anonymous visitors on EVERY
+    // route (was: homepage-only; off-homepage fell through to an empty menu —
+    // the catastrophic finding). #how anchor repointed to the real
+    // /how-it-works page (the §B homepage rewrite removed the #how section).
+    if (!navUser) {
       return [
         { label: 'Atlas', href: '/atlas' },
-        { label: 'How it works', href: '#how' },
+        { label: 'How it works', href: '/how-it-works' },
+        { label: 'Pricing', href: '/pricing' },
         { label: 'Build Feed', href: '/feed' },
-        { label: 'Jobs', href: '/jobs' },
-        { label: 'Hire talent', href: '/for-hirers' },
+        { label: 'Browse talent', href: '/talent' },
       ]
     }
 

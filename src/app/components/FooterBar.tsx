@@ -28,10 +28,10 @@ export default function FooterBar() {
   const hide = NO_FOOTER.some(p => pathname === p || pathname.startsWith(p + '/'))
   if (hide) return null
 
-  // Anchor links only make sense on the homepage
-  const isHome = pathname === '/'
-  const howHref = isHome ? '#how' : '/#how'
-  const communityHref = isHome ? '#builders' : '/#builders'
+  // Phase 8 §F Block 1: dead homepage anchors (#how, #builders — removed by the
+  // §B homepage rewrite) repointed to the real pages. How it works → the §C
+  // page; Community → the talent directory (the community surface; no separate
+  // community page exists).
   const hireHref = '/for-hirers'
 
   return (
@@ -58,8 +58,10 @@ export default function FooterBar() {
         {/* Links */}
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <Link href="/atlas" style={linkStyle}>Atlas</Link>
-          <a href={howHref} style={linkStyle}>How it works</a>
-          <a href={communityHref} style={linkStyle}>Community</a>
+          <Link href="/how-it-works" style={linkStyle}>How it works</Link>
+          <Link href="/pricing" style={linkStyle}>Pricing</Link>
+          <Link href="/faq" style={linkStyle}>FAQ</Link>
+          <Link href="/talent" style={linkStyle}>Talent</Link>
           <a href={hireHref} style={linkStyle}>Hire talent</a>
           <Link href="/feed" style={linkStyle}>Build Feed</Link>
           <Link href="/jobs" style={linkStyle}>Jobs</Link>
