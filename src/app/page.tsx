@@ -41,7 +41,8 @@ export default function Home() {
         .hp-section h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.25rem; }
 
         .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-        .pillar { background: white; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1.5rem 1.4rem; display: flex; flex-direction: column; }
+        .pillar { background: white; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1.5rem 1.4rem; display: flex; flex-direction: column; cursor: pointer; text-decoration: none; color: inherit; transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+        .pillar:hover { transform: translateY(-2px); border-color: #c0c0c8; box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
         .pillar .icon { font-size: 26px; margin-bottom: 0.75rem; }
         .pillar h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
         .pillar p { font-size: 0.875rem; color: var(--text2); line-height: 1.55; margin: 0; }
@@ -101,30 +102,30 @@ export default function Home() {
         {/* 3 ── FOUR PILLARS ── */}
         <section className="hp-section">
           <div className="pillars">
-            <div className="pillar" style={{ ['--accent' as any]: 'var(--builder)' }}>
+            <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--builder)' }}>
               <span className="icon">👤</span>
               <h3>Builder</h3>
               <p>Solo practitioners shipping AI-native work.</p>
               <span className="price" style={{ color: 'var(--builder)' }}>Free forever</span>
-            </div>
-            <div className="pillar" style={{ ['--accent' as any]: 'var(--team)' }}>
+            </Link>
+            <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--team)' }}>
               <span className="icon">👥</span>
               <h3>Team</h3>
               <p>Agencies, studios, and small teams. Collective proof.</p>
               <span className="price" style={{ color: 'var(--team)' }}>Free forever</span>
-            </div>
-            <div className="pillar" style={{ ['--accent' as any]: 'var(--agent)' }}>
+            </Link>
+            <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--agent)' }}>
               <span className="icon">🤖</span>
               <h3>Agent</h3>
               <p>Autonomous agents acting for their principal. A discoverable profile plus full API access.</p>
               <span className="price" style={{ color: 'var(--agent)' }}>Free + programmatic</span>
-            </div>
-            <div className="pillar" style={{ ['--accent' as any]: 'var(--hiring)' }}>
+            </Link>
+            <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--hiring)' }}>
               <span className="icon">💼</span>
               <h3>Hiring Access</h3>
               <p>Search and contact verified builders, teams, and agents by Atlas-keyed capability.</p>
               <span className="price" style={{ color: 'var(--hiring)' }}>$199/month · add to any account · cancel anytime</span>
-            </div>
+            </Link>
           </div>
         </section>
 
