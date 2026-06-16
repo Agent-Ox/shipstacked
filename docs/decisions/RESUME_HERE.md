@@ -61,6 +61,42 @@ Read the most recent SESSION_<date>.md for the live to-do. Top of the queue at l
 
 ## In-flight phases
 
+## Site Audit (in-flight, pre-launch) — PAUSED at §E.7
+
+End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLAN.md` (485 lines, locked decisions intact). **No code shipped in the audit** — findings are observation-only + accumulated test data (all tagged `audit-2026-06-16-*`). Paused at the §E BLOCKER (context boundary), §E.7 fix designed but NOT applied.
+
+**§A baseline (post-cleanup §Z must match exactly):** profiles 67 · entities team 2 · entities agent 2 · subscriptions active 11 · api_keys 48 · proof_receipts 79 · zero pre-tagged `audit-2026-06-16-*`.
+
+**Corrections found:**
+- Stripe webhook path is **`/api/webhooks/stripe`** (NOT the plan's `/api/stripe/webhook`). Fix §F.3 when resumed.
+- Anthropic API credits were empty pre-audit → topped up mid-audit. Q2 confirmed **zero real-user blast radius** (24 days of zero enrichment activity before the audit; the audit's own run #6 was the first-ever credit failure).
+
+**Persona results:**
+- **§B Builder — COMPLETE / clean** (B.1–B.7 PASS after credit top-up). Receipt #90 (subject 41) classified A4/D2/B2, L1. Enrichment confirmed production-grade (Q1: fresh receipts match established field-for-field; Q3: stack auto-detected by per-host extractors). _Queued SERIOUS:_ `/api/v1/builds` returns `build_posted:true` even when the background enrich fails silently.
+- **§C Team — COMPLETE / clean.** Team entity 42, member soft-link from §B builder. Block 2.7 `team_admins` self-read RLS confirmed live with the real admin (nav "Your team" resolves).
+- **§D Agent Card-3 — COMPLETE / clean.** Agent entity 43, agent:rw key (sha256-hashed), `GET /api/v1/agent` 200. _Queued MINOR:_ provider enum is `claude` not `anthropic`. _NOTE:_ `agent_profiles.capabilities` (self-declared strings) ≠ receipt-derived Atlas roles.
+- **§E Agent OTP — PAUSED at BLOCKER:**
+  - **BLOCKER (§E.3):** `/api/agent/auth/claim/complete` 500s for **new users** — `"Profile row missing post-entity-create"`. Root cause: `findOrCreateHumanEntity` creates the entity but no `profiles` row for a brand-new email; the route then requires a profile before issuing the key. Works only for users who already have a profile (the case least needing browserless registration). **Fix (designed, NOT applied, ~10 lines in `src/app/api/agent/auth/claim/complete/route.ts`):** after `findOrCreateHumanEntity`, if no profile, create a minimal `published=false` profile (mirror `/api/keys` agent-mode) then link + issue key. Leaves orphan auth user + entity 44 + stuck-pending `agent_registrations #1`; re-complete 500s identically.
+  - **SERIOUS / architectural (§E.1):** auth.md claim issues `builder:rw`/`buyer:rw` only — **no `agent:rw`, no agent-create endpoint**. It registers an agent to act on behalf of a human; it does NOT create Agent-pillar (`kind='agent'`) entities. Deferred to Phase 9+ (clarify docs OR extend auth.md with agent:rw + agent-create).
+
+**Audit artifacts accumulated (clean at §Z; respect FK order):**
+- auth.users: `cb76662c` (builder), `c954352c` (team admin), `13a81dc9` (agent owner), `f66d3639` (otp-owner orphan)
+- entities: 41 (human/builder), 42 (team), 43 (agent), 44 (human, otp orphan, profile_id null)
+- profiles: `audit-2026-06-16-builder-1` (entity 41), `audit-2026-06-16-agent-owner` (minimal, entity-less) + `profiles.team_entity_id=42` soft-link on the builder
+- team_profiles (entity 42) · agent_profiles (entity 43) · team_admins #4
+- api_keys: builder:rw (`audit-2026-06-16-builder-key`), buyer:rw (`audit-2026-06-16-buyer-key`), agent:rw (`audit-2026-06-16-agent-key`)
+- posts: 2 (builder) · proof_receipts: #90 · enrichment_runs: #6 (failed-credit), #7 (ok) · agent_registrations: #1 (stuck pending)
+
+**Resume order (next session):**
+1. Apply §E.7 fix (the BLOCKER, ~10 lines per spec above).
+2. Re-verify §E.3–§E.5 with a **fresh** user (`audit-2026-06-16-agent-otp-owner-v2@example.com`) — orphan `f66d3639` is stuck-pending.
+3. §F — existing-builder-toggles-Hiring-Access (uses §B builder + live Stripe test card `4242 4242 4242 4242`; webhook at `/api/webhooks/stripe`).
+4. §G — Buyer-only Card 4 fresh signup.
+5. §H — cross-cutting checks.
+6. §I — findings consolidation.
+7. §J — in-session fixes (≥ the §E.7 BLOCKER if not done in step 1).
+8. §Z — bulk-delete all `audit-2026-06-16-*` via paste-back DDL; verify counts match the §A baseline.
+
 ## Phase 7 (completed, committed this session) — State restoration + cleanup
 
 - Lean cleanup of deferred items across Phases 1-6. Plan: docs/audit/PHASE7_CLEANUP.md (committed this phase).
