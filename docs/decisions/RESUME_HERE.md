@@ -104,6 +104,74 @@ End-to-end persona simulation against prod. Plan: `docs/audit/SITE_AUDIT_E2E_PLA
 7. §J — in-session fixes (≥ the §E.7 BLOCKER if not done in step 1).
 8. §Z — bulk-delete all `audit-2026-06-16-*` via paste-back DDL; verify counts match the §A baseline.
 
+## Phase 8.5 — Real-Stripe lifecycle verification (PRE-LAUNCH BLOCKER)
+
+**Goal:** verify the actual Stripe Checkout → webhook → subscription insert → gate-flip path works end-to-end on prod. Phase 8 §F simulated the post-checkout state but skipped the Stripe-coupled half. This phase closes that gap.
+
+**Why this matters:** if any link in the chain (Checkout config, webhook secret, signature verification, event handler, DB insert) is broken, every real $199 toggle on launch day fails silently. Customer pays, no access unlocks, support fire. Must be verified before first real prospect sees the toggle.
+
+**Pre-flight setup (operator, ~15-30 min):**
+
+1. Stripe Dashboard → Test Mode toggle (top-right of dashboard)
+2. Test Mode → Developers → API Keys → copy `sk_test_...`
+3. Test Mode → Developers → Webhooks → copy `whsec_test_...` for the prod webhook endpoint
+4. Test Mode → Products → create test product mirroring `full_access` at $199/mo, copy the price ID `price_test_...`
+5. Vercel env vars (Preview environment, NOT Production):
+   - `STRIPE_SECRET_KEY` = `sk_test_...`
+   - `STRIPE_WEBHOOK_SECRET` = `whsec_test_...`
+   - `STRIPE_PRICE_FULL_ACCESS` (or whatever the env var is) = `price_test_...`
+6. Deploy a preview branch (any small commit, or just trigger redeploy on a preview URL)
+
+**Verification flow:**
+
+1. Sign up as a fresh audit Builder on the **preview URL** (not prod)
+2. Click EnableHiringButton in dashboard
+3. Stripe Checkout opens — paste test card `4242 4242 4242 4242`, any future expiry, any CVC, any postcode
+4. Complete checkout
+5. Verify on preview env:
+   - Redirected to success URL
+   - Webhook fired (Stripe Dashboard → Webhooks → Events log shows `checkout.session.completed` succeeded)
+   - `subscriptions` row written in preview DB with `status='active'`, correct `email`, correct `stripe_*` IDs
+   - `stripe_events` idempotency row written
+   - Dashboard shows Hiring Access ON
+   - `/talent` search unrestricted
+
+6. Cancel the subscription via Stripe customer portal (test mode)
+7. Verify:
+   - Webhook fires `customer.subscription.updated` with `cancel_at_period_end=true`
+   - `subscriptions.status` updates correctly
+   - Access continues until `current_period_end` per stated policy
+
+8. Force period-end:
+   - Stripe Dashboard test mode → fast-forward subscription to past period end
+   - Webhook fires `customer.subscription.deleted`
+   - `subscriptions.status = 'canceled'`
+   - Hiring Access removed from dashboard
+   - `/talent` returns to restricted state
+
+**Cleanup:**
+
+- Delete test subscriptions + customers from Stripe Test Mode
+- Delete test rows from preview DB
+- Revert Vercel preview env vars OR leave for future regression testing
+- Production env vars never touched (live keys remain intact)
+
+**Sign-off criteria (all must PASS before outreach launch):**
+
+- ✅ Checkout completes with test card
+- ✅ Webhook signature verifies
+- ✅ subscriptions row INSERTed on checkout.session.completed
+- ✅ Gate flips to hirer:true post-checkout
+- ✅ buyer:rw key issuable after subscription
+- ✅ Cancellation respects period-end
+- ✅ Period-end transition removes access
+
+**If any step fails:** STOP launch. Diagnose. Fix. Re-verify.
+
+**Estimated time:** 60-90 minutes including setup, verification, cleanup.
+
+**Critical: must be done on a Preview deployment, NOT Production.** Production has live keys; mixing test mode with live keys breaks both. Vercel Preview branches with their own env vars are the clean way to do this.
+
 ## Phase 7 (completed, committed this session) — State restoration + cleanup
 
 - Lean cleanup of deferred items across Phases 1-6. Plan: docs/audit/PHASE7_CLEANUP.md (committed this phase).
