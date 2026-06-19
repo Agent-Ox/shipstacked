@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from '@/lib/supabase-server'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICES = {
-  full_access: 'price_1TJhIzE3cjWtx7BrDkZxLavC',
+  full_access: process.env.STRIPE_PRICE_FULL_ACCESS || 'price_1TJhIzE3cjWtx7BrDkZxLavC',
 }
 
 export async function POST(req: Request) {
