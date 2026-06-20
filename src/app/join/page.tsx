@@ -211,11 +211,22 @@ export default function JoinPage() {
         }
       }
 
-      const skills = [...selectedUseCases, ...selectedAITools, ...selectedFrameworks, ...selectedDomains]
-      if (skills.length > 0) {
+      // skills.category is effectively NOT NULL — each row must carry its source
+      // group's category (mirrors EditProfileForm.tsx). Omitting it previously
+      // failed the constraint and dropped all selections silently.
+      const skillRows = [
+        ...selectedUseCases.map(name => ({ category: 'claude_use_case', name })),
+        ...selectedAITools.map(name => ({ category: 'ai_tool', name })),
+        ...selectedFrameworks.map(name => ({ category: 'framework', name })),
+        ...selectedDomains.map(name => ({ category: 'domain', name })),
+      ]
+      if (skillRows.length > 0) {
         const { data: profile } = await supabase.from('profiles').select('id').eq('username', generatedUsername).maybeSingle()
         if (profile?.id) {
-          await supabase.from('skills').insert(skills.map(s => ({ profile_id: profile.id, name: s })))
+          const { error: skillsErr } = await supabase
+            .from('skills')
+            .insert(skillRows.map(s => ({ profile_id: profile.id, category: s.category, name: s.name })))
+          if (skillsErr) console.warn('[builder signup] skills insert failed:', skillsErr)
         }
       }
 
