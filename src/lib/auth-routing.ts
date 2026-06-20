@@ -24,6 +24,13 @@ export function routeAfterAuth(
     return opts.requiresPasswordSet ? '/update-password' : '/hirer'
   }
   if (modes.builder) return '/dashboard'
+  // Phase 9: team admins and agent owners are first-class — they land on the
+  // pillar-aware /dashboard (which renders their section) instead of falling
+  // through and being ejected by the old no-profile gate. Behaviourally these
+  // already resolved to /dashboard via the default below; the explicit branches
+  // document the intent. Hirer landing (/hirer) is intentionally unchanged.
+  if (modes.team_admin) return '/dashboard'
+  if (modes.agent_owner) return '/dashboard'
   return '/dashboard'
 }
 

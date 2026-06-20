@@ -1,34 +1,35 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import BuilderDashboardClient from './BuilderDashboardClient'
+import DashboardShell from './DashboardShell'
+import { getUserState } from '@/lib/user'
 import { listActiveCollections } from '@/lib/collections/collections'
 import { listMembershipsForProfile } from '@/lib/collections/consent'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 
-export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+// Phase 9 Part 1: pillar-aware dashboard.
+// - Builder-only users render the existing BuilderDashboardClient unchanged
+//   (byte-identical — zero regression for the 40+ existing solo builders).
+// - Multi-pillar OR non-builder users render DashboardShell with stacked
+//   pillar sections. No user is redirected to /join unless they have zero
+//   pillar identity (no profile, team, agent, subscription, or client role).
 
+// Loads the exact data BuilderDashboardClient expects (unchanged from the
+// original dashboard data-load). Returned as props so both the builder-only
+// path and the multi-pillar path render an identical builder experience.
+async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>, email: string) {
   const { data: profile } = await supabase
     .from('profiles')
     .select('*, projects(*), skills(*)')
-    .eq('email', user.email)
+    .eq('email', email)
     .maybeSingle()
 
-  // No profile yet → send to /join. The agent entry point is now Card 3
-  // (/join → /api/join/agent); the interim /dashboard?agent=1 AgentOnboarding
-  // shim was deleted in Phase 5 §M (a profiled user hitting ?agent=1 just gets
-  // the normal dashboard — the param is ignored).
-  if (!profile) {
-    redirect('/join')
-  }
+  if (!profile) return null
 
-  // Normal dashboard
   const { data: applications } = await supabase
     .from('applications')
     .select('*, jobs(*)')
-    .eq('builder_email', user.email)
+    .eq('builder_email', email)
     .order('created_at', { ascending: false })
     .limit(5)
 
@@ -54,8 +55,8 @@ export default async function DashboardPage() {
     .not('url', 'is', null)
     .neq('url', '')
 
-  // Proof-of-Work card data (Phase 1 — replaces the retired dashboard ring). Keyed on the
-  // builder's entity; unlinked profiles (entity_id null) show the empty state.
+  // Proof-of-Work card data — keyed on the builder's entity; unlinked profiles
+  // (entity_id null) show the empty state.
   let l1Count = 0
   let l0Count = 0
   let distinctHosts = 0
@@ -80,31 +81,49 @@ export default async function DashboardPage() {
     distinctHosts = hosts.size
   }
 
-  // Consented collections — per-collection cards rendered in a loop on the
-  // dashboard, gated on profile.published in the client component. Zero
-  // active collections → empty arrays → no cards → dashboard byte-identical
-  // to today. Both queries use the session-bound client; RLS allows the
-  // public-read-active policy on collections, and memberships are
-  // service-role-only — but the user's own profile_id-keyed memberships
-  // can be read via the same path because we use service role for that
-  // specific lookup via the helper.
   const activeCollections = await listActiveCollections(supabase)
   const memberships = await listMembershipsForProfile(supabase, profile.id)
 
-  return (
-    <BuilderDashboardClient
-      profile={profile}
-      applications={applications || []}
-      hirers={hirers || []}
-      email={user.email!}
-      githubData={githubData || null}
-      l1Count={l1Count}
-      l0Count={l0Count}
-      distinctHosts={distinctHosts}
-      lastShippedAt={lastShippedAt}
-      provenPostCount={provenPostCount || 0}
-      activeCollections={activeCollections}
-      memberships={memberships}
-    />
-  )
+  return {
+    profile,
+    applications: applications || [],
+    hirers: hirers || [],
+    email,
+    githubData: githubData || null,
+    l1Count,
+    l0Count,
+    distinctHosts,
+    lastShippedAt,
+    provenPostCount: provenPostCount || 0,
+    activeCollections,
+    memberships,
+  }
+}
+
+export default async function DashboardPage() {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { modes, refs } = await getUserState()
+
+  // Zero pillar identity → onboarding. This is the ONLY remaining redirect to
+  // /join — team admins, agent owners, buyers, and builders all have a home.
+  if (!modes.builder && !modes.team_admin && !modes.agent_owner && !modes.hirer && !modes.client) {
+    redirect('/join')
+  }
+
+  // Single-pillar builder → unchanged BuilderDashboardClient, no shell chrome.
+  if (modes.builder && !modes.team_admin && !modes.agent_owner) {
+    const props = await loadBuilderProps(supabase, user.email!)
+    if (!props) redirect('/join')
+    return <BuilderDashboardClient {...props} />
+  }
+
+  // Multi-pillar OR non-builder → pillar-aware shell. If the user is also a
+  // builder, render the full builder dashboard as the leading block.
+  const builderProps = modes.builder ? await loadBuilderProps(supabase, user.email!) : null
+  const builderNode = builderProps ? <BuilderDashboardClient {...builderProps} /> : null
+
+  return <DashboardShell modes={modes} refs={refs} email={user.email!} builderNode={builderNode} />
 }
