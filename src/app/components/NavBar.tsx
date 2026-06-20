@@ -36,19 +36,14 @@ export default function NavBar() {
   const profileUsername = navUser?.profileUsername ?? null
   const teamSlug = navUser?.teamSlug ?? null
   const agentSlug = navUser?.agentSlug ?? null
-  // Phase 9: the Dashboard link always points at the pillar-aware /dashboard for
-  // authenticated users; the dashboard handles all pillar branching internally.
-  // (Only used by the fallback menu branch for users with no role-specific menu.)
-  const dashboardLink = '/dashboard'
   const isAdmin = modes.admin
-  const isHomepage = pathname === '/'
 
+  // Phase 9 Part 1.6: mode-driven, deterministic menu. Resolves purely from the
+  // user's modes + identity refs — NEVER from pathname. The same user sees the
+  // same menu on every page (fixes the "two navs" inconsistency where a
+  // builder+hirer saw different links on /dashboard vs /hirer).
   const getMenuLinks = () => {
-    // ---- Unauthenticated (any page) ----
-    // Phase 8 §F Block 1: one marketing menu for anonymous visitors on EVERY
-    // route (was: homepage-only; off-homepage fell through to an empty menu —
-    // the catastrophic finding). #how anchor repointed to the real
-    // /how-it-works page (the §B homepage rewrite removed the #how section).
+    // ---- Unauthenticated (any page) ---- (unchanged)
     if (!navUser) {
       return [
         { label: 'Atlas', href: '/atlas' },
@@ -59,107 +54,41 @@ export default function NavBar() {
       ]
     }
 
-    // ---- Client-only ----
+    // ---- Client-only ---- (unchanged: special JSX block in the render path)
     if (modes.client && !modes.builder && !modes.hirer) {
       return []
     }
 
-    // ---- Admin ----
-    if (isAdmin) {
-      return [{ label: 'Admin dashboard', href: '/admin' }]
-    }
+    const links: { label: string; href: string }[] = []
 
-    // ---- Hirer present ----
+    // Admin link is additive — admins may also be builders/hirers/etc.
+    if (isAdmin) links.push({ label: 'Admin dashboard', href: '/admin' })
+
+    // Common to all authenticated non-client users.
+    links.push({ label: 'Atlas', href: '/atlas' })
+    links.push({ label: 'Build Feed', href: '/feed' })
+    links.push({ label: 'Jobs', href: '/jobs' })
+
     if (modes.hirer) {
-      // On hirer-context pages
-      if (pathname.startsWith('/hirer')) {
-        const links = [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Browse talent', href: '/talent' },
-          { label: 'Jobs', href: '/jobs' },
-          { label: 'Post a job', href: '/post-job' },
-        ]
-        if (modes.builder) links.push({ label: 'Builder dashboard', href: '/dashboard' })
-        return links
-      }
-      if (pathname.startsWith('/talent') || pathname.startsWith('/post-job')) {
-        const links = [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Jobs', href: '/jobs' },
-          { label: 'Hirer dashboard', href: '/hirer' },
-        ]
-        if (modes.builder) links.push({ label: 'Builder dashboard', href: '/dashboard' })
-        return links
-      }
-      // Builder-side pages while hirer-mode active: expose both
-      if (modes.builder && pathname.startsWith('/dashboard')) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Build Feed', href: '/feed' },
-          { label: 'Jobs', href: '/jobs' },
-          { label: 'Edit profile', href: '/dashboard/edit' },
-          { label: 'Hirer dashboard', href: '/hirer' },
-        ]
-      }
-      // Default hirer nav (all other pages)
-      const links = [
-        { label: 'Atlas', href: '/atlas' },
-        { label: 'Browse talent', href: '/talent' },
-        { label: 'Jobs', href: '/jobs' },
-        { label: 'Hirer dashboard', href: '/hirer' },
-      ]
-      if (modes.builder) links.push({ label: 'Builder dashboard', href: '/dashboard' })
-      return links
+      links.push({ label: 'Browse talent', href: '/talent' })
+      links.push({ label: 'Post a job', href: '/post-job' })
+      links.push({ label: 'Hirer dashboard', href: '/hirer' })
     }
 
-    // ---- Builder-only ----
     if (modes.builder) {
-      if (pathname.startsWith('/dashboard/edit')) {
-        return [{ label: '← Dashboard', href: '/dashboard' }]
-      }
-      if (pathname.startsWith('/dashboard')) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Build Feed', href: '/feed' },
-          { label: 'Jobs', href: '/jobs' },
-          { label: 'Edit profile', href: '/dashboard/edit' },
-        ]
-      }
-      if (pathname.startsWith('/messages')) {
-        return [{ label: 'Dashboard', href: '/dashboard' }]
-      }
-      if (pathname.startsWith('/feed')) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Build Feed', href: '/feed' },
-        ]
-      }
-      if (pathname.startsWith('/jobs')) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Dashboard', href: '/dashboard' },
-        ]
-      }
-      if (pathname.startsWith('/u/') || pathname.startsWith('/company/')) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Build Feed', href: '/feed' },
-        ]
-      }
-      if (isHomepage) {
-        return [
-          { label: 'Atlas', href: '/atlas' },
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Build Feed', href: '/feed' },
-          { label: 'Jobs', href: '/jobs' },
-        ]
-      }
+      links.push({ label: 'Builder dashboard', href: '/dashboard' })
+      links.push({ label: 'Edit profile', href: '/dashboard/edit' })
     }
 
-    // Fallback for any logged-in user with no other match
-    return navUser ? [{ label: 'Dashboard', href: dashboardLink }] : []
+    if (modes.team_admin && teamSlug) {
+      links.push({ label: 'Edit team', href: `/team/${teamSlug}/edit` })
+    }
+
+    if (modes.agent_owner && agentSlug) {
+      links.push({ label: 'Edit agent', href: `/agent/${agentSlug}/edit` })
+    }
+
+    return links
   }
 
   useEffect(() => {
@@ -240,12 +169,12 @@ export default function NavBar() {
     }
     if (teamSlug) {
       links.push({ label: 'Your team', href: `/team/${teamSlug}` })
-      if (pathname === `/team/${teamSlug}`) links.push({ label: 'Edit team', href: `/team/${teamSlug}/edit` })
     }
     if (agentSlug) {
       links.push({ label: 'Your agent', href: `/agent/${agentSlug}` })
-      if (pathname === `/agent/${agentSlug}`) links.push({ label: 'Edit agent', href: `/agent/${agentSlug}/edit` })
     }
+    // Phase 9 Part 1.6: Edit team / Edit agent moved into getMenuLinks()
+    // (unconditional per mode, no longer page-dependent).
     return links
   }
 
