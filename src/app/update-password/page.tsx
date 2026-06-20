@@ -54,7 +54,7 @@ export default function UpdatePasswordPage() {
       setLoading(false)
     } else {
       const { data: { user } } = await supabase.auth.getUser()
-      const modes = user ? await deriveModesClientSide(supabase, user) : { builder: false, hirer: false, client: false, admin: false }
+      const modes = user ? await deriveModesClientSide(supabase, user) : { builder: false, hirer: false, client: false, admin: false, team_admin: false, agent_owner: false }
       window.location.href = routeAfterAuth(modes)
     }
   }
@@ -66,7 +66,7 @@ export default function UpdatePasswordPage() {
       supabase.from('subscriptions').select('id').eq('email', user.email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
       supabase.from('profiles').select('id').eq('email', user.email).maybeSingle(),
     ])
-    return { builder: !!profile, hirer: !!sub, client: metaRole === 'client', admin: metaRole === 'admin' }
+    return { builder: !!profile, hirer: !!sub, client: metaRole === 'client', admin: metaRole === 'admin', team_admin: false, agent_owner: false }
   }
 
   return (

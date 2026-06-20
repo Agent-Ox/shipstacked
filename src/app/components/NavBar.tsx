@@ -15,7 +15,7 @@ type NavUser = {
   agentSlug: string | null
 }
 
-const EMPTY_MODES: EntityModes = { builder: false, hirer: false, client: false, admin: false }
+const EMPTY_MODES: EntityModes = { builder: false, hirer: false, client: false, admin: false, team_admin: false, agent_owner: false }
 
 export default function NavBar() {
   const [navUser, setNavUser] = useState<NavUser | null>(null)
@@ -36,8 +36,10 @@ export default function NavBar() {
   const profileUsername = navUser?.profileUsername ?? null
   const teamSlug = navUser?.teamSlug ?? null
   const agentSlug = navUser?.agentSlug ?? null
-  // Dashboard link priority: client > hirer > builder (mirrors routeAfterAuth)
-  const dashboardLink = modes.client ? '/client/inbox' : modes.hirer ? '/hirer' : '/dashboard'
+  // Phase 9: the Dashboard link always points at the pillar-aware /dashboard for
+  // authenticated users; the dashboard handles all pillar branching internally.
+  // (Only used by the fallback menu branch for users with no role-specific menu.)
+  const dashboardLink = '/dashboard'
   const isAdmin = modes.admin
   const isHomepage = pathname === '/'
 
@@ -190,6 +192,8 @@ export default function NavBar() {
         hirer: !!sub,
         client: metaRole === 'client',
         admin: metaRole === 'admin',
+        team_admin: !!teamAdmin,
+        agent_owner: !!agentEntity,
       }
       const teamRel = (teamAdmin as any)?.team
       const teamSlug = (Array.isArray(teamRel) ? teamRel[0]?.slug : teamRel?.slug) ?? null
