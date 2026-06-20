@@ -127,19 +127,19 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: 'ShipStacked <hello@shipstacked.com>',
         to: email,
-        subject: 'Welcome to ShipStacked — access your account',
+        subject: 'Welcome to ShipStacked Full Access',
         html: `
           <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
             <h1 style="font-size: 24px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em;">Welcome to ShipStacked.</h1>
             <p style="color: #6e6e73; font-size: 15px; line-height: 1.6;">
-              Your Full Access subscription is confirmed. Click below to set your password and access the builder directory.
+              Your Full Access subscription is active. You can now message builders, post jobs, and use the full hiring features.
             </p>
-            <a href="${magicLink || siteUrl + '/login'}"
+            <a href="${siteUrl}/hirer"
               style="display: inline-block; margin: 1.5rem 0 1rem; padding: 0.875rem 2rem; background: #0071e3; color: white; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 600;">
-              Set password and access ShipStacked →
+              Access your dashboard →
             </a>
             <p style="color: #aeaeb2; font-size: 13px; line-height: 1.6;">
-              This link expires in 24 hours. After setting your password, sign in anytime at shipstacked.com/login.
+              Already set your password during signup? This link takes you straight in. If you ever need to reset your password, you can do it from the dashboard.
             </p>
             <hr style="border: none; border-top: 1px solid #e0e0e5; margin: 1.5rem 0;" />
             <p style="color: #aeaeb2; font-size: 12px;">Questions? Reply to this email or contact hello@shipstacked.com</p>

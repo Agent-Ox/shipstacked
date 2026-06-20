@@ -116,6 +116,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
   const { hasSubscription, user: resolvedUser } = await getEntityModes()
   const isAdmin = resolvedUser?.email === 'oxleethomas+admin@gmail.com'
   const hasAccess = !!resolvedUser && (resolvedUser.email === profile.email || hasSubscription || isAdmin)
+  // Owner viewing their own page: hasAccess is true (email match) which correctly
+  // un-gates their contact/social links, but they must NOT see the self-message CTA.
+  const isOwner = !!resolvedUser && resolvedUser.email === profile.email
 
   const claudeSkills = byCategory('claude_use_case')
   const languages = byCategory('language')
@@ -580,7 +583,16 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           </div>
 
           {/* Role-aware CTA */}
-          {hasAccess ? (
+          {isOwner ? (
+            <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center', animationDelay: '0.4s' }}>
+              <p style={{ fontSize: 13, color: 'var(--accent2)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem', fontFamily: 'var(--mono)' }}>YOUR PROFILE</p>
+              <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>This is how your profile looks to hirers.</p>
+              <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: '1.25rem', fontWeight: 300 }}>Keep it current to get found.</p>
+              <a href="/dashboard/edit" style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: 'var(--accent)', color: 'white', borderRadius: 20, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+                Edit profile →
+              </a>
+            </div>
+          ) : hasAccess ? (
             <div className="fade-up" style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center', animationDelay: '0.4s' }}>
               <p style={{ fontSize: 13, color: 'var(--accent2)', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem', fontFamily: 'var(--mono)' }}>READY TO HIRE?</p>
               <p style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>

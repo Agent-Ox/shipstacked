@@ -17,16 +17,31 @@ export default function SetPasswordPage() {
   useEffect(() => {
     const supabase = createClient()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Landing guard: if the password is already set (e.g. a stale post-payment
+    // email link, a magic-link race, or back-button navigation), don't show the
+    // form again — route the user to their dashboard. Excludes USER_UPDATED so
+    // the normal in-page set-password submit keeps its own redirect.
+    const skipIfAlreadySet = async (session: { user: any } | null): Promise<boolean> => {
+      if (session?.user?.user_metadata?.password_set === true) {
+        const modes = await deriveModesClientSide(supabase, session.user)
+        window.location.href = routeAfterAuth(modes)
+        return true
+      }
+      return false
+    }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'PASSWORD_RECOVERY')) {
+        if (event !== 'USER_UPDATED' && await skipIfAlreadySet(session)) return
         setSessionReady(true)
         setEmail(session.user.email || '')
         setChecking(false)
       }
     })
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
+        if (await skipIfAlreadySet(session)) return
         setSessionReady(true)
         setEmail(session.user.email || '')
         setChecking(false)
