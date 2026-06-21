@@ -23,6 +23,40 @@ function adminClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
+// GET — list the caller's own sent invites (never exposes token_hash).
+// Optional ?team_entity_id= filter; if present the caller must admin that team.
+export async function GET(req: Request) {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+
+  const admin = adminClient()
+  const url = new URL(req.url)
+  const teamParam = url.searchParams.get('team_entity_id')
+
+  let query = admin
+    .from('invites')
+    .select('id, invitee_email, status, team_entity_id, created_at, expires_at, accepted_at')
+    .eq('inviter_user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (teamParam) {
+    const teamEntityId = Number(teamParam)
+    const { data: adminRow } = await admin
+      .from('team_admins')
+      .select('id')
+      .eq('team_entity_id', teamEntityId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!adminRow) return NextResponse.json({ error: 'Not an admin of this team' }, { status: 403 })
+    query = query.eq('team_entity_id', teamEntityId)
+  }
+
+  const { data: invites, error } = await query
+  if (error) return NextResponse.json({ error: 'Could not load invites' }, { status: 500 })
+  return NextResponse.json({ invites: invites ?? [] })
+}
+
 // POST — create + email a team or generic invite.
 export async function POST(req: Request) {
   const supabase = await createServerSupabaseClient()
