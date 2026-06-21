@@ -65,6 +65,55 @@ export default function AgentEditClient({ entity, profile, ownerEmail, principal
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
   const [togglingPublish, setTogglingPublish] = useState(false)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [logoUploaded, setLogoUploaded] = useState(false)
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) { setError('Please use a JPG, PNG or WebP image.'); return }
+    if (file.size > 5 * 1024 * 1024) { setError('Please use an image under 5MB.'); return }
+    setLogoUploading(true); setError('')
+    try {
+      // Resize to 400px longest edge client-side before upload (mirrors avatar).
+      const resized = await new Promise<Blob>((resolve, reject) => {
+        const img = new Image()
+        const objectUrl = URL.createObjectURL(file)
+        img.onload = () => {
+          const MAX = 400
+          let w = img.width
+          let h = img.height
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+          else { w = Math.round(w * MAX / h); h = MAX }
+          const canvas = document.createElement('canvas')
+          canvas.width = w
+          canvas.height = h
+          canvas.getContext('2d')!.drawImage(img, 0, 0, w, h)
+          URL.revokeObjectURL(objectUrl)
+          canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Resize failed')), 'image/jpeg', 0.85)
+        }
+        img.onerror = reject
+        img.src = objectUrl
+      })
+      const fd = new FormData()
+      fd.append('file', new File([resized], 'logo.jpg', { type: 'image/jpeg' }))
+      fd.append('entity_id', String(entity.id))
+      fd.append('kind', 'agent')
+      const res = await fetch('/api/entity-logo', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (data.url) {
+        setLogoUrl(data.url)
+        setLogoUploaded(true)
+        setTimeout(() => setLogoUploaded(false), 3000)
+      } else {
+        setError(data.error || 'Upload failed')
+      }
+    } catch {
+      setError('Upload failed. Please try again.')
+    }
+    setLogoUploading(false)
+  }
 
   const save = async () => {
     if (saving) return
@@ -199,8 +248,20 @@ export default function AgentEditClient({ entity, profile, ownerEmail, principal
             </p>
           </div>
           <div style={{ marginBottom: '1rem' }}>
-            <label style={labelStyle}>Logo URL <span style={{ fontWeight: 400, color: '#6e6e73' }}>(paste an image URL)</span></label>
-            <input type="url" placeholder="https://…/logo.png" value={logoUrl} onChange={e => setLogoUrl(e.target.value)} style={inputStyle} />
+            <label style={labelStyle}>Logo</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 56, height: 56, borderRadius: 12, overflow: 'hidden', background: '#f5f5f7', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {logoUrl ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: '#aeaeb2' }}>No logo</span>}
+              </div>
+              <div>
+                <label style={{ display: 'inline-block', padding: '0.5rem 1rem', background: logoUploading ? '#d2d2d7' : '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, cursor: logoUploading ? 'not-allowed' : 'pointer' }}>
+                  {logoUploading ? 'Uploading...' : logoUrl ? 'Change logo' : 'Upload logo'}
+                  <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} disabled={logoUploading} />
+                </label>
+                <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '0.4rem' }}>JPG, PNG or WebP. Max 5MB.</p>
+                {logoUploaded && <p style={{ fontSize: 13, color: '#1a7f37', fontWeight: 600, marginTop: '0.35rem' }}>✓ Logo uploaded</p>}
+              </div>
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
             <div style={{ flex: 1, minWidth: 180 }}>
