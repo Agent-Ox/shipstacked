@@ -19,7 +19,7 @@ export function routeAfterAuth(
   if (opts.redirectTo && opts.redirectTo.startsWith('/')) return opts.redirectTo
 
   if (modes.admin) return '/admin'
-  if (modes.client) return '/client/inbox'
+  if (modes.client && !modes.hirer) return '/client/inbox'
   if (modes.hirer) {
     return opts.requiresPasswordSet ? '/update-password' : '/hirer'
   }
