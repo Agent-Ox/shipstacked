@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import ShareButtons from '@/app/u/[username]/ShareButtons'
 import FeedPostForm from '@/app/feed/FeedPostForm'
 import CollectionToggleCard from './CollectionToggleCard'
+import InviteCard from './InviteCard'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 
@@ -259,6 +260,13 @@ export default function BuilderDashboardClient({
 
             {/* Messages card */}
             <MessagesCard />
+
+            {/* Invite a colleague */}
+            <div style={{ background:'white', border:'1px solid #e0e0e5', borderRadius:14, padding:'1.25rem 1.5rem', marginBottom:'1rem' }}>
+              <p style={{ fontSize:12, fontWeight:600, color:'#6e6e73', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.3rem' }}>Invite a colleague</p>
+              <p style={{ fontSize:13, color:'#6e6e73', lineHeight:1.5, marginBottom:'0.75rem' }}>Know someone shipping AI-native work? Invite them to ShipStacked.</p>
+              <InviteCard />
+            </div>
 
             {/* Photo nudge — show if profile has no avatar */}
             {!profile.avatar_url && (
