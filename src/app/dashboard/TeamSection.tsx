@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
+import InviteCard from './InviteCard'
 
 function adminClient() {
   return createClient(
@@ -73,7 +74,7 @@ export default async function TeamSection({
           <a href={`/team/${teamSlug}/edit#members`} style={{ fontSize: 12, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>Manage members →</a>
         </div>
         {memberList.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#6e6e73' }}>No members yet. Members link themselves from their own profile — LinkedIn-style.</p>
+          <p style={{ fontSize: 13, color: '#6e6e73' }}>No members yet. Invite teammates below — they'll join your team when they accept.</p>
         ) : (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {memberList.map((m: any) => {
@@ -88,6 +89,12 @@ export default async function TeamSection({
             })}
           </div>
         )}
+
+        {/* Invite teammates */}
+        <div style={{ marginTop: '1.25rem' }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.5rem' }}>Invite teammates</p>
+          <InviteCard teamEntityId={teamEntityId} />
+        </div>
       </div>
 
       {/* Hiring Access — per-user billing for Part 1 */}
