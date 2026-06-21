@@ -69,6 +69,16 @@ export async function POST(req: Request) {
       .from('avatars')
       .getPublicUrl(filename)
 
+    // Persist logo_url server-side so the upload is immediately durable (mirrors
+    // /api/avatar writing avatar_url). The table/key match the editors' PATCH
+    // /api/v1/{team,agent} writes (team_profiles/agent_profiles by entity_id).
+    const table = kind === 'team' ? 'team_profiles' : 'agent_profiles'
+    const { error: persistError } = await adminSupabase
+      .from(table)
+      .update({ logo_url: publicUrl })
+      .eq('entity_id', entityId)
+    if (persistError) throw persistError
+
     return NextResponse.json({ url: publicUrl })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
