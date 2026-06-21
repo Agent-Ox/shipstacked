@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import posthog from 'posthog-js'
 
-type Source = 'hirers_authed' | 'hirers' | 'dashboard_enable_hiring' | 'buyer_empty_state' | 'homepage' | 'talent_teaser' | 'team_dashboard'
+type Source = 'hirers_authed' | 'hirers' | 'dashboard_enable_hiring' | 'buyer_empty_state' | 'homepage' | 'talent_teaser' | 'team_dashboard' | 'agent_dashboard'
 
 type Props = {
   /**
