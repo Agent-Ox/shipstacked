@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 
 // Auto-verification criteria:
-// 1. At least 1 Build Feed post with BOTH outcome AND url filled in
+// 1. ≥1 proven project (url + description/outcome) OR legacy build-feed post (url + outcome)
 // 2. Profile has: full_name, bio, role, location
 // 3. At least 1 project OR at least 3 skills selected
 
@@ -41,7 +41,19 @@ export async function checkAutoVerify(profileId: string): Promise<boolean> {
   const hasPortfolio = (projectCount || 0) >= 1 || (skillCount || 0) >= 3
   if (!hasPortfolio) return false
 
-  // Check Build Feed — at least 1 post with both outcome AND url
+  // Proven build — at least 1 proven project (the signup build was rerouted
+  // posts→projects) OR a legacy build-feed post. A project counts as proven
+  // when it has a non-empty project_url AND prose (the rerouted outcome lands
+  // in description; some projects carry it in outcome).
+  const { data: projRows } = await supabase
+    .from('projects')
+    .select('description, outcome, project_url')
+    .eq('profile_id', profileId)
+  const provenProjectCount = (projRows || []).filter(p =>
+    (p.project_url || '').trim() && ((p.description || '').trim() || (p.outcome || '').trim()),
+  ).length
+
+  // Legacy Build Feed posts — a post with both outcome AND url.
   const { count: provenPostCount } = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
@@ -51,7 +63,7 @@ export async function checkAutoVerify(profileId: string): Promise<boolean> {
     .not('url', 'is', null)
     .neq('url', '')
 
-  if ((provenPostCount || 0) < 1) return false
+  if (((provenPostCount || 0) + provenProjectCount) < 1) return false
 
   // All criteria met — verify and publish the profile
   await supabase
