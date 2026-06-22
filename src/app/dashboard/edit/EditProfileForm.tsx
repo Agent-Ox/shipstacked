@@ -345,7 +345,8 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
 
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '3rem 1.5rem' }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem', color: '#1d1d1f' }}>Edit profile</h1>
-        <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '3rem' }}>Changes appear on your public profile immediately.</p>
+        <p style={{ color: '#6e6e73', fontSize: 15, marginBottom: '1rem' }}>Changes appear on your public profile immediately.</p>
+        <a href={`/u/${profile.username}`} target="_blank" rel="noopener" style={{ display: 'inline-block', padding: '0.5rem 1rem', borderRadius: 980, background: '#f5f5f7', color: '#1d1d1f', fontSize: 13, fontWeight: 500, textDecoration: 'none', marginBottom: '3rem' }}>View my profile →</a>
 
         {error && <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#c00' }}>{error}</div>}
         {saved && <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#1a7f37' }}>✓ Profile saved successfully.</div>}
@@ -584,6 +585,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           style={{ width: '100%', padding: '0.9rem', background: loading ? '#d2d2d7' : '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 15, fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}>
           {loading ? 'Saving...' : 'Save changes'}
         </button>
+        {saved && <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.75rem 1rem', marginTop: '1rem', fontSize: 14, color: '#1a7f37' }}>✓ Profile saved successfully.</div>}
       </div>
     </div>
   )
