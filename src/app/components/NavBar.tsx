@@ -13,6 +13,8 @@ type NavUser = {
   profileUsername: string | null
   teamSlug: string | null
   agentSlug: string | null
+  companySlug: string | null
+  companyPublic: boolean
 }
 
 const EMPTY_MODES: EntityModes = { builder: false, hirer: false, client: false, admin: false, team_admin: false, agent_owner: false }
@@ -36,6 +38,8 @@ export default function NavBar() {
   const profileUsername = navUser?.profileUsername ?? null
   const teamSlug = navUser?.teamSlug ?? null
   const agentSlug = navUser?.agentSlug ?? null
+  const companySlug = navUser?.companySlug ?? null
+  const companyPublic = navUser?.companyPublic ?? false
   const isAdmin = modes.admin
 
   // Phase 9 Part 1.6: mode-driven, deterministic menu. Resolves purely from the
@@ -73,6 +77,11 @@ export default function NavBar() {
       links.push({ label: 'Browse talent', href: '/talent' })
       links.push({ label: 'Post a job', href: '/post-job' })
       links.push({ label: 'Hirer dashboard', href: '/hirer' })
+      links.push({ label: 'Edit company', href: '/hirer#company-form' })
+      // Only link the public page when it's public — /company/[slug] 404s otherwise.
+      if (companySlug && companyPublic) {
+        links.push({ label: 'View company profile', href: `/company/${companySlug}` })
+      }
     }
 
     if (modes.builder) {
@@ -108,11 +117,12 @@ export default function NavBar() {
       // Phase 8 §F Block 2: 4 parallel queries (added team_admins + agent
       // entities). Browser client + user session; RLS-gated. entities has a
       // public-read policy; team_admins self-read added in §F.B2.7 — both render.
-      const [{ data: sub }, { data: profile }, { data: teamAdmin }, { data: agentEntity }] = await Promise.all([
+      const [{ data: sub }, { data: profile }, { data: teamAdmin }, { data: agentEntity }, { data: company }] = await Promise.all([
         supabase.from('subscriptions').select('id').eq('email', email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
         supabase.from('profiles').select('id, username').eq('email', email).maybeSingle(),
         supabase.from('team_admins').select('team:entities!team_admins_team_entity_id_fkey(slug)').eq('user_id', user.id).limit(1).maybeSingle(),
         supabase.from('entities').select('slug').eq('kind', 'agent').eq('owner_user_id', user.id).limit(1).maybeSingle(),
+        supabase.from('employer_profiles').select('slug, public').eq('email', email).maybeSingle(),
       ])
 
       if (cancelled) return
@@ -132,6 +142,8 @@ export default function NavBar() {
         profileUsername: (profile as any)?.username ?? null,
         teamSlug,
         agentSlug: (agentEntity as any)?.slug ?? null,
+        companySlug: (company as any)?.slug ?? null,
+        companyPublic: (company as any)?.public === true,
       })
       setLoading(false)
       // Aggregated unread count across all active messaging modes
