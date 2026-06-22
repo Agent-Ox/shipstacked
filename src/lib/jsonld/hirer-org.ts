@@ -11,6 +11,7 @@
  */
 
 import { CANONICAL_HOST, SCHEMA_CONTEXT, hirerOrgId } from './context.ts'
+import { informative } from '../badge.ts'
 
 export interface HirerOrgInput {
   slug: string
@@ -72,7 +73,7 @@ export function buildHirerOrgJsonLd(company: HirerOrgInput): HirerOrgJsonLd {
   const locality = trim(company.location)
   if (locality) out.address = { '@type': 'PostalAddress', addressLocality: locality }
 
-  const industry = trim(company.industry)
+  const industry = informative(trim(company.industry))
   if (industry) out['shipstacked:industry'] = industry
 
   return out

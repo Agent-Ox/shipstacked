@@ -20,6 +20,7 @@
  */
 
 import { CANONICAL_HOST, SCHEMA_CONTEXT, agentOrgId, personId, teamOrgId } from './context.ts'
+import { informative } from '../badge.ts'
 
 /** Resolved principal the agent acts on behalf of (from resolveAgentPrincipal). */
 export interface AgentPrincipal {
@@ -53,7 +54,7 @@ export interface AgentOrgJsonLd {
   description?: string
   image?: string
   knowsAbout?: string[]
-  'shipstacked:provider': string
+  'shipstacked:provider'?: string
   'shipstacked:model'?: string
   'shipstacked:capabilities'?: string[]
   'shipstacked:focus'?: string
@@ -78,7 +79,6 @@ export function buildAgentOrgJsonLd(agent: AgentOrgInput): AgentOrgJsonLd {
     '@id': canonical,
     name: agent.agent_name,
     url: canonical,
-    'shipstacked:provider': agent.provider,
     'shipstacked:verified': agent.verified,
     'shipstacked:l1ReceiptCount': agent.l1_receipt_count,
     'shipstacked:listedOn': CANONICAL_HOST,
@@ -88,6 +88,8 @@ export function buildAgentOrgJsonLd(agent: AgentOrgInput): AgentOrgJsonLd {
   if (description) out.description = description
   const logo = trim(agent.logo_url)
   if (logo) out.image = logo
+  const provider = informative(agent.provider)
+  if (provider) out['shipstacked:provider'] = provider
   const model = trim(agent.model)
   if (model) out['shipstacked:model'] = model
   const focus = trim(agent.focus)

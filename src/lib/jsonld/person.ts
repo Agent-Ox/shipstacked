@@ -23,6 +23,7 @@
  */
 
 import { CANONICAL_HOST, SCHEMA_CONTEXT, personId, teamOrgId } from './context.ts'
+import { informative } from '../badge.ts'
 
 export interface PersonProfileInput {
   username: string
@@ -199,13 +200,13 @@ export function buildPersonJsonLd(opts: {
 
   if (profile.verified) out['shipstacked:verified'] = true
 
-  const primaryProf = nonEmpty(profile.primary_profession)
+  const primaryProf = informative(nonEmpty(profile.primary_profession))
   if (primaryProf) out['shipstacked:primaryProfession'] = primaryProf
   const seniority = nonEmpty(profile.seniority)
   if (seniority) out['shipstacked:seniority'] = seniority
-  const workType = nonEmpty(profile.work_type)
+  const workType = informative(nonEmpty(profile.work_type))
   if (workType) out['shipstacked:workType'] = workType
-  const dayRate = nonEmpty(profile.day_rate)
+  const dayRate = informative(nonEmpty(profile.day_rate))
   if (dayRate) out['shipstacked:dayRate'] = dayRate
   const timezone = nonEmpty(profile.timezone)
   if (timezone) out['shipstacked:timezone'] = timezone
