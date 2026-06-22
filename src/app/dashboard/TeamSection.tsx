@@ -65,6 +65,7 @@ export default async function TeamSection({
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
         <a href={`/team/${teamSlug}/edit`} style={{ padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Edit team</a>
         <a href={`/team/${teamSlug}`} style={{ padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>View public page</a>
+        <a href={`/paste?subject=${teamEntityId}`} style={{ padding: '0.5rem 1rem', background: '#1a7f37', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Post work as {teamName} →</a>
       </div>
 
       {/* Members */}

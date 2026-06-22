@@ -197,6 +197,9 @@ export default function TeamEditClient({ entity, profile, members: initialMember
           <a href={`/team/${entity.slug}`} style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>View public page →</a>
         </div>
 
+        {/* Proof-of-work on-ramp — publish a receipt subjected to this team */}
+        <a href={`/paste?subject=${entity.id}`} style={{ display: 'inline-block', marginBottom: '1.5rem', padding: '0.6rem 1.25rem', background: '#1a7f37', color: 'white', borderRadius: 980, fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>Post work as {teamName} →</a>
+
         {/* Publish state — prominent */}
         <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', background: published ? '#f0faf0' : 'white', borderColor: published ? '#b3e0b3' : '#e0e0e5' }}>
           <div>
