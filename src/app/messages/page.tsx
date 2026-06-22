@@ -202,7 +202,7 @@ function MessagesInner() {
     if (activeMode === 'hirer') {
       return builderForConv(conv).full_name || 'Builder'
     }
-    return conv.employer_profile?.company_name || conv.jobs?.company_name || conv.employer_email?.split('@')[0] || 'Hirer'
+    return conv.employer_profile?.company_name || conv.jobs?.company_name || 'Confidential'
   }
 
   const msgBubble = (msg: any) => {
