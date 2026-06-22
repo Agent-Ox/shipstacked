@@ -65,8 +65,7 @@ export default function HirerDashboardClient({
   const logoInputRef = useRef<HTMLInputElement>(null)
 
   const isPublic = profile.public ?? true
-  const hasProfile = !!initial?.id
-  const [profileSaved, setProfileSaved] = useState(false)
+  const [hasProfile, setHasProfile] = useState(!!initial?.id)
 
   useEffect(() => {
     posthog.capture('hirer_dashboard_viewed')
@@ -129,11 +128,11 @@ export default function HirerDashboardClient({
       if (hasProfile) {
         await supabase.from('employer_profiles').update(data).eq('email', email)
       } else {
-        await supabase.from('employer_profiles').insert([data])
+        const { data: inserted } = await supabase.from('employer_profiles').insert([data]).select('id').single()
+        if (inserted?.id) setHasProfile(true)
       }
       setProfile(p => ({ ...p, slug }))
       setSaved(true)
-      setProfileSaved(true)
     } catch (e: any) {
       setError(e.message || 'Something went wrong')
     } finally {
@@ -210,7 +209,7 @@ export default function HirerDashboardClient({
           </div>
         )}
 
-                {!hasProfile && !profileSaved && (
+                {!hasProfile && (
           <div style={{ background: '#fff8f0', border: '1px solid #fde68a', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
             <div style={{ flex: 1 }}>
@@ -221,7 +220,7 @@ export default function HirerDashboardClient({
           </div>
         )}
 
-        <a href={hasProfile || profileSaved ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile || profileSaved ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
+        <a href={hasProfile ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>Core product</p>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'white', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>Search talent</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Browse and contact verified AI-native builders directly.</p>
@@ -234,10 +233,10 @@ export default function HirerDashboardClient({
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Browse talent</h3>
             <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Find verified AI-native builders and message them directly.</p>
           </a>
-          <a href={hasProfile || profileSaved ? "/messages?as=hirer" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile || profileSaved ? 1 : 0.5 }}>
+          <a href={hasProfile ? "/messages?as=hirer" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile ? 1 : 0.5 }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Conversations</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Messages</h3>
-            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile || profileSaved ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
+            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
           </a>
           <a href="/post-job" style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Hiring</p>
@@ -511,6 +510,9 @@ export default function HirerDashboardClient({
               <div style={{ background: '#e3f3e3', border: '1px solid #b3e0b3', borderRadius: 10, padding: '0.875rem 1rem', marginTop: '0.75rem', fontSize: 14, color: '#1a7f37', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontWeight: 700 }}>✓</span>
                 <span>Profile saved.{profile.public && profile.slug ? ` Live at shipstacked.com/company/${profile.slug}` : ' Toggle public when ready to go live.'}</span>
+                {hasProfile && isPublic && profile.slug && (
+                  <a href={'/company/' + profile.slug} target="_blank" style={{ fontSize: 13, color: '#0071e3', fontWeight: 600, textDecoration: 'none', marginLeft: 'auto', whiteSpace: 'nowrap' }}>View company profile →</a>
+                )}
               </div>
             )}
           </div>
