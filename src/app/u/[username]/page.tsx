@@ -6,6 +6,7 @@ import type { Metadata } from 'next'
 import ShareButtons from './ShareButtons'
 import { ProfileViewTracker, MessageButton } from './ProfileAnalytics'
 import { buildPersonJsonLd } from '@/lib/jsonld/person'
+import { informative } from '@/lib/badge'
 import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { createClient } from '@supabase/supabase-js'
@@ -267,7 +268,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 <p style={{ fontSize: 16, color: 'var(--text2)', marginBottom: '0.4rem' }}>{profile.role}</p>
                 {profile.location && <p style={{ fontSize: 14, color: 'var(--text3)' }}>📍 {profile.location}</p>}
               </div>
-              {profile.availability && (
+              {informative(profile.availability) && (
                 <span className="availability-badge">
                   <span className="availability-dot" />
                   {profile.availability}
@@ -298,10 +299,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           )}
 
           {/* Professional info */}
-          {(profile.primary_profession || profile.seniority || profile.work_type || profile.day_rate || profile.timezone || (profile.languages && profile.languages.length > 0)) && (
+          {(informative(profile.primary_profession) || profile.seniority || informative(profile.work_type) || informative(profile.day_rate) || profile.timezone || (profile.languages && profile.languages.length > 0)) && (
             <div className="fade-up card" style={{ padding: '1.25rem 1.75rem', marginBottom: '1.5rem', animationDelay: '0.08s' }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.25rem' }}>
-                {profile.primary_profession && (
+                {informative(profile.primary_profession) && (
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Profession</p>
                     <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.primary_profession}</p>
@@ -313,13 +314,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                     <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.seniority}</p>
                   </div>
                 )}
-                {profile.work_type && (
+                {informative(profile.work_type) && (
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Work type</p>
                     <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.work_type}</p>
                   </div>
                 )}
-                {profile.day_rate && (
+                {informative(profile.day_rate) && (
                   <div>
                     <p style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.25rem', fontFamily: 'var(--mono)' }}>Day rate</p>
                     <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500 }}>{profile.day_rate}</p>

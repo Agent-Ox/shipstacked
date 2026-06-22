@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import ApplyButton from './ApplyButton'
 import { buildHirerOrgJsonLd } from '@/lib/jsonld/hirer-org'
+import { informative } from '@/lib/badge'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params
@@ -142,12 +143,12 @@ export default async function CompanyProfilePage({ params }: { params: Promise<{
               <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.75rem' }}>
                 {company.location && <span style={{ fontSize: 13, color: '#6e6e73' }}>📍 {company.location}</span>}
                 {company.team_size && <span style={{ fontSize: 13, color: '#6e6e73' }}>👥 {company.team_size}</span>}
-                {company.industry && (
+                {informative(company.industry) && (
                   <span style={{ fontSize: 12, fontWeight: 500, color: '#0071e3', background: '#e8f0fe', padding: '0.2rem 0.6rem', borderRadius: 980 }}>
                     {company.industry}
                   </span>
                 )}
-                {company.hiring_type && (
+                {informative(company.hiring_type) && (
                   <span style={{ fontSize: 12, fontWeight: 500, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980 }}>
                     {company.hiring_type}
                   </span>

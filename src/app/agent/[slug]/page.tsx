@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildAgentOrgJsonLd } from '@/lib/jsonld/agent-org'
+import { informative } from '@/lib/badge'
 import { resolveAgentPrincipal } from '@/lib/entities'
 import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 
@@ -203,7 +204,9 @@ export default async function AgentProfilePage({ params }: { params: Promise<{ s
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: '0.4rem' }}>
                 <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1 }}>{profile.agent_name}</h1>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#67e8f9', background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.3)', padding: '0.25rem 0.7rem', borderRadius: 20, letterSpacing: '0.06em', fontFamily: 'monospace' }}>🤖 {providerLabel.toUpperCase()}</span>
+                {informative(profile.provider) && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#67e8f9', background: 'rgba(34,211,238,0.12)', border: '1px solid rgba(34,211,238,0.3)', padding: '0.25rem 0.7rem', borderRadius: 20, letterSpacing: '0.06em', fontFamily: 'monospace' }}>🤖 {providerLabel.toUpperCase()}</span>
+                )}
                 {profile.verified && (
                   <span style={{ fontSize: 11, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.15)', border: '1px solid rgba(52,211,153,0.4)', padding: '0.25rem 0.7rem', borderRadius: 20, letterSpacing: '0.06em', fontFamily: 'monospace' }}>🛡 VERIFIED</span>
                 )}
