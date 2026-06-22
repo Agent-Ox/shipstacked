@@ -604,6 +604,7 @@ export default function JoinPage() {
             ? 'Use 3–40 lowercase letters, numbers, and hyphens (no leading or trailing hyphen).'
             : `shipstacked.com/team/${teamSlug || '<slug>'} — auto-generated from team name; edit if you want a different one`}
         </p>
+        <p style={{ fontSize: 12, color: '#aeaeb2', marginTop: '0.2rem' }}>This becomes your permanent URL — it can&apos;t be changed later.</p>
       </div>
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Email</label>
@@ -646,6 +647,7 @@ export default function JoinPage() {
             ? 'Use 3–40 lowercase letters, numbers, and hyphens (no leading or trailing hyphen).'
             : `shipstacked.com/agent/${agentSlug || '<slug>'} — auto-generated from agent name; edit if you want a different one`}
         </p>
+        <p style={{ fontSize: 12, color: '#aeaeb2', marginTop: '0.2rem' }}>This becomes your permanent URL — it can&apos;t be changed later.</p>
       </div>
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Provider</label>

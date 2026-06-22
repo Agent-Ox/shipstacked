@@ -157,6 +157,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
     location: profile.location,
     services,
     team_size_range: profile.team_size_range,
+    founded_year: profile.founded_year,
     verified: profile.verified,
     l1_receipt_count: l1Count,
     members: memberList.map((m) => ({ username: m.username })),

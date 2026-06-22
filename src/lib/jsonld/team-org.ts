@@ -34,6 +34,7 @@ export interface TeamOrgInput {
   location: string | null
   services: string[]
   team_size_range: string | null
+  founded_year?: number | null
   verified: boolean
   l1_receipt_count: number
   /** Published linked members, by username (→ Person @id references). */
@@ -51,6 +52,7 @@ export interface TeamOrgJsonLd {
   description?: string
   slogan?: string
   logo?: string
+  foundingDate?: string
   sameAs?: string[]
   address?: { '@type': 'PostalAddress'; addressLocality: string }
   member?: Array<{ '@type': 'Person'; '@id': string }>
@@ -98,6 +100,7 @@ export function buildTeamOrgJsonLd(team: TeamOrgInput): TeamOrgJsonLd {
   if (team.services.length > 0) out['shipstacked:services'] = team.services
   const size = trim(team.team_size_range)
   if (size) out['shipstacked:teamSize'] = size
+  if (team.founded_year) out.foundingDate = String(team.founded_year)
 
   // Person references only (@id + @type) — the full Person node is owned by
   // src/lib/jsonld/person.ts at /u/<username> (Invariant #5).
