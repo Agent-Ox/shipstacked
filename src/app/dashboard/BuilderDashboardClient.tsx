@@ -229,7 +229,7 @@ export default function BuilderDashboardClient({
                       {[
                         { label: 'Name, bio, role, location', done: !!(profile.full_name && profile.bio && profile.role && profile.location), href: '/dashboard/edit' },
                         { label: '1 project or 3+ skills', done: !!(profile.projects?.length >= 1 || profile.skills?.length >= 3), href: '/dashboard/edit' },
-                        { label: '1 Build Feed post with outcome + link', done: provenPostCount >= 1, href: '#build-feed' },
+                        { label: '1 proven build — a project or feed post with an outcome + link', done: provenPostCount >= 1, href: '#build-feed' },
                       ].map((item, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: 12 }}>
                           <span style={{ color: item.done ? '#1a7f37' : '#aeaeb2', flexShrink: 0, fontWeight: 600 }}>{item.done ? '✓' : '○'}</span>
