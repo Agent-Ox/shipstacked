@@ -51,6 +51,7 @@ export default async function AgentSection({
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
         <a href={`/agent/${agentSlug}/edit`} style={{ padding: '0.5rem 1rem', background: '#06b6d4', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Edit agent</a>
         <a href={`/agent/${agentSlug}`} style={{ padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>View public page</a>
+        <a href={`/paste?subject=${agentEntityId}`} style={{ padding: '0.5rem 1rem', background: '#1a7f37', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Post work as {agentName} →</a>
       </div>
 
       <div style={{ borderTop: '0.5px solid #f0f0f5', paddingTop: '1.25rem' }}>
