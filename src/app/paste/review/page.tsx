@@ -20,10 +20,11 @@ export const metadata: Metadata = {
 export default async function PasteReviewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ draft?: string }>
+  searchParams: Promise<{ draft?: string; subject?: string }>
 }) {
   const params = await searchParams
   const draftId = params.draft
+  const pinnedSubjectId = typeof params.subject === 'string' && /^\d+$/.test(params.subject) ? Number(params.subject) : undefined
 
   if (!draftId) {
     redirect('/paste')
@@ -56,5 +57,5 @@ export default async function PasteReviewPage({
     ) as IdentityOption[]
   }
 
-  return <ReviewForm draftId={draftId} draft={draft} atlasRoles={roles} ownedEntities={ownedEntities} />
+  return <ReviewForm draftId={draftId} draft={draft} atlasRoles={roles} ownedEntities={ownedEntities} pinnedSubjectId={pinnedSubjectId} />
 }

@@ -15,9 +15,14 @@ export const metadata: Metadata = {
 export default async function PastePage({
   searchParams,
 }: {
-  searchParams: Promise<{ pasted_url?: string }>
+  searchParams: Promise<{ pasted_url?: string; subject?: string }>
 }) {
   const params = await searchParams
   const pastedUrl = typeof params.pasted_url === 'string' ? params.pasted_url : ''
-  return <PasteForm initialUrl={pastedUrl} autoSubmit={pastedUrl.length > 0} />
+  // Optional subject pin (Phase: team/agent on-ramp). A team/agent owner lands
+  // here via /paste?subject=<entityId> so the receipt is attributed to that
+  // entity. Threaded through to /paste/review (the publish route still
+  // ownership-validates the entity server-side).
+  const subjectId = typeof params.subject === 'string' && /^\d+$/.test(params.subject) ? Number(params.subject) : undefined
+  return <PasteForm initialUrl={pastedUrl} autoSubmit={pastedUrl.length > 0} subjectId={subjectId} />
 }

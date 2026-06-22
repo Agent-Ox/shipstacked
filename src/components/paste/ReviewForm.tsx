@@ -56,22 +56,33 @@ export default function ReviewForm({
   draft,
   atlasRoles,
   ownedEntities = [],
+  pinnedSubjectId,
 }: {
   draftId: string
   draft: PasteDraft
   atlasRoles: AtlasRole[]
   ownedEntities?: IdentityOption[]
+  pinnedSubjectId?: number
 }) {
   const inferredIds = draft.atlas.inferred
   const lowConfidence = draft.atlas.confidence < 0.2
 
   const router = useRouter()
 
-  // Identity picker (Phase 4 §J): default to the human entity, else first owned.
+  // Identity picker (Phase 4 §J): default to the pinned subject when it's an
+  // entity the user owns (team/agent on-ramp), else the human entity, else first.
   const defaultEntityId = useMemo(() => {
     if (ownedEntities.length === 0) return 0
+    if (pinnedSubjectId && ownedEntities.some((e) => e.id === pinnedSubjectId)) return pinnedSubjectId
     return (ownedEntities.find((e) => e.kind === 'human') ?? ownedEntities[0]).id
-  }, [ownedEntities])
+  }, [ownedEntities, pinnedSubjectId])
+  // The pinned entity (when owned) — surfaced as a read-only "Publishing as"
+  // line so a single-entity team/agent owner SEES they're posting as the entity
+  // even though the multi-entity picker stays hidden for them.
+  const pinnedEntity = useMemo(
+    () => (pinnedSubjectId ? ownedEntities.find((e) => e.id === pinnedSubjectId) ?? null : null),
+    [pinnedSubjectId, ownedEntities],
+  )
   const [subjectEntityId, setSubjectEntityId] = useState<number>(defaultEntityId)
   const [title, setTitle] = useState(draft.analyze.title_draft.slice(0, TITLE_MAX))
   const [description, setDescription] = useState(draft.analyze.description_draft.slice(0, DESCRIPTION_MAX))
@@ -129,10 +140,13 @@ export default function ReviewForm({
     const claimedRoles = confirmedRoles.filter((id) => !inferredIds.includes(id))
     const publishPayload = {
       draft_id: draftId,
-      // Only sent when the user actually has a choice (>1 owned entity); when
-      // omitted the server defaults to human-entity resolution — solo path
-      // unchanged (Phase 4 §J).
-      ...(ownedEntities.length > 1 ? { subject_entity_id: subjectEntityId } : {}),
+      // Always send the resolved subject when there is one (defaults to the
+      // human/first owned entity). subjectEntityId=0 means "no owned entity
+      // yet" — omitted so the server falls back to findOrCreateHumanEntity.
+      // The publish route ownership-validates the entity, so a builder still
+      // resolves to the same human entity; a single-entity team/agent owner is
+      // no longer silently dropped to their human entity.
+      ...(subjectEntityId ? { subject_entity_id: subjectEntityId } : {}),
       draft: {
         url: draft.url,
         source: draft.classify.source,
@@ -206,6 +220,15 @@ export default function ReviewForm({
         {lowConfidence && (
           <div style={{ background: '#fff8e6', border: '1px solid #ffd98a', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#5a4400' }}>
             This didn’t classify cleanly — pick a role yourself below.
+          </div>
+        )}
+
+        {/* Pinned subject (team/agent on-ramp) — explicit read-only line so a
+            single-entity owner SEES who they're publishing as (picker hides). */}
+        {pinnedEntity && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: '#eef6ff', border: '1px solid #b8d9f8', borderRadius: 10, marginBottom: '1.75rem', fontSize: 14, color: '#1d1d1f' }}>
+            <span style={{ fontWeight: 600 }}>Publishing as:</span>
+            <span>{({ human: '👤', team: '👥', agent: '🤖' } as Record<string, string>)[pinnedEntity.kind] ?? '•'} {pinnedEntity.display_name} ({pinnedEntity.kind})</span>
           </div>
         )}
 

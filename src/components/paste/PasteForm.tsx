@@ -69,9 +69,11 @@ const PHASE_COPY: Record<Phase, string> = {
 export default function PasteForm({
   initialUrl,
   autoSubmit,
+  subjectId,
 }: {
   initialUrl: string
   autoSubmit: boolean
+  subjectId?: number
 }) {
   const router = useRouter()
   const [url, setUrl] = useState(initialUrl)
@@ -132,7 +134,10 @@ export default function PasteForm({
         analyze: analyze as never,
       })
 
-      router.push(`/paste/review?draft=${encodeURIComponent(draft_id)}`)
+      // Carry the optional subject pin through to review so the receipt is
+      // attributed to the team/agent entity (ownership re-validated at publish).
+      const subjectQs = subjectId ? `&subject=${subjectId}` : ''
+      router.push(`/paste/review?draft=${encodeURIComponent(draft_id)}${subjectQs}`)
     } catch (e) {
       console.error('[paste] flow failed', e)
       setError('Something went wrong. Try again?')
