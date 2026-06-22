@@ -89,12 +89,19 @@ export async function GET(req: Request) {
       const { data: hirerProfileRows } = hirerEmails.length > 0
         ? await admin
             .from('employer_profiles')
-            .select('email, company_name, logo_url')
+            .select('email, company_name, logo_url, public')
             .in('email', hirerEmails)
         : { data: [] }
 
       const hirerMap = Object.fromEntries((hirerProfileRows || []).map((e: any) => [e.email, e]))
-      conversations = convs.map((conv: any) => ({ ...conv, employer_profile: hirerMap[conv.employer_email] || null }))
+      conversations = convs.map((conv: any) => {
+        const ep = hirerMap[conv.employer_email]
+        // Private hirers: hide name + logo from builders (the dashboard promise).
+        const employer_profile = ep
+          ? (ep.public ? { company_name: ep.company_name, logo_url: ep.logo_url } : { company_name: null, logo_url: null })
+          : null
+        return { ...conv, employer_profile }
+      })
     }
   }
 
@@ -252,7 +259,7 @@ export async function POST(req: Request) {
   if (conv) {
     const { data: ep } = await admin
       .from('employer_profiles')
-      .select('company_name')
+      .select('company_name, public')
       .eq('email', conv.employer_email)
       .maybeSingle()
     hirerProfileRow = ep
@@ -289,7 +296,7 @@ export async function POST(req: Request) {
                 New message on ShipStacked
               </h2>
               <p style="color: #6e6e73; font-size: 14px; line-height: 1.6; margin-bottom: 1rem;">
-                ${isHirerSending ? (conv.employer_profile?.company_name || 'A hirer on ShipStacked') : builderName} sent you a message:
+                ${isHirerSending ? ((conv.employer_profile?.public && conv.employer_profile?.company_name) ? conv.employer_profile.company_name : 'A hirer on ShipStacked') : builderName} sent you a message:
               </p>
               <div style="background: #f5f5f7; border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; font-size: 14px; color: #3d3d3f; line-height: 1.6;">
                 ${content.trim()}
