@@ -199,15 +199,17 @@ export default function JoinPage() {
 
       if (insertError) throw insertError
 
-      if (projectTitle.trim() && projectOutcome.trim()) {
+      if (projectTitle.trim()) {
         const { data: profile } = await supabase.from('profiles').select('id').eq('username', generatedUsername).maybeSingle()
         if (profile?.id) {
-          await supabase.from('posts').insert([{
+          const { error: projErr } = await supabase.from('projects').insert([{
             profile_id: profile.id,
             title: projectTitle.trim(),
-            outcome: projectOutcome.trim(),
-            url: projectUrl.trim() || null,
+            description: projectOutcome.trim() || null,
+            project_url: projectUrl.trim() || null,
+            display_order: 0,
           }])
+          if (projErr) console.warn('[builder signup] project insert failed:', projErr)
         }
       }
 
