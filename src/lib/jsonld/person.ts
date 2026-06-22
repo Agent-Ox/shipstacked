@@ -44,6 +44,7 @@ export interface PersonProfileInput {
   timezone: string | null
   languages: string[] | null
   entity_id: number | null
+  avatar_url?: string | null
 }
 
 export interface PersonEntityInput {
@@ -74,6 +75,7 @@ export interface PersonJsonLd {
   '@id': string
   identifier?: string
   name: string
+  image?: string
   jobTitle?: string
   description?: string
   url: string
@@ -175,6 +177,9 @@ export function buildPersonJsonLd(opts: {
   // shipstacked:profile:<username> so downstream consumers always have a
   // canonical machine-identifier. No fabrication — username is genuine data.
   out.identifier = entity?.external_id ?? `shipstacked:profile:${profile.username}`
+
+  const image = nonEmpty(profile.avatar_url)
+  if (image) out.image = image
 
   const jobTitle = nonEmpty(profile.role)
   if (jobTitle) out.jobTitle = jobTitle

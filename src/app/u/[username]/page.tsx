@@ -26,8 +26,8 @@ export async function generateMetadata(
   return {
     title, description,
     alternates: { canonical: url },
-    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}`, width: 1200, height: 630, alt: title }] },
-    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}`] },
+    openGraph: { title, description, url, type: 'profile', images: [{ url: `https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}&avatar=${encodeURIComponent(profile.avatar_url || '')}`, width: 1200, height: 630, alt: title }] },
+    twitter: { card: 'summary_large_image', title, description, images: [`https://shipstacked.com/og?v=2&type=builder&name=${encodeURIComponent(profile.full_name || '')}&role=${encodeURIComponent(profile.role || '')}&verified=${profile.verified ? 'true' : 'false'}&location=${encodeURIComponent(profile.location || '')}&avatar=${encodeURIComponent(profile.avatar_url || '')}`] },
   }
 }
 
@@ -175,6 +175,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       timezone: profile.timezone,
       languages: profile.languages,
       entity_id: profile.entity_id,
+      avatar_url: profile.avatar_url,
     },
     entity: linkedEntity,
     skills: (skills ?? []).map((s: any) => ({ name: s.name })),

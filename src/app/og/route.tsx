@@ -32,6 +32,7 @@ export async function GET(req: Request) {
   const location = searchParams.get('location') || '' // company location OR company name for jobs
   const verifiedParam = searchParams.get('verified') // builder verified flag
   const roleParam = searchParams.get('role') || '' // builder role
+  const avatarParam = searchParams.get('avatar') || '' // builder avatar URL (public Supabase URL)
 
   // Receipt OG card — on-demand, reads from DB by slug. Service role so the
   // card renders for unlisted receipts too (the card reveals only the
@@ -147,9 +148,13 @@ export async function GET(req: Request) {
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 48 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 16 }}>
-              <div style={{ width: 80, height: 80, borderRadius: 40, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white' }}>
-                {builderName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-              </div>
+              {avatarParam ? (
+                <img src={avatarParam} width={80} height={80} style={{ width: 80, height: 80, borderRadius: 40, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 80, height: 80, borderRadius: 40, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white' }}>
+                  {builderName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
                   <span style={{ fontSize: 52, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.03em' }}>{builderName}</span>
@@ -345,13 +350,14 @@ export async function GET(req: Request) {
   let builderRole = 'AI-native builder'
   let verified = false
   let builderLocation = ''
+  let builderAvatar = avatarParam
 
   if (username) {
     try {
       const supabase = await createServerSupabaseClient()
       const { data: profile } = await supabase
         .from('profiles')
-        .select('full_name, role, verified, location')
+        .select('full_name, role, verified, location, avatar_url')
         .eq('username', username)
         .eq('published', true)
         .maybeSingle()
@@ -360,6 +366,7 @@ export async function GET(req: Request) {
         builderRole = profile.role || builderRole
         verified = profile.verified || false
         builderLocation = profile.location || ''
+        builderAvatar = profile.avatar_url || builderAvatar
       }
     } catch {}
   }
@@ -395,9 +402,13 @@ export async function GET(req: Request) {
           {/* Builder info */}
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: 48 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginBottom: 16 }}>
-              <div style={{ width: 80, height: 80, borderRadius: 40, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white' }}>
-                {builderName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
-              </div>
+              {builderAvatar ? (
+                <img src={builderAvatar} width={80} height={80} style={{ width: 80, height: 80, borderRadius: 40, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 80, height: 80, borderRadius: 40, background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, fontWeight: 700, color: 'white' }}>
+                  {builderName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 8 }}>
                   <span style={{ fontSize: 52, fontWeight: 700, color: 'rgba(240,240,245,0.95)', letterSpacing: '-0.03em' }}>{builderName}</span>
