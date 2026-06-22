@@ -77,7 +77,7 @@ export default function NavBar() {
 
     if (modes.builder) {
       links.push({ label: 'Builder dashboard', href: '/dashboard' })
-      links.push({ label: 'Edit profile', href: '/dashboard/edit' })
+      links.push({ label: 'Edit builder profile', href: '/dashboard/edit' })
     }
 
     if (modes.team_admin && teamSlug) {
@@ -165,7 +165,7 @@ export default function NavBar() {
     if (!navUser) return []
     const links: { label: string; href: string }[] = []
     if (profileUsername && pathname !== `/u/${profileUsername}`) {
-      links.push({ label: 'Your profile', href: `/u/${profileUsername}` })
+      links.push({ label: 'Your builder profile', href: `/u/${profileUsername}` })
     }
     if (teamSlug) {
       links.push({ label: 'Your team', href: `/team/${teamSlug}` })
