@@ -46,7 +46,20 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
     .eq('profile_id', profile.id)
     .maybeSingle()
 
-  const { count: provenPostCount } = await supabase
+  // The "has a build" signal now lives in projects (the signup build was
+  // rerouted from posts → projects). Count proven projects (prose + link,
+  // mirroring the old outcome+url bar) AND keep counting legacy proven posts
+  // so existing builders don't regress. provenPostCount = the sum.
+  const { count: provenProjectCount } = await supabase
+    .from('projects')
+    .select('id', { count: 'exact', head: true })
+    .eq('profile_id', profile.id)
+    .not('description', 'is', null)
+    .neq('description', '')
+    .not('project_url', 'is', null)
+    .neq('project_url', '')
+
+  const { count: provenLegacyPostCount } = await supabase
     .from('posts')
     .select('id', { count: 'exact', head: true })
     .eq('profile_id', profile.id)
@@ -54,6 +67,8 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
     .neq('outcome', '')
     .not('url', 'is', null)
     .neq('url', '')
+
+  const provenPostCount = (provenProjectCount || 0) + (provenLegacyPostCount || 0)
 
   // Proof-of-Work card data — keyed on the builder's entity; unlinked profiles
   // (entity_id null) show the empty state.
