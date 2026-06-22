@@ -53,7 +53,7 @@ export default function HirerDashboardClient({
   hirerProfile: HirerProfile | null
   applications: any[]
 }) {
-  const [profile, setProfile] = useState<HirerProfile>(initial || { email, public: false })
+  const [profile, setProfile] = useState<HirerProfile>(initial || { email, public: true })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -64,7 +64,7 @@ export default function HirerDashboardClient({
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
 
-  const isPublic = profile.public || false
+  const isPublic = profile.public ?? true
   const hasProfile = !!initial?.id
   const [profileSaved, setProfileSaved] = useState(false)
 
@@ -124,7 +124,7 @@ export default function HirerDashboardClient({
         website_url: profile.website_url, linkedin_url: profile.linkedin_url,
         x_url: profile.x_url, logo_url: profile.logo_url,
         industry: profile.industry, hiring_type: profile.hiring_type,
-        public: profile.public || false,
+        public: profile.public ?? true,
       }
       if (hasProfile) {
         await supabase.from('employer_profiles').update(data).eq('email', email)
