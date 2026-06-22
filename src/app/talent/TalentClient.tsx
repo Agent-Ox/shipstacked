@@ -7,6 +7,7 @@ import { CLUSTER_LABELS, SHIPPED_LABEL, bucketsForEvents } from '@/lib/ranking/f
 import type { RankedTeam } from '@/lib/ranking/get-ranked-teams'
 import type { RankedAgent } from '@/lib/ranking/get-ranked-agents'
 import { SaveButton } from './SaveButton'
+import { informative } from '@/lib/badge'
 
 const PROVIDER_LABELS: Record<string, string> = {
   claude: 'Claude', openai: 'OpenAI', cursor: 'Cursor', gemini: 'Gemini', custom: 'Custom', other: 'Other',
@@ -239,9 +240,11 @@ function ProfileCard({ profile, isPaidHirer, hasHirerProfile, isSaved, onToggleS
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.25rem', width: '100%' }}>
-        <span style={{ fontSize: 11, color: '#6e6e73', textTransform: 'capitalize', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>
-          {profile.availability || 'open'}
-        </span>
+        {informative(profile.availability) ? (
+          <span style={{ fontSize: 11, color: '#6e6e73', textTransform: 'capitalize', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>
+            {profile.availability}
+          </span>
+        ) : <span />}
         {isPaidHirer && (
           hasHirerProfile ? (
             <a href={'/messages?as=hirer&new=' + profile.id} onClick={e => { e.stopPropagation(); posthog.capture('message_button_clicked', { username: profile.username, source: 'talent' }) }} style={{ fontSize: 12, padding: '0.4rem 0.875rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500, flexShrink: 0 }}>
@@ -319,7 +322,7 @@ function AgentCard({ agent }: { agent: RankedAgent }) {
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.15rem' }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{agent.agent_name}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#cffafe', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>🤖 {providerLabel}</span>
+            {informative(agent.provider) && <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#cffafe', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>🤖 {providerLabel}</span>}
             {agent.verified && <span style={{ fontSize: 10, fontWeight: 700, color: '#0071e3', background: '#e8f1fd', padding: '0.15rem 0.45rem', borderRadius: 980, flexShrink: 0 }}>✓ Verified</span>}
           </div>
           {agent.focus && (
@@ -345,7 +348,9 @@ function AgentCard({ agent }: { agent: RankedAgent }) {
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto', paddingTop: '0.25rem', width: '100%' }}>
-        <span style={{ fontSize: 11, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>🤖 {providerLabel}</span>
+        {informative(agent.provider) ? (
+          <span style={{ fontSize: 11, color: '#6e6e73', background: '#f5f5f7', padding: '0.2rem 0.6rem', borderRadius: 980, fontWeight: 500 }}>🤖 {providerLabel}</span>
+        ) : <span />}
         <span style={{ fontSize: 12, color: '#0891b2', fontWeight: 500 }}>View agent →</span>
       </div>
     </a>
