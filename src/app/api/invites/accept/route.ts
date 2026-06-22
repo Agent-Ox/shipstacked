@@ -47,8 +47,8 @@ export async function POST(req: Request) {
   // or a pending invite would become a password-reset vector. Existing users
   // just get linked + the invite marked accepted; they log in normally.
   const password = body.password
-  if (isNewUser && (!password || password.length < 8)) {
-    return NextResponse.json({ error: 'A password of at least 8 characters is required' }, { status: 400 })
+  if (isNewUser && (!password || password.length < 6)) {
+    return NextResponse.json({ error: 'A password of at least 6 characters is required' }, { status: 400 })
   }
 
   // ATOMIC single-use redeem (checked CAS — only the winner proceeds).

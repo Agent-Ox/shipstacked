@@ -25,8 +25,8 @@ export default function AcceptInviteForm({ rawToken, inviteeEmail, teamName, inv
   const handleAccept = async () => {
     if (submitting) return
     setError(null)
-    if (!isExistingUser && password.length < 8) {
-      setError('Choose a password of at least 8 characters.')
+    if (!isExistingUser && password.length < 6) {
+      setError('Choose a password of at least 6 characters.')
       return
     }
     setSubmitting(true)
@@ -74,13 +74,13 @@ export default function AcceptInviteForm({ rawToken, inviteeEmail, teamName, inv
 
         {!isExistingUser && (
           <>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6e6e73', marginBottom: '0.3rem' }}>Create a password <span style={{ fontWeight: 400 }}>(min 8 characters)</span></label>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: '#6e6e73', marginBottom: '0.3rem' }}>Create a password <span style={{ fontWeight: 400 }}>(min 6 characters)</span></label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password"
-              placeholder="At least 8 characters"
+              placeholder="At least 6 characters"
               style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid #e0e0e5', borderRadius: 10, fontSize: 14, color: '#1d1d1f', marginBottom: '1rem', fontFamily: 'inherit' }}
             />
           </>
