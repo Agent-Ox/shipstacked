@@ -291,11 +291,11 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
 
       if (profileError) throw profileError
 
-      // Delete all existing projects then re-insert
-      await supabase.from('projects').delete().eq('profile_id', profile.id)
-
+      // Delete-then-reinsert projects, but ONLY when the form has projects to
+      // write. An empty/untouched section must not silently wipe existing rows.
       const validProjects = projectsList.filter(p => p.title.trim())
       if (validProjects.length > 0) {
+        await supabase.from('projects').delete().eq('profile_id', profile.id)
         await supabase.from('projects').insert(
           validProjects.map((p, i) => ({
             profile_id: profile.id,
@@ -309,8 +309,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
         )
       }
 
-      // Replace all skills
-      await supabase.from('skills').delete().eq('profile_id', profile.id)
+      // Replace all skills — same guard: only wipe when there are skills to write.
       const newSkills = [
         ...selectedUseCases.map(name => ({ profile_id: profile.id, category: 'claude_use_case', name })),
         ...selectedLLMs.map(name => ({ profile_id: profile.id, category: 'llm', name })),
@@ -319,7 +318,10 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
         ...selectedAITools.map(name => ({ profile_id: profile.id, category: 'ai_tool', name })),
         ...selectedDomains.map(name => ({ profile_id: profile.id, category: 'domain', name })),
       ]
-      if (newSkills.length > 0) await supabase.from('skills').insert(newSkills)
+      if (newSkills.length > 0) {
+        await supabase.from('skills').delete().eq('profile_id', profile.id)
+        await supabase.from('skills').insert(newSkills)
+      }
 
       setSaved(true)
       router.refresh()
