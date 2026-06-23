@@ -7,6 +7,7 @@ import CollectionToggleCard from './CollectionToggleCard'
 import InviteCard from './InviteCard'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
+import { THRESHOLD_MIN_RECEIPTS, THRESHOLD_MIN_HOSTS } from '@/lib/ranking/quality-score'
 
 function ProofOfWorkCard({ l1Count, l0Count, distinctHosts, lastShippedAt, username }: { l1Count: number; l0Count: number; distinctHosts: number; lastShippedAt: string | null; username: string }) {
   const hasProof = l1Count > 0
@@ -63,6 +64,41 @@ function MessagesCard() {
   )
 }
 
+// "Your ranking" card — surfaces ranked-status + the SPECIFIC gap-to-rank using
+// the EXACT quality-score gate (never the raw 0-100 score: status + action only,
+// to avoid gaming/demotivation/leaderboard dynamics). effectiveReceiptCount
+// mirrors quality-score.ts l1HostStats (L1 receipts on a non-blocklisted host).
+function RankingCard({ effectiveReceiptCount, distinctHosts }: { effectiveReceiptCount: number; distinctHosts: number }) {
+  // Same gate as quality-score.ts: ranked unless BOTH thresholds are missed.
+  const ranked = !(effectiveReceiptCount < THRESHOLD_MIN_RECEIPTS && distinctHosts < THRESHOLD_MIN_HOSTS)
+
+  if (ranked) {
+    return (
+      <div style={{ background: '#f0faf0', border: '1px solid #b3e0b3', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Your ranking</p>
+        <p style={{ fontSize: 14, color: '#1d1d1f', lineHeight: 1.5 }}>✓ You&apos;re ranked — you appear in talent search and hirer browsing.</p>
+        <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '0.4rem' }}>{effectiveReceiptCount} verified receipt{effectiveReceiptCount === 1 ? '' : 's'} · {distinctHosts} platform{distinctHosts === 1 ? '' : 's'}</p>
+      </div>
+    )
+  }
+
+  // Not ranked — the SPECIFIC gap from the real values. Not-ranked means
+  // effectiveReceiptCount < 3 AND distinctHosts < 2, so either 0 effective
+  // receipts (no proof yet) or 1-2 on a single host (nearest gate = a 2nd host).
+  const gap = effectiveReceiptCount === 0
+    ? 'Post your first build with a live, reachable link to start your proof-of-work record.'
+    : 'You’re one step away — add verified work from one more platform (a different host) to get ranked and appear in search.'
+
+  return (
+    <div style={{ background: '#fff8f0', border: '1px solid #fde68a', borderRadius: 14, padding: '1.25rem 1.5rem', marginBottom: '1rem' }}>
+      <p style={{ fontSize: 12, fontWeight: 600, color: '#92400e', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Your ranking</p>
+      <p style={{ fontSize: 14, fontWeight: 600, color: '#92400e', marginBottom: '0.2rem' }}>Not yet ranked</p>
+      <p style={{ fontSize: 13, color: '#a16207', lineHeight: 1.5, marginBottom: '0.75rem' }}>{gap}</p>
+      <a href="/paste" style={{ fontSize: 13, padding: '0.4rem 0.875rem', background: '#f59e0b', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 600, display: 'inline-block' }}>Add verified work →</a>
+    </div>
+  )
+}
+
 export default function BuilderDashboardClient({
   profile,
   applications,
@@ -72,6 +108,7 @@ export default function BuilderDashboardClient({
   l1Count,
   l0Count,
   distinctHosts,
+  effectiveReceiptCount,
   lastShippedAt,
   provenPostCount,
   activeCollections = [],
@@ -85,6 +122,7 @@ export default function BuilderDashboardClient({
   l1Count: number
   l0Count: number
   distinctHosts: number
+  effectiveReceiptCount: number
   lastShippedAt: string | null
   provenPostCount: number
   activeCollections?: Array<{ slug: string; title: string; description: string | null }>
@@ -174,6 +212,8 @@ export default function BuilderDashboardClient({
               </div>
               <ProofOfWorkCard l1Count={l1Count} l0Count={l0Count} distinctHosts={distinctHosts} lastShippedAt={lastShippedAt} username={profile.username} />
             </div>
+
+            <RankingCard effectiveReceiptCount={effectiveReceiptCount} distinctHosts={distinctHosts} />
 
             {/* Buyer Mode toggle — composable, per Phase 2 spec */}
             <EnableHiringButton source="dashboard_enable_hiring" variant="card" />

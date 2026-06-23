@@ -75,6 +75,11 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
   let l1Count = 0
   let l0Count = 0
   let distinctHosts = 0
+  // True effective-receipt count (L1 with a non-blocklisted host) — mirrors
+  // quality-score.ts l1HostStats EXACTLY. l1Count counts ALL L1 (incl.
+  // shared-doc hosts) so it is an UPPER BOUND, not the ranking input; the
+  // ranking gate must use effectiveReceiptCount.
+  let effectiveReceiptCount = 0
   let lastShippedAt: string | null = null
   if (profile.entity_id) {
     const { data: powReceipts } = await supabase
@@ -87,7 +92,7 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
         l1Count++
         const artifacts = Array.isArray(r.artifacts) ? (r.artifacts as Array<{ url?: string | null }>) : []
         const host = extractHost(artifacts[0]?.url)
-        if (host && !isSharedDocHost(host)) hosts.add(host)
+        if (host && !isSharedDocHost(host)) { hosts.add(host); effectiveReceiptCount++ }
       } else if (r.verification_level === 'L0_claimed') {
         l0Count++
       }
@@ -108,6 +113,7 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
     l1Count,
     l0Count,
     distinctHosts,
+    effectiveReceiptCount,
     lastShippedAt,
     provenPostCount: provenPostCount || 0,
     activeCollections,
