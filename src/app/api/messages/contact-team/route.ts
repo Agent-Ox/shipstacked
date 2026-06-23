@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
+import { notifyTeamAdminsOfContact } from '@/lib/team/notify'
 
 // Contact a team (GAP 3). Anyone logged-in can message a PUBLISHED team; the
 // conversation is keyed to subject_entity_id (not a builder_profile_id), and any
@@ -84,6 +85,14 @@ export async function POST(req: Request) {
       read: false,
     }])
     await admin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', convId)
+
+    // Notify the team's admins of the inbound lead (fire-and-forget).
+    notifyTeamAdminsOfContact({
+      admin,
+      teamEntityId: team_entity_id,
+      senderEmail: user.email!,
+      messagePreview: message.trim(),
+    }).catch(() => {})
   }
 
   return NextResponse.json({ conversation: { id: convId } })

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { getEntityModes } from '@/lib/user'
 import { defaultMessagingMode } from '@/lib/auth-routing'
+import { notifyTeamAdminsOfContact } from '@/lib/team/notify'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'
@@ -337,6 +338,18 @@ export async function POST(req: Request) {
       .maybeSingle()
     hirerProfileRow = ep
     ;(conv as any).employer_profile = hirerProfileRow
+  }
+
+  // Team conversation: when the contacter (employer_email) sends inbound, notify
+  // the team's admins (fire-and-forget). Admin replies are handled by the
+  // existing block below (which emails the contacter) — that path is untouched.
+  if (conv && (conv as any).subject_entity_id && user.email === conv.employer_email) {
+    notifyTeamAdminsOfContact({
+      admin,
+      teamEntityId: (conv as any).subject_entity_id,
+      senderEmail: user.email!,
+      messagePreview: content.trim(),
+    }).catch(() => {})
   }
 
   if (conv) {
