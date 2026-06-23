@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import PostJobForm from './PostJobForm'
 
 export default async function PostJobPage({
@@ -27,6 +28,34 @@ export default async function PostJobPage({
   if (!sub) {
     redirect('/hirers#pricing')
   }
+
+  // "Post as" options — teams/agents this user OWNS (display only; the insert
+  // re-validates ownership server-side). Mirrors the paste flow's ownedEntities.
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const { data: ownedRows } = await admin
+    .from('entities')
+    .select('id, slug, display_name, kind')
+    .eq('owner_user_id', user.id)
+    .in('kind', ['team', 'agent'])
+  const ownedIds = (ownedRows ?? []).map((e: any) => e.id)
+  const [{ data: teamLogos }, { data: agentLogos }] = ownedIds.length
+    ? await Promise.all([
+        admin.from('team_profiles').select('entity_id, logo_url').in('entity_id', ownedIds),
+        admin.from('agent_profiles').select('entity_id, logo_url').in('entity_id', ownedIds),
+      ])
+    : [{ data: [] as any[] }, { data: [] as any[] }]
+  const logoByEntity = new Map<number, string | null>()
+  for (const r of [...(teamLogos ?? []), ...(agentLogos ?? [])]) logoByEntity.set(r.entity_id, r.logo_url ?? null)
+  const ownedEntities = (ownedRows ?? []).map((e: any) => ({
+    id: e.id,
+    slug: e.slug,
+    display_name: e.display_name,
+    kind: e.kind as 'team' | 'agent',
+    logo_url: logoByEntity.get(e.id) ?? null,
+  }))
 
   // Edit mode — read ?edit=jobId, fetch that job, pass as initialData
   const { edit: jobId } = await searchParams
@@ -59,6 +88,7 @@ export default async function PostJobPage({
       hirerEmail={user.email!}
       jobId={jobId}
       initialData={initialData}
+      ownedEntities={ownedEntities}
     />
   )
 }

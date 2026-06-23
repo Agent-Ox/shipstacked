@@ -39,7 +39,30 @@ export default async function JobsPage() {
     ? await admin.from('employer_profiles').select('email, logo_url, slug').in('email', hirerEmails)
     : { data: [] }
   const hirerMap = Object.fromEntries((hirerProfileRows || []).map((e: any) => [e.email, e]))
-  const jobsWithLogos = jobList.map((j: any) => ({ ...j, employer_profile: hirerMap[j.employer_email] || null }))
+
+  // Team/agent-posted jobs (subject_entity_id) — fetch the entity identity +
+  // logo so the card can show the team/agent instead of the email-based hirer.
+  // Jobs with null subject_entity_id are untouched (the existing path below).
+  const subjectIds = [...new Set(jobList.map((j: any) => j.subject_entity_id).filter(Boolean))]
+  let subjectMap: Record<number, { display_name: string; slug: string; kind: string; logo_url: string | null }> = {}
+  if (subjectIds.length > 0) {
+    const [{ data: subjEntities }, { data: subjTeamLogos }, { data: subjAgentLogos }] = await Promise.all([
+      admin.from('entities').select('id, display_name, slug, kind').in('id', subjectIds),
+      admin.from('team_profiles').select('entity_id, logo_url').in('entity_id', subjectIds),
+      admin.from('agent_profiles').select('entity_id, logo_url').in('entity_id', subjectIds),
+    ])
+    const logoBy = new Map<number, string | null>()
+    for (const r of [...(subjTeamLogos || []), ...(subjAgentLogos || [])]) logoBy.set(r.entity_id, r.logo_url ?? null)
+    subjectMap = Object.fromEntries((subjEntities || []).map((e: any) => [e.id, {
+      display_name: e.display_name, slug: e.slug, kind: e.kind, logo_url: logoBy.get(e.id) ?? null,
+    }]))
+  }
+
+  const jobsWithLogos = jobList.map((j: any) => ({
+    ...j,
+    employer_profile: hirerMap[j.employer_email] || null,
+    subject_profile: j.subject_entity_id ? (subjectMap[j.subject_entity_id] || null) : null,
+  }))
 
   // Builder: which jobs have they already applied to?
   let appliedJobIds: string[] = []

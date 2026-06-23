@@ -73,9 +73,14 @@ function JobCard({ job, isBuilder, isLoggedOut, alreadyApplied }: {
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>(alreadyApplied ? 'done' : 'idle')
   const justApplied = state === 'done' && !alreadyApplied
 
-  const logo = job.employer_profile?.logo_url
-  const companyName = job.anonymous ? 'Confidential' : job.company_name
-  const companySlug = job.employer_profile?.slug
+  // Team/agent-posted job → show the team/agent identity + link to its page.
+  // No subject_profile (every existing job) → unchanged email-based hirer path.
+  const subject = job.subject_profile
+  const logo = subject ? subject.logo_url : job.employer_profile?.logo_url
+  const companyName = job.anonymous ? 'Confidential' : (subject ? subject.display_name : job.company_name)
+  const companyHref = subject
+    ? `/${subject.kind === 'agent' ? 'agent' : 'team'}/${subject.slug}`
+    : (job.employer_profile?.slug ? `/company/${job.employer_profile.slug}` : null)
   const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const postedAgo = (() => {
     const seconds = Math.floor((Date.now() - new Date(job.created_at).getTime()) / 1000)
@@ -107,7 +112,7 @@ function JobCard({ job, isBuilder, isLoggedOut, alreadyApplied }: {
       {/* Header row — mirrors feed card author row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
         {/* Company logo / initials */}
-        <Link href={companySlug ? `/company/${companySlug}` : '/jobs'} style={{ textDecoration: 'none', flexShrink: 0 }}>
+        <Link href={companyHref ?? '/jobs'} style={{ textDecoration: 'none', flexShrink: 0 }}>
           <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg, #e8f1fd, #d0e4fb)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
             {logo
               ? <img src={logo} alt={companyName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -118,8 +123,8 @@ function JobCard({ job, isBuilder, isLoggedOut, alreadyApplied }: {
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-            {companySlug ? (
-              <Link href={`/company/${companySlug}`} style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', textDecoration: 'none' }}>
+            {companyHref ? (
+              <Link href={companyHref} style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', textDecoration: 'none' }}>
                 {companyName}
               </Link>
             ) : (

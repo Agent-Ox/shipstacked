@@ -47,12 +47,18 @@ function Section({ title, children }: { title: string, children: React.ReactNode
   )
 }
 
-export default function PostJobForm({ hirerEmail, jobId, initialData }: {
+type OwnedEntity = { id: number; slug: string; display_name: string; kind: 'team' | 'agent'; logo_url: string | null }
+
+export default function PostJobForm({ hirerEmail, jobId, initialData, ownedEntities = [] }: {
   hirerEmail: string
   jobId?: string
   initialData?: any
+  ownedEntities?: OwnedEntity[]
 }) {
   const [loading, setLoading] = useState(false)
+  // "Post as" — null = personal (existing direct-to-supabase path, unchanged);
+  // an entity id = post as that owned team/agent (validated server route).
+  const [subjectEntityId, setSubjectEntityId] = useState<number | null>(null)
   const [done, setDone] = useState(false)
   const [newJobId, setNewJobId] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -108,6 +114,31 @@ export default function PostJobForm({ hirerEmail, jobId, initialData }: {
         const { error: updateError } = await supabase
           .from('jobs').update(payload).eq('id', jobId).eq('employer_email', hirerEmail)
         if (updateError) throw updateError
+      } else if (subjectEntityId) {
+        // Post AS a team/agent → validated server route (ownership-checked).
+        const res = await fetch('/api/jobs/post-as-team', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject_entity_id: subjectEntityId, ...payload }),
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Something went wrong')
+        if (data.job?.id) {
+          setNewJobId(data.job.id)
+          fetch('/api/jobs/xpost', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: data.job.id,
+              role_title: roleTitle,
+              company_name: anonymous ? 'A ShipStacked hirer' : companyName,
+              location,
+              day_rate: dayRate,
+              salary_range: salaryRange,
+              job_type: employmentType,
+            }),
+          }).catch(() => {})
+        }
       } else {
         const expires = new Date()
         expires.setDate(expires.getDate() + 30)
@@ -196,6 +227,35 @@ export default function PostJobForm({ hirerEmail, jobId, initialData }: {
           <div style={{ background: '#fff0f0', border: '1px solid #ffd0d0', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.5rem', fontSize: 14, color: '#c00' }}>
             {error}
           </div>
+        )}
+
+        {/* "Post as" — only when the user owns teams/agents, and only on create
+            (edit keeps the personal path for v1). Default Yourself = personal. */}
+        {!jobId && ownedEntities.length > 0 && (
+          <Section title="Post as">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {[{ id: null as number | null, label: 'Yourself', kind: null as 'team' | 'agent' | null }, ...ownedEntities.map(e => ({ id: e.id as number | null, label: e.display_name, kind: e.kind as 'team' | 'agent' | null }))].map(opt => {
+                const selected = subjectEntityId === opt.id
+                const icon = opt.kind === 'team' ? '👥 ' : opt.kind === 'agent' ? '🤖 ' : ''
+                return (
+                  <button
+                    key={opt.id ?? 'self'}
+                    type="button"
+                    onClick={() => setSubjectEntityId(opt.id)}
+                    style={{
+                      padding: '0.5rem 1rem', borderRadius: 980, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer',
+                      border: selected ? '1px solid #0071e3' : '1px solid #d2d2d7',
+                      background: selected ? '#e8f1fd' : 'white',
+                      color: selected ? '#0071e3' : '#1d1d1f', fontWeight: selected ? 600 : 400,
+                    }}
+                  >
+                    {icon}{opt.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p style={hintStyle}>The job is billed to your account; the team/agent is shown as the poster.</p>
+          </Section>
         )}
 
         <Section title="The role">
