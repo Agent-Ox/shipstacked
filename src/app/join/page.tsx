@@ -150,7 +150,7 @@ export default function JoinPage() {
     setError('')
     try {
       const supabase = createClient()
-      const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password })
+      const { error: signUpError } = await supabase.auth.signUp({ email: email.trim(), password, options: { data: { password_set: true } } })
       if (signUpError) {
         setError(signUpError.message)
         setLoading(false)
