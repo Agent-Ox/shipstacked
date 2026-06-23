@@ -245,6 +245,12 @@ export default function JoinPage() {
       // the enrichment running after returning 202 to the browser.
       fetch('/api/enrich', { method: 'POST' }).catch(() => {})
 
+      // Fire the auto-verify check too: a builder who completed all gates at signup
+      // (basics + portfolio + a build with url+outcome) should be verified now,
+      // without needing to open the editor and save. Same fire-and-forget pattern;
+      // verify-check no-ops if criteria aren't met.
+      fetch('/api/profile/verify-check', { method: 'POST' }).catch(() => {})
+
       setUsername(generatedUsername)
       setView('builder-2')
     } catch (err: any) {
