@@ -27,7 +27,18 @@ export async function GET(
   if (!conv) return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
 
   const builderEmail = (conv.profiles as any)?.email
-  const isParticipant = user.email === conv.employer_email || user.email === builderEmail
+  let isParticipant = user.email === conv.employer_email || user.email === builderEmail
+  // Team conversations (subject_entity_id set): any admin of the team is a
+  // participant (shared inbox). Never fires for null subject_entity_id.
+  if (!isParticipant && conv.subject_entity_id) {
+    const { data: ta } = await admin
+      .from('team_admins')
+      .select('id')
+      .eq('team_entity_id', conv.subject_entity_id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (ta) isParticipant = true
+  }
   if (!isParticipant) return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
 
   const { data: messages } = await admin

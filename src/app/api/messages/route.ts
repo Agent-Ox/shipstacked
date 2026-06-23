@@ -51,6 +51,67 @@ export async function GET(req: Request) {
     return NextResponse.json({ conversation: conv })
   }
 
+  // ?as=team&entity={id} — a team's shared inbox. Self-contained (the
+  // builder/hirer paths below are untouched). Only an admin of the team may list.
+  if (asParam === 'team') {
+    const entityId = searchParams.get('entity')
+    if (!entityId) return NextResponse.json({ error: 'entity required' }, { status: 400 })
+    const { data: ta } = await admin
+      .from('team_admins')
+      .select('id')
+      .eq('team_entity_id', entityId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!ta) return NextResponse.json({ error: 'Not an admin of this team' }, { status: 403 })
+
+    const { data: rawTeamConvs } = await admin
+      .from('conversations')
+      .select('*, jobs(role_title, company_name)')
+      .eq('subject_entity_id', entityId)
+      .order('last_message_at', { ascending: false })
+    const teamConvsRaw = rawTeamConvs || []
+
+    // Resolve the OTHER party (the contacter on employer_email) for display.
+    const contacterEmails = [...new Set(teamConvsRaw.map((c: any) => c.employer_email))]
+    const [{ data: eps }, { data: profs }] = contacterEmails.length > 0
+      ? await Promise.all([
+          admin.from('employer_profiles').select('email, company_name, logo_url').in('email', contacterEmails),
+          admin.from('profiles').select('email, full_name, username, avatar_url').in('email', contacterEmails),
+        ])
+      : [{ data: [] as any[] }, { data: [] as any[] }]
+    const epMap = Object.fromEntries((eps || []).map((e: any) => [e.email, e]))
+    const prMap = Object.fromEntries((profs || []).map((p: any) => [p.email, p]))
+    const teamConvs = teamConvsRaw.map((c: any) => {
+      const ep = epMap[c.employer_email], pr = prMap[c.employer_email]
+      return {
+        ...c,
+        contacter: {
+          name: ep?.company_name || pr?.full_name || c.employer_email,
+          logo_url: ep?.logo_url || pr?.avatar_url || null,
+          username: pr?.username || null,
+        },
+      }
+    })
+
+    // Same last-message + unread enrichment as the builder/hirer paths.
+    const ids = teamConvs.map((c: any) => c.id)
+    const lastMap: Record<string, any> = {}
+    const unread: Record<string, number> = {}
+    if (ids.length > 0) {
+      const { data: recent } = await admin
+        .from('messages').select('conversation_id, content, sender_email, created_at')
+        .in('conversation_id', ids).order('created_at', { ascending: false })
+      for (const m of (recent || [])) if (!lastMap[m.conversation_id]) lastMap[m.conversation_id] = m
+      const { data: un } = await admin
+        .from('messages').select('conversation_id')
+        .in('conversation_id', ids).eq('read', false).neq('sender_email', user.email!)
+      for (const m of (un || [])) unread[m.conversation_id] = (unread[m.conversation_id] || 0) + 1
+    }
+    return NextResponse.json({
+      conversations: teamConvs.map((c: any) => ({ ...c, last_message: lastMap[c.id] || null, unread_count: unread[c.id] || 0 })),
+    })
+  }
+
   // Resolve which side the request is fetching for
   const as = (asParam === 'builder' || asParam === 'hirer')
     ? asParam
@@ -219,14 +280,26 @@ export async function POST(req: Request) {
     // clients) can always reply.
     const { data: existingConv } = await admin
       .from('conversations')
-      .select('employer_email, profiles!builder_profile_id(email)')
+      .select('employer_email, subject_entity_id, profiles!builder_profile_id(email)')
       .eq('id', convId)
       .maybeSingle()
     if (!existingConv) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 })
     }
     const builderEmail = (existingConv as any).profiles?.email
-    if (user.email !== existingConv.employer_email && user.email !== builderEmail) {
+    let isParticipant = user.email === existingConv.employer_email || user.email === builderEmail
+    // Team conversations (subject_entity_id set): any team admin can reply
+    // (shared inbox). Never fires for null subject_entity_id.
+    if (!isParticipant && (existingConv as any).subject_entity_id) {
+      const { data: ta } = await admin
+        .from('team_admins')
+        .select('id')
+        .eq('team_entity_id', (existingConv as any).subject_entity_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (ta) isParticipant = true
+    }
+    if (!isParticipant) {
       return NextResponse.json({ error: 'Not a participant in this conversation' }, { status: 403 })
     }
   }

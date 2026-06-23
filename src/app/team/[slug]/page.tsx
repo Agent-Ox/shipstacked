@@ -6,6 +6,7 @@ import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildTeamOrgJsonLd } from '@/lib/jsonld/team-org'
 import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 import { getTeamMembers } from '@/lib/team/members'
+import ContactTeamButton from './ContactTeamButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,20 +92,26 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
   const { entity, profile } = resolved
   const admin = adminClient()
 
-  // ── Published gate (Invariant #2). Unpublished teams 404 for everyone EXCEPT
-  // an admin of that team, who sees a preview. ──────────────────────────────
-  let preview = false
-  if (!profile.published) {
-    const supabase = await createServerSupabaseClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) notFound()
+  // Resolve the viewer + whether they admin THIS team (used by the published
+  // gate below AND the Contact CTA). A logged-out viewer → user null.
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  let viewerIsAdmin = false
+  if (user) {
     const { data: adminRow } = await admin
       .from('team_admins')
       .select('id')
       .eq('team_entity_id', entity.id)
       .eq('user_id', user.id)
       .maybeSingle()
-    if (!adminRow) notFound()
+    viewerIsAdmin = !!adminRow
+  }
+
+  // ── Published gate (Invariant #2). Unpublished teams 404 for everyone EXCEPT
+  // an admin of that team, who sees a preview. (Outcome unchanged.) ──────────
+  let preview = false
+  if (!profile.published) {
+    if (!user || !viewerIsAdmin) notFound()
     preview = true
   }
 
@@ -209,6 +216,18 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
                 {profile.team_size_range && <span style={{ fontSize: 14, color: '#555568' }}>👥 {profile.team_size_range}</span>}
                 {profile.founded_year && <span style={{ fontSize: 14, color: '#555568' }}>Est. {profile.founded_year}</span>}
               </div>
+              {/* Contact CTA — only on a publicly-viewable team (not the admin preview). */}
+              {!preview && (
+                <div style={{ marginTop: '0.9rem' }}>
+                  <ContactTeamButton
+                    teamEntityId={entity.id}
+                    teamName={profile.team_name}
+                    slug={entity.slug}
+                    loggedIn={!!user}
+                    isAdmin={viewerIsAdmin}
+                  />
+                </div>
+              )}
             </div>
           </div>
 

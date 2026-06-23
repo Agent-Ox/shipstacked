@@ -21,16 +21,20 @@ function timeAgo(date: string) {
   return d.toLocaleDateString([], { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-type Mode = 'builder' | 'hirer'
+type Mode = 'builder' | 'hirer' | 'team'
 
 function MessagesInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const newProfileId = searchParams.get('new')
   const asParam = searchParams.get('as')
+  const entityParam = searchParams.get('entity')
 
   const [activeMode, setActiveMode] = useState<Mode | null>(null)
   const [availableModes, setAvailableModes] = useState<{ builder: boolean; hirer: boolean }>({ builder: false, hirer: false })
+  // Teams the user admins → a team-inbox tab each (?as=team&entity={id}).
+  const [availableTeams, setAvailableTeams] = useState<Array<{ id: string; name: string }>>([])
+  const [activeTeamEntity, setActiveTeamEntity] = useState<string | null>(null)
 
   const [conversations, setConversations] = useState<any[]>([])
   const [selected, setSelected] = useState<any>(null)
@@ -73,17 +77,33 @@ function MessagesInner() {
         window.location.href = '/client/inbox'
         return
       }
+      // Teams this user admins → team-inbox tabs.
+      const { data: adminRows } = await supabase.from('team_admins').select('team_entity_id').eq('user_id', session.user.id)
+      const teamIds = [...new Set((adminRows || []).map((r: any) => String(r.team_entity_id)))]
+      let teams: Array<{ id: string; name: string }> = []
+      if (teamIds.length > 0) {
+        const { data: tEnts } = await supabase.from('entities').select('id, display_name').in('id', teamIds)
+        teams = (tEnts || []).map((e: any) => ({ id: String(e.id), name: e.display_name }))
+      }
+
       if (cancelled) return
 
       setAvailableModes({ builder, hirer })
+      setAvailableTeams(teams)
 
       // Resolve active mode: ?as= param if valid for this user; else hirer > builder priority
       let resolved: Mode | null = null
-      if (asParam === 'hirer' && hirer) resolved = 'hirer'
+      let resolvedTeam: string | null = null
+      if (asParam === 'team' && entityParam && teams.some(t => t.id === entityParam)) {
+        resolved = 'team'; resolvedTeam = entityParam
+      }
+      else if (asParam === 'hirer' && hirer) resolved = 'hirer'
       else if (asParam === 'builder' && builder) resolved = 'builder'
       else if (hirer) resolved = 'hirer'
       else if (builder) resolved = 'builder'
+      else if (teams.length > 0) { resolved = 'team'; resolvedTeam = teams[0].id }
 
+      setActiveTeamEntity(resolvedTeam)
       setActiveMode(resolved)
     }
 
@@ -94,6 +114,7 @@ function MessagesInner() {
   // Load conversations + open Realtime channel whenever active mode changes
   useEffect(() => {
     if (!activeMode) return
+    if (activeMode === 'team' && !activeTeamEntity) return
     const supabase = createClient()
     loadConversations(activeMode).then(() => {
       if (newProfileId && activeMode === 'hirer') handleNewConversation(newProfileId)
@@ -112,7 +133,7 @@ function MessagesInner() {
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [activeMode, newProfileId])
+  }, [activeMode, newProfileId, activeTeamEntity])
 
   useEffect(() => { selectedRef.current = selected }, [selected])
   useEffect(() => { userEmailRef.current = userEmail }, [userEmail])
@@ -122,7 +143,10 @@ function MessagesInner() {
 
   const loadConversations = async (mode: Mode) => {
     setLoading(true)
-    const res = await fetch(`/api/messages?as=${mode}`)
+    const url = mode === 'team'
+      ? `/api/messages?as=team&entity=${activeTeamEntity}`
+      : `/api/messages?as=${mode}`
+    const res = await fetch(url)
     if (res.ok) { const { conversations } = await res.json(); setConversations(conversations) }
     setLoading(false)
   }
@@ -177,10 +201,16 @@ function MessagesInner() {
     setSending(false)
   }
 
-  const switchMode = (mode: Mode) => {
+  const switchMode = (mode: Mode, entity?: string) => {
     setSelected(null)
     setMessages([])
     setView('list')
+    if (mode === 'team' && entity) {
+      setActiveTeamEntity(entity)
+      setActiveMode('team')
+      router.replace(`/messages?as=team&entity=${entity}`)
+      return
+    }
     setActiveMode(mode)
     router.replace(`/messages?as=${mode}`)
   }
@@ -199,6 +229,10 @@ function MessagesInner() {
   }
 
   const getConvName = (conv: any) => {
+    if (activeMode === 'team') {
+      // Team inbox: the other party is the contacter (resolved server-side).
+      return conv.contacter?.name || 'Someone'
+    }
     if (activeMode === 'hirer') {
       return builderForConv(conv).full_name || 'Builder'
     }
@@ -220,8 +254,9 @@ function MessagesInner() {
   }
 
   const TabStrip = () => {
-    if (!availableModes.builder || !availableModes.hirer) return null
-    const tabStyle = (mode: Mode) => ({
+    const tabCount = (availableModes.builder ? 1 : 0) + (availableModes.hirer ? 1 : 0) + availableTeams.length
+    if (tabCount < 2) return null
+    const tabStyle = (active: boolean) => ({
       padding: '0.4rem 0.9rem',
       borderRadius: 980,
       fontSize: 13,
@@ -229,13 +264,16 @@ function MessagesInner() {
       cursor: 'pointer' as const,
       border: 'none',
       fontFamily: 'inherit',
-      background: activeMode === mode ? '#0071e3' : '#f5f5f7',
-      color: activeMode === mode ? 'white' : '#1d1d1f',
+      background: active ? '#0071e3' : '#f5f5f7',
+      color: active ? 'white' : '#1d1d1f',
     })
     return (
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-        <button type="button" onClick={() => switchMode('builder')} style={tabStyle('builder')}>As builder</button>
-        <button type="button" onClick={() => switchMode('hirer')} style={tabStyle('hirer')}>As hirer</button>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {availableModes.builder && <button type="button" onClick={() => switchMode('builder')} style={tabStyle(activeMode === 'builder')}>As builder</button>}
+        {availableModes.hirer && <button type="button" onClick={() => switchMode('hirer')} style={tabStyle(activeMode === 'hirer')}>As hirer</button>}
+        {availableTeams.map(t => (
+          <button key={t.id} type="button" onClick={() => switchMode('team', t.id)} style={tabStyle(activeMode === 'team' && activeTeamEntity === t.id)}>👥 {t.name}</button>
+        ))}
       </div>
     )
   }
@@ -252,6 +290,8 @@ function MessagesInner() {
               <p style={{ fontSize: 13, color: '#6e6e73', marginBottom: '1rem' }}>Browse talent and message builders.</p>
               <a href="/talent" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Browse talent</a>
             </>
+          ) : activeMode === 'team' ? (
+            <p style={{ fontSize: 13, color: '#6e6e73' }}>Messages to your team will appear here.</p>
           ) : (
             <p style={{ fontSize: 13, color: '#6e6e73' }}>Hirers will message you when interested.</p>
           )}
