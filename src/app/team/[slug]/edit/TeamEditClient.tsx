@@ -23,10 +23,11 @@ type TeamProfile = {
 
 type Member = {
   id: string
-  username: string
+  username: string | null
   full_name: string | null
   role: string | null
   avatar_url: string | null
+  team_role?: 'owner' | 'admin' | null
 }
 
 type Props = {
@@ -304,21 +305,31 @@ export default function TeamEditClient({ entity, profile, members: initialMember
           ) : (
             <div>
               {members.map(m => {
-                const mInitials = (m.full_name || m.username).split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                const teamRoleLabel = m.team_role === 'owner' ? 'Owner' : m.team_role === 'admin' ? 'Admin' : null
+                const displayName = m.full_name || m.username || teamRoleLabel || 'Member'
+                const mInitials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                const inner = (
+                  <>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white' }}>
+                      {m.avatar_url ? <img src={m.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mInitials}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}{teamRoleLabel ? ` · ${teamRoleLabel}` : ''}</p>
+                      <p style={{ fontSize: 12, color: '#aeaeb2' }}>{m.username ? `@${m.username}` : (m.role || 'Runs this team')}</p>
+                    </div>
+                  </>
+                )
                 return (
                   <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: '0.5px solid #f0f0f5', gap: '0.75rem' }}>
-                    <a href={`/u/${m.username}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', minWidth: 0 }}>
-                      <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white' }}>
-                        {m.avatar_url ? <img src={m.avatar_url} alt={m.full_name || m.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mInitials}
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.full_name || m.username}</p>
-                        <p style={{ fontSize: 12, color: '#aeaeb2' }}>@{m.username}</p>
-                      </div>
-                    </a>
-                    <button onClick={() => removeMember(m.username)} style={{ fontSize: 12, padding: '0.3rem 0.7rem', background: '#fff0f0', color: '#c00', border: '1px solid #ffd0d0', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
-                      Remove
-                    </button>
+                    {m.username
+                      ? <a href={`/u/${m.username}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', minWidth: 0 }}>{inner}</a>
+                      : <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>{inner}</div>}
+                    {/* Remove only applies to self-linked builders — owners/admins can't be unlinked here. */}
+                    {!m.team_role && m.username && (
+                      <button onClick={() => removeMember(m.username!)} style={{ fontSize: 12, padding: '0.3rem 0.7rem', background: '#fff0f0', color: '#c00', border: '1px solid #ffd0d0', borderRadius: 980, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                        Remove
+                      </button>
+                    )}
                   </div>
                 )
               })}

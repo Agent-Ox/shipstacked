@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { notFound, redirect } from 'next/navigation'
 import TeamEditClient from './TeamEditClient'
+import { getTeamMembers } from '@/lib/team/members'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,12 +64,9 @@ export default async function TeamEditPage({ params }: { params: Promise<{ slug:
     .maybeSingle()
   if (!profile) notFound()
 
-  // 5. Linked members (admin sees ALL linked, including unpublished).
-  const { data: members } = await admin
-    .from('profiles')
-    .select('id, username, full_name, role, avatar_url')
-    .eq('team_entity_id', entity.id)
-    .order('full_name')
+  // 5. People — owners/admins (team_admins) UNION all linked builders (admin sees
+  // ALL, including unpublished). Read-only union; no published filter here.
+  const members = await getTeamMembers(admin, entity.id, { publishedOnly: false })
 
   return (
     <TeamEditClient

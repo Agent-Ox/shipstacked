@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildTeamOrgJsonLd } from '@/lib/jsonld/team-org'
 import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
+import { getTeamMembers } from '@/lib/team/members'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,13 +108,9 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
     preview = true
   }
 
-  // ── Linked members (published-gated) ──────────────────────────────────────
-  const { data: members } = await admin
-    .from('profiles')
-    .select('id, username, full_name, role, avatar_url')
-    .eq('team_entity_id', entity.id)
-    .eq('published', true)
-    .order('full_name')
+  // ── People (membership = team_admins owners/admins UNION published self-linkers) ──
+  // Read-only; the owner/admins always show, self-linkers must be published.
+  const members = await getTeamMembers(admin, entity.id, { publishedOnly: true })
 
   // ── Recent team-subject receipts — same L1 + non-shared-doc bar as /u ──────
   const { data: rawReceipts } = await admin
@@ -140,7 +137,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
   const lastShipped = receipts[0]?.issued_at ?? null
 
   const services = profile.services ?? []
-  const memberList = (members ?? []) as Array<{ id: string; username: string; full_name: string | null; role: string | null; avatar_url: string | null }>
+  const memberList = members
   const initials = profile.team_name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   // Phase 6 §I: Atlas roles for this team → knowsAbout URLs (deduped + sorted).
@@ -160,7 +157,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
     founded_year: profile.founded_year,
     verified: profile.verified,
     l1_receipt_count: l1Count,
-    members: memberList.map((m) => ({ username: m.username })),
+    members: memberList.filter((m) => m.username).map((m) => ({ username: m.username! })),
     atlasRoles: teamAtlasRoles,
   })
 
@@ -303,20 +300,24 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.75rem' }}>
                 {memberList.map((m) => {
-                  const mInitials = (m.full_name || m.username).split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-                  return (
-                    <a key={m.id} href={`/u/${m.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <div className="t-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>
-                          {m.avatar_url ? <img src={m.avatar_url} alt={m.full_name || m.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mInitials}
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.full_name || m.username}</p>
-                          {m.role && <p style={{ fontSize: 12, color: '#555568', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.role}</p>}
-                        </div>
+                  const displayName = m.full_name || m.username || (m.team_role === 'owner' ? 'Owner' : 'Admin')
+                  const mInitials = displayName.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+                  const teamRoleLabel = m.team_role === 'owner' ? 'Owner' : m.team_role === 'admin' ? 'Admin' : null
+                  const card = (
+                    <div className="t-card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: 'white' }}>
+                        {m.avatar_url ? <img src={m.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mInitials}
                       </div>
-                    </a>
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</p>
+                        {(m.role || teamRoleLabel) && <p style={{ fontSize: 12, color: '#555568', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.role || teamRoleLabel}</p>}
+                      </div>
+                    </div>
                   )
+                  // Only link to /u when the member has a builder profile (username).
+                  return m.username
+                    ? <a key={m.id} href={`/u/${m.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>{card}</a>
+                    : <div key={m.id}>{card}</div>
                 })}
               </div>
             )}
