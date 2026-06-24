@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import InviteCard from './InviteCard'
+import TeamJobsManager from './TeamJobsManager'
+import { getTeamMembers } from '@/lib/team/members'
 
 function adminClient() {
   return createClient(
@@ -50,26 +52,37 @@ export default async function TeamSection({
     .eq('entity_id', teamEntityId)
     .maybeSingle()
 
-  // Parallel reads — members, counts, and recent lists for each section.
+  const now = new Date().toISOString()
+
+  // Parallel reads — members (source-of-truth getTeamMembers), counts, and lists.
   const [
-    { data: members },
-    { count: memberCount },
+    teamMembers,
     { count: proofCount },
     { count: activeJobsCount },
     { count: convCount },
     { data: recentConvs },
-    { data: activeJobs },
     { data: recentProof },
+    { data: managerJobs },
   ] = await Promise.all([
-    admin.from('profiles').select('username, full_name, avatar_url').eq('team_entity_id', teamEntityId).eq('published', true).order('full_name').limit(5),
-    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('team_entity_id', teamEntityId).eq('published', true),
+    // FIX 1 — member count/list via getTeamMembers (includes the owner from
+    // team_admins), matching the public team page + editor. Profiles-only counting
+    // omitted the owner and disagreed with those surfaces.
+    getTeamMembers(admin, teamEntityId, { publishedOnly: true }),
+    // Proof count = published L1 proof. May EXCEED the public team page's
+    // "verified receipts" display, which additionally drops shared-doc-host
+    // receipts (a /u-parity display filter not applied to this dashboard count).
     admin.from('proof_receipts').select('id', { count: 'exact', head: true }).eq('subject_id', teamEntityId).eq('visibility', 'public').eq('verification_level', 'L1_artifact_confirmed'),
-    admin.from('jobs').select('id', { count: 'exact', head: true }).eq('subject_entity_id', teamEntityId).eq('status', 'active'),
+    // FIX 2 — active-jobs count matches /jobs: status='active' AND expires_at>now.
+    admin.from('jobs').select('id', { count: 'exact', head: true }).eq('subject_entity_id', teamEntityId).eq('status', 'active').gt('expires_at', now),
     admin.from('conversations').select('id', { count: 'exact', head: true }).eq('subject_entity_id', teamEntityId),
     admin.from('conversations').select('id, employer_email, last_message_at').eq('subject_entity_id', teamEntityId).order('last_message_at', { ascending: false }).limit(3),
-    admin.from('jobs').select('id, role_title, created_at').eq('subject_entity_id', teamEntityId).eq('status', 'active').order('created_at', { ascending: false }).limit(5),
     admin.from('proof_receipts').select('id, slug, title, issued_at').eq('subject_id', teamEntityId).eq('visibility', 'public').eq('verification_level', 'L1_artifact_confirmed').order('issued_at', { ascending: false }).limit(5),
+    // FIX 3 — ALL the team's jobs (active + paused) for the manager, scoped to the
+    // owner's email (post-as-team sets employer_email = owner). Every mutation is
+    // re-scoped .eq('employer_email', ownerEmail) so only the owner's jobs change.
+    admin.from('jobs').select('id, role_title, status, created_at').eq('subject_entity_id', teamEntityId).eq('employer_email', email).order('created_at', { ascending: false }),
   ])
+  const memberCount = teamMembers.length
 
   // Resolve contacter display name for recent conversations (mirrors the
   // ?as=team listing in api/messages/route.ts).
@@ -86,7 +99,7 @@ export default async function TeamSection({
 
   const teamName = profile?.team_name || teamSlug
   const initials = teamName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-  const memberList = members || []
+  const memberList = teamMembers.slice(0, 5)
 
   return (
     <div>
@@ -151,20 +164,7 @@ export default async function TeamSection({
           <p style={cardLabel}>Jobs</p>
           <a href="/post-job" style={sectionAction}>Post a job →</a>
         </div>
-        {(activeJobs || []).length === 0 ? (
-          <p style={emptyText}>No active jobs — <a href="/post-job" style={{ color: '#0071e3', textDecoration: 'none' }}>Post a job →</a></p>
-        ) : (
-          <div>
-            {(activeJobs || []).map((j: any) => (
-              <a key={j.id} href="/jobs" style={rowLink}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
-                  <span style={{ fontSize: 14, color: '#1d1d1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.role_title}</span>
-                  {j.created_at && <span style={{ fontSize: 12, color: '#aeaeb2', flexShrink: 0 }}>{timeAgo(j.created_at)}</span>}
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+        <TeamJobsManager jobs={managerJobs || []} ownerEmail={email} />
       </div>
 
       {/* Proof of work */}
@@ -200,14 +200,18 @@ export default async function TeamSection({
         ) : (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {memberList.map((m: any) => {
-              const mi = (m.full_name || m.username).split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-              return (
-                <a key={m.username} href={`/u/${m.username}`} title={m.full_name || m.username} style={{ textDecoration: 'none' }}>
-                  <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white' }}>
-                    {m.avatar_url ? <img src={m.avatar_url} alt={m.full_name || m.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mi}
-                  </div>
-                </a>
+              // Null-safe: the profile-less owner (username null) renders a plain
+              // avatar chip, no /u/null link (mirrors the editor People guard).
+              const displayName = m.full_name || m.username || (m.team_role === 'owner' ? 'Owner' : m.team_role === 'admin' ? 'Admin' : 'Member')
+              const mi = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
+              const avatar = (
+                <div style={{ width: 36, height: 36, borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: 'white' }}>
+                  {m.avatar_url ? <img src={m.avatar_url} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : mi}
+                </div>
               )
+              return m.username
+                ? <a key={m.id} href={`/u/${m.username}`} title={displayName} style={{ textDecoration: 'none' }}>{avatar}</a>
+                : <div key={m.id} title={displayName}>{avatar}</div>
             })}
           </div>
         )}
