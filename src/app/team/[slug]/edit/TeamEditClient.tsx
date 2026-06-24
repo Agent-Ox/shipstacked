@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
-import AddBuilderProfileButton from '@/app/components/AddBuilderProfileButton'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import { TEAM_SIZE_RANGES } from '@/lib/team/validate'
 
@@ -309,6 +308,10 @@ export default function TeamEditClient({ entity, profile, members: initialMember
                 const teamRoleLabel = m.team_role === 'owner' ? 'Owner' : m.team_role === 'admin' ? 'Admin' : null
                 const displayName = m.full_name || m.username || teamRoleLabel || 'Member'
                 const mInitials = displayName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                // The owner with no builder profile: their chip carries the action
+                // to become a real, visible member (the CTA lives on the chip, not
+                // an orphaned card elsewhere). Only this row shows it.
+                const isProfilelessOwner = m.team_role === 'owner' && !m.username
                 const inner = (
                   <>
                     <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'white' }}>
@@ -317,11 +320,17 @@ export default function TeamEditClient({ entity, profile, members: initialMember
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}{teamRoleLabel ? ` · ${teamRoleLabel}` : ''}</p>
                       <p style={{ fontSize: 12, color: '#aeaeb2' }}>{m.username ? `@${m.username}` : (m.role || 'Runs this team')}</p>
+                      {isProfilelessOwner && (
+                        <>
+                          <a href={`/join?card=builder&team=${entity.id}`} style={{ display: 'inline-block', marginTop: '0.5rem', fontSize: 13, padding: '0.4rem 0.9rem', borderRadius: 980, background: '#0071e3', color: 'white', fontWeight: 600, textDecoration: 'none' }}>Complete your builder profile →</a>
+                          <p style={{ fontSize: 12, color: '#aeaeb2', marginTop: '0.3rem', whiteSpace: 'normal' }}>Add yourself as a builder to appear here properly.</p>
+                        </>
+                      )}
                     </div>
                   </>
                 )
                 return (
-                  <div key={m.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: '0.5px solid #f0f0f5', gap: '0.75rem' }}>
+                  <div key={m.id} style={{ display: 'flex', alignItems: isProfilelessOwner ? 'flex-start' : 'center', justifyContent: 'space-between', padding: '0.6rem 0', borderBottom: '0.5px solid #f0f0f5', gap: '0.75rem' }}>
                     {m.username
                       ? <a href={`/u/${m.username}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', minWidth: 0 }}>{inner}</a>
                       : <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>{inner}</div>}
@@ -340,8 +349,6 @@ export default function TeamEditClient({ entity, profile, members: initialMember
 
         {/* Phase 3 — composable Buyer Mode + agent management */}
         <EnableHiringButton source="team_dashboard" variant="card" />
-        {/* Growth loop — owners with no builder profile can add one (no re-signup). */}
-        <AddBuilderProfileButton teamEntityId={entity.id} />
         <ConnectAnAgent scope="team:rw" variant="team_dashboard" email={ownerEmail} username={entity.slug} />
 
       </div>
