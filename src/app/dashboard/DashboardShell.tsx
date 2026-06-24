@@ -38,12 +38,16 @@ export default function DashboardShell({
           {modes.client && <BuyerSection email={email} hasSubscription={modes.hirer} />}
           {modes.hirer && <HirerSection />}
 
-          {/* Invite a colleague */}
-          <div style={{ background:'white', border:'1px solid #e0e0e5', borderRadius:14, padding:'1.25rem 1.5rem', marginBottom:'1rem' }}>
-            <p style={{ fontSize:12, fontWeight:600, color:'#6e6e73', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.3rem' }}>Invite a colleague</p>
-            <p style={{ fontSize:13, color:'#6e6e73', lineHeight:1.5, marginBottom:'0.75rem' }}>Know someone shipping AI-native work? Invite them to ShipStacked.</p>
-            <InviteCard />
-          </div>
+          {/* Invite a colleague — generic platform-growth prompt. Suppressed for
+              team owners, who get the team-scoped "Invite teammates" in TeamSection
+              (inviting members who JOIN the team, not just the platform). */}
+          {!modes.team_admin && (
+            <div style={{ background:'white', border:'1px solid #e0e0e5', borderRadius:14, padding:'1.25rem 1.5rem', marginBottom:'1rem' }}>
+              <p style={{ fontSize:12, fontWeight:600, color:'#6e6e73', letterSpacing:'0.05em', textTransform:'uppercase', marginBottom:'0.3rem' }}>Invite a colleague</p>
+              <p style={{ fontSize:13, color:'#6e6e73', lineHeight:1.5, marginBottom:'0.75rem' }}>Know someone shipping AI-native work? Invite them to ShipStacked.</p>
+              <InviteCard />
+            </div>
+          )}
         </div>
       </div>
     </>
