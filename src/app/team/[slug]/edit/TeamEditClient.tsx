@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
+import AddBuilderProfileButton from '@/app/components/AddBuilderProfileButton'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import { TEAM_SIZE_RANGES } from '@/lib/team/validate'
 
@@ -339,6 +340,8 @@ export default function TeamEditClient({ entity, profile, members: initialMember
 
         {/* Phase 3 — composable Buyer Mode + agent management */}
         <EnableHiringButton source="team_dashboard" variant="card" />
+        {/* Growth loop — owners with no builder profile can add one (no re-signup). */}
+        <AddBuilderProfileButton teamEntityId={entity.id} />
         <ConnectAnAgent scope="team:rw" variant="team_dashboard" email={ownerEmail} username={entity.slug} />
 
       </div>

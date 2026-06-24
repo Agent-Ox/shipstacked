@@ -73,6 +73,9 @@ export default function JoinPage() {
   const [card, setCard] = useState<Card | null>(null)
   const [checking, setChecking] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  // ?team={entityId} — pre-link a new builder profile to a team (ownership
+  // re-validated at submit). Read once from the URL on mount.
+  const [teamParam, setTeamParam] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -117,13 +120,23 @@ export default function JoinPage() {
   // Initial check: existing session + existing profile?
   useEffect(() => {
     const supabase = createClient()
+    const params = new URLSearchParams(window.location.search)
+    const teamP = params.get('team')
+    const cardP = params.get('card')
+    if (teamP) setTeamParam(teamP)
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) { setChecking(false); return }
       setIsLoggedIn(true)
       setEmail(user.email || '')
       supabase.from('profiles').select('username').eq('email', user.email).maybeSingle().then(({ data }) => {
         if (data?.username) { window.location.href = '/dashboard' }
-        else { setChecking(false) }
+        else {
+          // Deep-link: ?card=builder lands a logged-in, profile-less user straight
+          // on the builder form (skips the card picker). Existing-profile users are
+          // already redirected to /dashboard above, so no double-create.
+          if (cardP === 'builder') { setCard('builder'); setView('builder-0') }
+          setChecking(false)
+        }
       })
     })
   }, [])
@@ -178,6 +191,21 @@ export default function JoinPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
+      // Optional team auto-join (?team={entityId}). ONLY honored if the user is
+      // actually an admin of that team — the team_admins self-read RLS returns a
+      // row only for the user's own admin membership, so a forged ?team= for a
+      // team you don't own resolves to no row → ignored (never links a stranger).
+      let teamEntityIdToLink: number | null = null
+      if (teamParam) {
+        const { data: ta } = await supabase
+          .from('team_admins')
+          .select('id')
+          .eq('team_entity_id', teamParam)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (ta) teamEntityIdToLink = Number(teamParam)
+      }
+
       const base = fullName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20)
       const suffix = Math.floor(Math.random() * 900) + 100
       const generatedUsername = base + suffix
@@ -195,6 +223,7 @@ export default function JoinPage() {
         published: true,
         verified: false,
         accepts_project_inquiries: true,
+        ...(teamEntityIdToLink ? { team_entity_id: teamEntityIdToLink } : {}),
       }])
 
       if (insertError) throw insertError
