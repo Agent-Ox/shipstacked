@@ -90,8 +90,15 @@ export async function POST(req: Request) {
     .maybeSingle()
 
   if (!profile) {
-    const slugBase = invite.invitee_email.split('@')[0].replace(/[^a-z0-9]/gi, '').toLowerCase().slice(0, 20)
-    const username = slugBase + Math.floor(Math.random() * 999)
+    // Neutral, email-free placeholder username. The real name-based username is
+    // generated on first publish (EditProfileForm). NEVER derive it from the
+    // email — that would leak the email local-part into the public /u URL.
+    let username = 'member' + Math.floor(100000 + Math.random() * 900000)
+    for (let i = 0; i < 5; i++) {
+      const { data: clash } = await admin.from('profiles').select('id').eq('username', username).maybeSingle()
+      if (!clash) break
+      username = 'member' + Math.floor(100000 + Math.random() * 900000)
+    }
     const { data: newProfile, error: profileErr } = await admin
       .from('profiles')
       .insert({

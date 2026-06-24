@@ -282,6 +282,24 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
       // build is still required), keeping the ranking/quality signal honest.
       const hasBasics = fullName.trim().length > 0 && role.trim().length > 0 && bio.trim().length > 0
 
+      // On FIRST publish (invited members are created published:false with a
+      // neutral 'memberNNNNNN' username), go live AND regenerate the username from
+      // the name (mirroring /join), so the public /u URL is name-based — never the
+      // email-derived placeholder. Collision-checked. Only here: an already-
+      // published profile's username is NEVER changed (stable live URL). The
+      // router.refresh() after save repaints the "View my profile" link.
+      let publishFields: Record<string, unknown> = {}
+      if (!profile.published && hasBasics) {
+        const base = fullName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20)
+        let candidate = base + (Math.floor(Math.random() * 900) + 100)
+        for (let i = 0; i < 5; i++) {
+          const { data: clash } = await supabase.from('profiles').select('id').eq('username', candidate).neq('id', profile.id).maybeSingle()
+          if (!clash) break
+          candidate = base + (Math.floor(Math.random() * 900) + 100)
+        }
+        publishFields = { published: true, username: candidate }
+      }
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -294,7 +312,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           timezone,
           languages: spokenLanguages.length > 0 ? spokenLanguages : null,
           team_entity_id: teamEntityId,
-          ...(!profile.published && hasBasics ? { published: true } : {}),
+          ...publishFields,
         })
         .eq('id', profile.id)
 
