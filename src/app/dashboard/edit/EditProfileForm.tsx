@@ -274,6 +274,14 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
     try {
       const supabase = createClient()
 
+      // Mirror /join's publish (canProceedBuilder0 = name+role+bio): an
+      // UNPUBLISHED profile with the basics goes live on save, so invited members
+      // (created published:false by the accept route) become visible on completion.
+      // Already-published profiles are untouched. `verified` is NOT written here —
+      // autoVerify/verify-check stays the sole path to verified:true (a proven
+      // build is still required), keeping the ranking/quality signal honest.
+      const hasBasics = fullName.trim().length > 0 && role.trim().length > 0 && bio.trim().length > 0
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -286,6 +294,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
           timezone,
           languages: spokenLanguages.length > 0 ? spokenLanguages : null,
           team_entity_id: teamEntityId,
+          ...(!profile.published && hasBasics ? { published: true } : {}),
         })
         .eq('id', profile.id)
 
