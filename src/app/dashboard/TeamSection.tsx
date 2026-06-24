@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
+import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import InviteCard from './InviteCard'
 
 function adminClient() {
@@ -9,12 +10,37 @@ function adminClient() {
   )
 }
 
-// Phase 9 Part 1 — minimal team home on /dashboard. Profile card + edit/view +
-// member preview + (per-user) Hiring Access. Team-scoped messaging/jobs/billing
-// are Part 2.
+function timeAgo(date: string) {
+  const s = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`
+  if (s < 604800) return `${Math.floor(s / 86400)}d ago`
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+const cardStyle: React.CSSProperties = {
+  background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem',
+}
+const cardLabel: React.CSSProperties = {
+  fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem',
+}
+const linkPrimary: React.CSSProperties = {
+  padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+}
+const linkNeutral: React.CSSProperties = {
+  padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+}
+const sectionAction: React.CSSProperties = { fontSize: 12, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }
+const rowLink: React.CSSProperties = { display: 'block', textDecoration: 'none', color: 'inherit', padding: '0.5rem 0', borderTop: '0.5px solid #f0f0f5' }
+const emptyText: React.CSSProperties = { fontSize: 13, color: '#6e6e73' }
+
+// Phase 9 Part 2 — the team command center. /dashboard's team home: at-a-glance
+// stats, messages, jobs, proof-of-work, members+invite, with edit-profile linked
+// from the Manage section. All queries are reads via the service-role client.
 export default async function TeamSection({
-  teamEntityId, teamSlug,
-}: { teamEntityId?: number; teamSlug?: string }) {
+  teamEntityId, teamSlug, email,
+}: { teamEntityId?: number; teamSlug?: string; email: string }) {
   if (!teamEntityId || !teamSlug) return null
   const admin = adminClient()
 
@@ -24,58 +50,153 @@ export default async function TeamSection({
     .eq('entity_id', teamEntityId)
     .maybeSingle()
 
-  const { data: members } = await admin
-    .from('profiles')
-    .select('username, full_name, avatar_url')
-    .eq('team_entity_id', teamEntityId)
-    .eq('published', true)
-    .order('full_name')
-    .limit(5)
+  // Parallel reads — members, counts, and recent lists for each section.
+  const [
+    { data: members },
+    { count: memberCount },
+    { count: proofCount },
+    { count: activeJobsCount },
+    { count: convCount },
+    { data: recentConvs },
+    { data: activeJobs },
+    { data: recentProof },
+  ] = await Promise.all([
+    admin.from('profiles').select('username, full_name, avatar_url').eq('team_entity_id', teamEntityId).eq('published', true).order('full_name').limit(5),
+    admin.from('profiles').select('id', { count: 'exact', head: true }).eq('team_entity_id', teamEntityId).eq('published', true),
+    admin.from('proof_receipts').select('id', { count: 'exact', head: true }).eq('subject_id', teamEntityId).eq('visibility', 'public').eq('verification_level', 'L1_artifact_confirmed'),
+    admin.from('jobs').select('id', { count: 'exact', head: true }).eq('subject_entity_id', teamEntityId).eq('status', 'active'),
+    admin.from('conversations').select('id', { count: 'exact', head: true }).eq('subject_entity_id', teamEntityId),
+    admin.from('conversations').select('id, employer_email, last_message_at').eq('subject_entity_id', teamEntityId).order('last_message_at', { ascending: false }).limit(3),
+    admin.from('jobs').select('id, role_title, created_at').eq('subject_entity_id', teamEntityId).eq('status', 'active').order('created_at', { ascending: false }).limit(5),
+    admin.from('proof_receipts').select('id, slug, title, issued_at').eq('subject_id', teamEntityId).eq('visibility', 'public').eq('verification_level', 'L1_artifact_confirmed').order('issued_at', { ascending: false }).limit(5),
+  ])
 
-  const { count: memberCount } = await admin
-    .from('profiles')
-    .select('id', { count: 'exact', head: true })
-    .eq('team_entity_id', teamEntityId)
-    .eq('published', true)
+  // Resolve contacter display name for recent conversations (mirrors the
+  // ?as=team listing in api/messages/route.ts).
+  const convEmails = [...new Set((recentConvs || []).map((c: any) => c.employer_email))]
+  const [{ data: eps }, { data: profs }] = convEmails.length > 0
+    ? await Promise.all([
+        admin.from('employer_profiles').select('email, company_name').in('email', convEmails),
+        admin.from('profiles').select('email, full_name').in('email', convEmails),
+      ])
+    : [{ data: [] as any[] }, { data: [] as any[] }]
+  const epMap = Object.fromEntries((eps || []).map((e: any) => [e.email, e]))
+  const prMap = Object.fromEntries((profs || []).map((p: any) => [p.email, p]))
+  const contacterName = (em: string) => epMap[em]?.company_name || prMap[em]?.full_name || em
 
   const teamName = profile?.team_name || teamSlug
   const initials = teamName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
   const memberList = members || []
 
   return (
-    <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
-      <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '1rem' }}>Your team</p>
-
-      {/* Profile card */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-        <div style={{ width: 56, height: 56, borderRadius: 14, flexShrink: 0, overflow: 'hidden', background: profile?.logo_url ? 'transparent' : 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: 'white' }}>
-          {profile?.logo_url ? <img src={profile.logo_url} alt={teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{teamName}</p>
-            <span style={{ fontSize: 11, fontWeight: 600, padding: '0.15rem 0.55rem', borderRadius: 980, background: profile?.published ? '#e3f3e3' : '#f5f5f7', color: profile?.published ? '#1a7f37' : '#6e6e73' }}>
-              {profile?.published ? 'Published' : 'Unpublished'}
-            </span>
+    <div>
+      {/* Identity + at-a-glance */}
+      <div style={cardStyle}>
+        <p style={cardLabel}>Your team</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, flexShrink: 0, overflow: 'hidden', background: profile?.logo_url ? 'transparent' : 'linear-gradient(135deg, #6c63ff, #a78bfa)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: 'white' }}>
+            {profile?.logo_url ? <img src={profile.logo_url} alt={teamName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
           </div>
-          {profile?.tagline && <p style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.2rem' }}>{profile.tagline}</p>}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em' }}>{teamName}</p>
+              <span style={{ fontSize: 11, fontWeight: 600, padding: '0.15rem 0.55rem', borderRadius: 980, background: profile?.published ? '#e3f3e3' : '#f5f5f7', color: profile?.published ? '#1a7f37' : '#6e6e73' }}>
+                {profile?.published ? 'Published' : 'Unpublished'}
+              </span>
+            </div>
+            {profile?.tagline && <p style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.2rem' }}>{profile.tagline}</p>}
+          </div>
+        </div>
+        {/* Stat row */}
+        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', borderTop: '0.5px solid #f0f0f5', paddingTop: '1rem' }}>
+          {[
+            { label: 'Members', value: memberCount || 0 },
+            { label: 'Proof of work', value: proofCount || 0 },
+            { label: 'Active jobs', value: activeJobsCount || 0 },
+            { label: 'Messages', value: convCount || 0 },
+          ].map(s => (
+            <div key={s.label}>
+              <p style={{ fontSize: 20, fontWeight: 700, color: '#1d1d1f' }}>{s.value}</p>
+              <p style={{ fontSize: 12, color: '#6e6e73' }}>{s.label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-        <a href={`/team/${teamSlug}/edit`} style={{ padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Edit team</a>
-        <a href={`/team/${teamSlug}`} style={{ padding: '0.5rem 1rem', background: '#f5f5f7', color: '#1d1d1f', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>View public page</a>
-        <a href={`/paste?subject=${teamEntityId}`} style={{ padding: '0.5rem 1rem', background: '#1a7f37', color: 'white', borderRadius: 980, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>Post work as {teamName} →</a>
+      {/* Messages */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <p style={cardLabel}>Messages</p>
+          <a href="/messages?as=team" style={sectionAction}>View inbox →</a>
+        </div>
+        {(recentConvs || []).length === 0 ? (
+          <p style={emptyText}>No messages yet.</p>
+        ) : (
+          <div>
+            {(recentConvs || []).map((c: any) => (
+              <a key={c.id} href="/messages?as=team" style={rowLink}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <span style={{ fontSize: 14, color: '#1d1d1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contacterName(c.employer_email)}</span>
+                  {c.last_message_at && <span style={{ fontSize: 12, color: '#aeaeb2', flexShrink: 0 }}>{timeAgo(c.last_message_at)}</span>}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Members */}
-      <div style={{ borderTop: '0.5px solid #f0f0f5', paddingTop: '1.25rem', marginBottom: '1.25rem' }}>
+      {/* Jobs */}
+      <div style={cardStyle}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f' }}>Members <span style={{ color: '#6e6e73', fontWeight: 400 }}>({memberCount || 0})</span></p>
-          <a href={`/team/${teamSlug}/edit#members`} style={{ fontSize: 12, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>Manage members →</a>
+          <p style={cardLabel}>Jobs</p>
+          <a href="/post-job" style={sectionAction}>Post a job →</a>
+        </div>
+        {(activeJobs || []).length === 0 ? (
+          <p style={emptyText}>No active jobs — <a href="/post-job" style={{ color: '#0071e3', textDecoration: 'none' }}>Post a job →</a></p>
+        ) : (
+          <div>
+            {(activeJobs || []).map((j: any) => (
+              <a key={j.id} href="/jobs" style={rowLink}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <span style={{ fontSize: 14, color: '#1d1d1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{j.role_title}</span>
+                  {j.created_at && <span style={{ fontSize: 12, color: '#aeaeb2', flexShrink: 0 }}>{timeAgo(j.created_at)}</span>}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Proof of work */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <p style={cardLabel}>Proof of work</p>
+          <a href={`/paste?subject=${teamEntityId}`} style={sectionAction}>Post work →</a>
+        </div>
+        {(recentProof || []).length === 0 ? (
+          <p style={emptyText}>No work published yet — <a href={`/paste?subject=${teamEntityId}`} style={{ color: '#0071e3', textDecoration: 'none' }}>Post work →</a></p>
+        ) : (
+          <div>
+            {(recentProof || []).map((r: any) => (
+              <a key={r.id} href={`/p/${r.slug}`} style={rowLink}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem' }}>
+                  <span style={{ fontSize: 14, color: '#1d1d1f', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title || r.slug}</span>
+                  {r.issued_at && <span style={{ fontSize: 12, color: '#aeaeb2', flexShrink: 0 }}>{timeAgo(r.issued_at)}</span>}
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Members + Invite */}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+          <p style={cardLabel}>Members <span style={{ color: '#6e6e73', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>({memberCount || 0})</span></p>
+          <a href={`/team/${teamSlug}/edit#members`} style={sectionAction}>Manage members →</a>
         </div>
         {memberList.length === 0 ? (
-          <p style={{ fontSize: 13, color: '#6e6e73' }}>No members yet. Invite teammates below — they'll join your team when they accept.</p>
+          <p style={emptyText}>No members yet. Invite teammates below — they&apos;ll join your team when they accept.</p>
         ) : (
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
             {memberList.map((m: any) => {
@@ -90,18 +211,21 @@ export default async function TeamSection({
             })}
           </div>
         )}
-
-        {/* Invite teammates */}
         <div style={{ marginTop: '1.25rem' }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.5rem' }}>Invite teammates</p>
           <InviteCard teamEntityId={teamEntityId} />
         </div>
       </div>
 
-      {/* Hiring Access — per-user billing for Part 1 */}
-      <div style={{ borderTop: '0.5px solid #f0f0f5', paddingTop: '1.25rem' }}>
+      {/* Manage */}
+      <div style={cardStyle}>
+        <p style={cardLabel}>Manage</p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+          <a href={`/team/${teamSlug}/edit`} style={linkPrimary}>Edit team profile</a>
+          <a href={`/team/${teamSlug}`} style={linkNeutral}>View public page</a>
+        </div>
         <EnableHiringButton source="team_dashboard" variant="card" />
-        <p style={{ fontSize: 11, color: '#aeaeb2', lineHeight: 1.5 }}>Hiring Access is currently billed per-user (your account email). Team-scoped billing arrives in Part 2.</p>
+        <ConnectAnAgent scope="team:rw" variant="team_dashboard" email={email} username={teamSlug} />
       </div>
     </div>
   )

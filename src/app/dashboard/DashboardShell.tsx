@@ -33,7 +33,7 @@ export default function DashboardShell({
             </div>
           )}
 
-          {modes.team_admin && <TeamSection teamEntityId={refs.team_entity_id} teamSlug={refs.team_slug} />}
+          {modes.team_admin && <TeamSection teamEntityId={refs.team_entity_id} teamSlug={refs.team_slug} email={email} />}
           {modes.agent_owner && <AgentSection agentEntityId={refs.agent_entity_id} agentSlug={refs.agent_slug} />}
           {modes.client && <BuyerSection email={email} hasSubscription={modes.hirer} />}
           {modes.hirer && <HirerSection />}

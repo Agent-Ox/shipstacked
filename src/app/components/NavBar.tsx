@@ -89,8 +89,10 @@ export default function NavBar() {
       links.push({ label: 'Edit builder profile', href: '/dashboard/edit' })
     }
 
-    if (modes.team_admin && teamSlug) {
-      links.push({ label: 'Edit team', href: `/team/${teamSlug}/edit` })
+    // Pure team owner → "Dashboard". A builder already has "Builder dashboard"
+    // (same /dashboard, now rendering both pillars), so don't double it up.
+    if (modes.team_admin && !modes.builder) {
+      links.push({ label: 'Dashboard', href: '/dashboard' })
     }
 
     if (modes.agent_owner && agentSlug) {
