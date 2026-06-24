@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import EnableHiringButton from '@/app/components/EnableHiringButton'
+import InviteCard from '@/app/dashboard/InviteCard'
 import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import { TEAM_SIZE_RANGES } from '@/lib/team/validate'
 
@@ -345,6 +346,14 @@ export default function TeamEditClient({ entity, profile, members: initialMember
               })}
             </div>
           )}
+          {/* Invite teammates — they auto-join this team on accept (api/invites
+              → accept sets profiles.team_entity_id). Surfaced here so the editor
+              is the single, complete membership home. */}
+          <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '0.5px solid #f0f0f5' }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.2rem' }}>Invite teammates</p>
+            <p style={{ fontSize: 12, color: '#6e6e73', marginBottom: '0.75rem' }}>They&apos;ll join {teamName} automatically when they accept.</p>
+            <InviteCard teamEntityId={entity.id} />
+          </div>
         </div>
 
         {/* Phase 3 — composable Buyer Mode + agent management */}

@@ -134,6 +134,19 @@ export default async function DashboardPage() {
     redirect('/join')
   }
 
+  // Pure team owner (no other pillar) → their single home is the team editor,
+  // where signup also lands them. Consolidates the split (login no longer drops
+  // them on a divergent dashboard TeamSection). Multi-pillar owners (builder+team,
+  // hirer+team, agent+team, etc.) are NOT caught — they keep the full dashboard.
+  // No loop: the editor route never redirects back here. Falls through to the
+  // shell if the slug can't be resolved.
+  if (
+    modes.team_admin && !modes.builder && !modes.hirer && !modes.client &&
+    !modes.admin && !modes.agent_owner && refs.team_slug
+  ) {
+    redirect(`/team/${refs.team_slug}/edit`)
+  }
+
   // Single-pillar builder → unchanged BuilderDashboardClient, no shell chrome.
   if (modes.builder && !modes.team_admin && !modes.agent_owner) {
     const props = await loadBuilderProps(supabase, user.email!)

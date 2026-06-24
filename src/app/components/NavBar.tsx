@@ -197,6 +197,7 @@ export default function NavBar() {
   const messagesHref =
     modes.client && !modes.builder && !modes.hirer ? null
       : modes.hirer && !modes.builder ? '/messages?as=hirer'
+      : modes.team_admin && !modes.builder && !modes.hirer ? '/messages?as=team'
       : '/messages'
 
   return (
