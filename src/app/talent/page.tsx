@@ -12,7 +12,7 @@ import { findAtlasMatches } from '@/lib/atlas/matching'
 
 export const metadata: Metadata = {
   title: 'AI-Native Builder Directory | ShipStacked',
-  description: 'Browse verified AI-native builders. Vibe coders, prompt engineers, AI automation specialists — all with proven build histories and real outcomes.',
+  description: 'AI-native builders ranked by verified proof of work — prompt engineers, agent builders, and automation specialists, each with real shipped projects and outcomes.',
   openGraph: {
     title: 'AI-Native Builder Directory | ShipStacked',
     description: 'Find and hire verified AI-native builders with real proof of work.',
@@ -174,7 +174,12 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     .filter(b => allBuilders.some((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)))
     .map(b => ({ value: b.key, label: b.label, count: profiles.filter((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)).length }))
   const verifiedCount = profiles.filter((p: any) => p.verified).length
-  const displayProfiles = isMember ? profiles : profiles.slice(0, 6)
+  // GEO (stage A): the full ranked list is public to everyone — every /u profile
+  // it links to is already public + indexable + in the sitemap, so walling the
+  // LIST hid the biggest citable asset for no monetization benefit. The paywall
+  // is on CONTACT, not visibility (isTeaser still drives the "become a member to
+  // contact" CTA; per-card contact/save stay member-gated).
+  const displayProfiles = profiles
   const isTeaser = !isMember
 
   // Total unfiltered count for the header (only when filters are active)
@@ -202,16 +207,16 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     savedIds = saved?.map((s: any) => s.profile_id) || []
   }
 
-  // Beacon 1 — paywall-aware ItemList. JSON-LD reflects the 6-builder
-  // teaser slice that's HTML-visible to anonymous viewers, NOT the full
-  // unpaywalled list (emitting the full list to crawlers would expose
-  // data behind a paywall). Query above already filters published=true so
-  // the 3 fakes are excluded at source.
-  const teaserSlice = profiles.slice(0, 6)
+  // Beacon 1 — ItemList over the FULL public ranked list. The list is not behind
+  // a paywall: every /u/{username} it links to is already public + indexable + in
+  // the sitemap, so the structured data supports visible content (GEO rule). Only
+  // CONTACT is member-gated, not the list. Query above already filters
+  // published=true so the 3 fakes are excluded at source.
+  const listedProfiles = profiles
   const talentItemListLd = buildItemListJsonLd({
     listUrl: `${CANONICAL_HOST}/talent`,
-    listName: 'AI-native builders on ShipStacked',
-    items: teaserSlice.map((p: any) => ({
+    listName: 'AI-native builders on ShipStacked, ranked by verified proof of work',
+    items: listedProfiles.map((p: any) => ({
       url: personId(p.username),
       id: personId(p.username),
       name: p.full_name?.trim() || p.username,
