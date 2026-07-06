@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@supabase/supabase-js'
 import { loadVocab, getVocabByLayer, type CapabilityVocabEntry } from '@/lib/capability/vocab'
-import { getBuildersForCapability, type CapabilityBuilder } from '@/lib/capability/practitioners'
+import { getSubjectsForCapability, type CapabilityBuilder, type CapabilityOrg } from '@/lib/capability/practitioners'
 import { buildItemListJsonLd } from '@/lib/jsonld/item-list'
-import { CANONICAL_HOST, personId } from '@/lib/jsonld/context'
+import { CANONICAL_HOST, personId, teamOrgId, agentOrgId } from '@/lib/jsonld/context'
 import { ATLAS_VERSION_DEFAULT } from '@/lib/atlas/roles'
 
 // Stage C: per-capability answer pages. Statically generated for every vocab
@@ -65,7 +65,8 @@ export default async function CapabilityTalentPage({ params }: { params: Promise
   const { entry, vocab } = resolved
   const admin = adminClient()
 
-  const builders = await getBuildersForCapability(admin, entry.slug, vocab)
+  const { builders, teams, agents } = await getSubjectsForCapability(admin, entry.slug, vocab)
+  const totalSubjects = builders.length + teams.length + agents.length
 
   // Related Atlas roles (from the crosswalk) + sibling capabilities (same layer).
   const { data: xw } = await admin
@@ -88,17 +89,17 @@ export default async function CapabilityTalentPage({ params }: { params: Promise
   const itemListLd = buildItemListJsonLd({
     listUrl: `${CANONICAL_HOST}/talent/${entry.slug}`,
     listName: `${entry.label} builders on ShipStacked, ranked by verified proof of work`,
-    items: builders.map((b) => ({
-      url: personId(b.username),
-      id: personId(b.username),
-      name: b.full_name?.trim() || b.username,
-    })),
+    items: [
+      ...builders.map((b) => ({ url: personId(b.username), id: personId(b.username), name: b.full_name?.trim() || b.username })),
+      ...teams.map((t) => ({ url: teamOrgId(t.slug), id: teamOrgId(t.slug), name: t.name })),
+      ...agents.map((a) => ({ url: agentOrgId(a.slug), id: agentOrgId(a.slug), name: a.name })),
+    ],
   })
 
-  const count = builders.length
+  const count = totalSubjects
   const lead = count > 0
-    ? `These are the ${count} ${entry.label} builder${count === 1 ? '' : 's'} on ShipStacked, ranked by verified proof of work. Each has shipped real, reachable ${entry.label} work — verified from public artifacts like GitHub repos and live deployments, not demos or claims. The order reflects the breadth, consistency, and recency of their proven work.`
-    : `No builders have proven ${entry.label} work on ShipStacked yet. Builders rank here by shipping real, verifiable ${entry.label} projects — confirmed from public artifacts, not claims. Check back as the directory grows.`
+    ? `These are the ${count} proof-verified ${entry.label} builders, teams, and agents on ShipStacked, ranked by verified proof of work. Each has shipped real, reachable ${entry.label} work — verified from public artifacts like GitHub repos and live deployments, not demos or claims. The order reflects the breadth, consistency, and recency of their proven work.`
+    : `No builders, teams, or agents have proven ${entry.label} work on ShipStacked yet. They rank here by shipping real, verifiable ${entry.label} projects — confirmed from public artifacts, not claims. Check back as the directory grows.`
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', padding: '2rem 1.5rem 4rem' }}>
@@ -123,10 +124,28 @@ export default async function CapabilityTalentPage({ params }: { params: Promise
           {lead}
         </p>
 
-        {count > 0 && (
-          <div style={{ display: 'grid', gap: '0.6rem' }}>
-            {builders.map((b) => <BuilderRow key={b.username} b={b} />)}
-          </div>
+        {builders.length > 0 && (
+          <Section label="Builders">
+            <div style={{ display: 'grid', gap: '0.6rem' }}>
+              {builders.map((b) => <BuilderRow key={b.username} b={b} />)}
+            </div>
+          </Section>
+        )}
+
+        {teams.length > 0 && (
+          <Section label="Teams & agencies">
+            <div style={{ display: 'grid', gap: '0.6rem' }}>
+              {teams.map((t) => <OrgRow key={`team-${t.slug}`} o={t} />)}
+            </div>
+          </Section>
+        )}
+
+        {agents.length > 0 && (
+          <Section label="Agents">
+            <div style={{ display: 'grid', gap: '0.6rem' }}>
+              {agents.map((a) => <OrgRow key={`agent-${a.slug}`} o={a} />)}
+            </div>
+          </Section>
         )}
 
         {relatedRoles.length > 0 && (
@@ -186,6 +205,30 @@ function BuilderRow({ b }: { b: CapabilityBuilder }) {
       </div>
       <span style={{ flexShrink: 0, fontSize: 12, color: '#6e6e73', background: '#f4f4f6', borderRadius: 999, padding: '0.2rem 0.6rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
         {b.receipt_count} proof receipt{b.receipt_count === 1 ? '' : 's'}
+      </span>
+    </Link>
+  )
+}
+
+function OrgRow({ o }: { o: CapabilityOrg }) {
+  const href = o.kind === 'team' ? `/team/${o.slug}` : `/agent/${o.slug}`
+  const icon = o.kind === 'team' ? '👥' : '🤖'
+  return (
+    <Link href={href} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.85rem 1rem', background: 'white', border: '1px solid #ececf0', borderRadius: 12, textDecoration: 'none' }}>
+      <div style={{ width: 42, height: 42, borderRadius: 10, flexShrink: 0, overflow: 'hidden', background: '#f4f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>
+        {o.logo_url ? <img src={o.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span aria-hidden="true">{icon}</span>}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: '#1d1d1f' }}>{o.name}</span>
+          {o.ranked
+            ? <span style={{ fontSize: 11, fontWeight: 600, color: '#1a7f37', background: '#e3f3e3', borderRadius: 999, padding: '0.1rem 0.5rem' }}>Ranked</span>
+            : <span style={{ fontSize: 11, fontWeight: 600, color: '#6e6e73', background: '#f4f4f6', borderRadius: 999, padding: '0.1rem 0.5rem' }}>Not yet ranked</span>}
+        </div>
+        <p style={{ fontSize: 13, color: '#6e6e73', margin: '0.1rem 0 0' }}>{o.kind === 'team' ? 'Team / agency' : 'Agent'}</p>
+      </div>
+      <span style={{ flexShrink: 0, fontSize: 12, color: '#6e6e73', background: '#f4f4f6', borderRadius: 999, padding: '0.2rem 0.6rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        {o.receipt_count} proof receipt{o.receipt_count === 1 ? '' : 's'}
       </span>
     </Link>
   )
