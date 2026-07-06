@@ -47,6 +47,22 @@ export default async function HirerDashboardPage() {
     .eq('email', user.email)
     .maybeSingle()
 
+  // A team owner (team_admins row) already has an org identity — their team.
+  // When they enable hiring they hire AS their team, so the /hirer dashboard
+  // must NOT push a second, overlapping company profile. Resolve team ownership
+  // + the team's slug/display name (mirrors getUserState / NavBar team query).
+  const { data: teamRow } = await supabase
+    .from('team_admins')
+    .select('team:entities!team_admins_team_entity_id_fkey(slug, display_name)')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+  const teamRel = (teamRow as any)?.team
+  const team = Array.isArray(teamRel) ? teamRel[0] : teamRel
+  const isTeamOwner = !!teamRow
+  const teamSlug: string | null = team?.slug ?? null
+  const teamName: string | null = team?.display_name ?? null
+
   const jobIds = (jobs || []).map(j => j.id)
   const { data: applications } = jobIds.length > 0
     ? await supabase
@@ -68,6 +84,9 @@ export default async function HirerDashboardPage() {
       jobs={jobs || []}
       hirerProfile={hirerProfile}
       applications={applications || []}
+      isTeamOwner={isTeamOwner}
+      teamSlug={teamSlug}
+      teamName={teamName}
     />
   )
 }

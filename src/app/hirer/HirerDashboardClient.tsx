@@ -46,12 +46,16 @@ function Tag({ label, selected, onClick }: { label: string; selected: boolean; o
 
 export default function HirerDashboardClient({
   email, renewsString, jobs, hirerProfile: initial, applications,
+  isTeamOwner = false, teamSlug = null, teamName = null,
 }: {
   email: string
   renewsString: string
   jobs: any[]
   hirerProfile: HirerProfile | null
   applications: any[]
+  isTeamOwner?: boolean
+  teamSlug?: string | null
+  teamName?: string | null
 }) {
   const [profile, setProfile] = useState<HirerProfile>(initial || { email, public: true })
   const [saving, setSaving] = useState(false)
@@ -66,6 +70,17 @@ export default function HirerDashboardClient({
 
   const isPublic = profile.public ?? true
   const [hasProfile, setHasProfile] = useState(!!initial?.id)
+
+  // A team owner already has an org identity (their team) and hires AS it — the
+  // gate for hiring is the subscription, not employer_profiles. So while they
+  // have no company profile, don't PUSH one: suppress the "set up your company
+  // profile" onboarding + warning banner and reframe it as optional. If they
+  // already created a company profile (hasProfile), nothing here applies.
+  const teamLabel = teamName || 'your team'
+  const suppressCompanyPush = isTeamOwner && !hasProfile
+  // Browse-talent / messages actions are gated on hasProfile for standalone
+  // hirers; a team owner hires as their team, so they're never gated.
+  const canAct = hasProfile || isTeamOwner
 
   useEffect(() => {
     posthog.capture('hirer_dashboard_viewed')
@@ -186,21 +201,27 @@ export default function HirerDashboardClient({
                 <p style={{ fontSize: 12, fontWeight: 700, color: '#0071e3', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Getting started</p>
                 <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.01em', marginBottom: '0.5rem' }}>Welcome to ShipStacked.</h3>
                 <p style={{ fontSize: 14, color: '#3d3d3f', lineHeight: 1.65, marginBottom: '0.75rem' }}>
-                  You have full access to the builder directory. To get started: browse talent, message builders you like, and set up your company profile so builders know who is reaching out.
+                  {isTeamOwner
+                    ? `You have full access to the builder directory. Browse talent and message builders you like. You're hiring as ${teamLabel}, so builders see your team's identity — no separate company profile needed.`
+                    : 'You have full access to the builder directory. To get started: browse talent, message builders you like, and set up your company profile so builders know who is reaching out.'}
                 </p>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <a href="/talent" style={{ fontSize: 13, padding: '0.5rem 1rem', background: '#0071e3', color: 'white', borderRadius: 980, textDecoration: 'none', fontWeight: 600 }}>Browse builders →</a>
-                  <a href="#company-form" style={{ fontSize: 13, padding: '0.5rem 1rem', background: 'white', color: '#0071e3', border: '1px solid #b8d9f8', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Set up company profile</a>
+                  {isTeamOwner
+                    ? (teamSlug && <a href={`/team/${teamSlug}`} style={{ fontSize: 13, padding: '0.5rem 1rem', background: 'white', color: '#0071e3', border: '1px solid #b8d9f8', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>View your team →</a>)
+                    : <a href="#company-form" style={{ fontSize: 13, padding: '0.5rem 1rem', background: 'white', color: '#0071e3', border: '1px solid #b8d9f8', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Set up company profile</a>}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0 }}>
                 {[
                   { n: '01', t: 'Browse the directory', done: false },
                   { n: '02', t: 'Message a builder', done: false },
-                  { n: '03', t: 'Set up your company profile', done: false },
+                  isTeamOwner
+                    ? { n: '03', t: `Hiring as ${teamLabel}`, done: true }
+                    : { n: '03', t: 'Set up your company profile', done: false },
                 ].map(s => (
                   <div key={s.n} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: 13, color: '#3d3d3f' }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#0071e3', fontFamily: 'monospace', width: 20 }}>{s.n}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: s.done ? '#1a7f37' : '#0071e3', fontFamily: 'monospace', width: 20 }}>{s.done ? '✓' : s.n}</span>
                     {s.t}
                   </div>
                 ))}
@@ -209,7 +230,7 @@ export default function HirerDashboardClient({
           </div>
         )}
 
-                {!hasProfile && (
+                {!hasProfile && !isTeamOwner && (
           <div style={{ background: '#fff8f0', border: '1px solid #fde68a', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
             <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
             <div style={{ flex: 1 }}>
@@ -220,7 +241,23 @@ export default function HirerDashboardClient({
           </div>
         )}
 
-        <a href={hasProfile ? "/talent" : "#company-form"} style={{ display: 'block', background: hasProfile ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
+        {/* Team owners hire AS their team — no required company profile. Light,
+            OPTIONAL note (not a warning); the company form below stays available
+            for anyone who wants a distinct employer identity. */}
+        {suppressCompanyPush && (
+          <div style={{ background: '#f5f5f7', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1rem 1.25rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+            <span style={{ fontSize: 20, flexShrink: 0 }}>🏢</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: '#1d1d1f', marginBottom: '0.2rem' }}>You&apos;re hiring as {teamLabel}.</p>
+              <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Jobs you post and messages you send as your team show your team&apos;s identity. You can also create a separate company profile below if you want a distinct employer identity — optional.</p>
+            </div>
+            {teamSlug && (
+              <a href={`/team/${teamSlug}`} style={{ fontSize: 13, padding: '0.5rem 1rem', background: 'white', color: '#1d1d1f', border: '1px solid #d2d2d7', borderRadius: 980, textDecoration: 'none', fontWeight: 500, whiteSpace: 'nowrap', flexShrink: 0 }}>View team →</a>
+            )}
+          </div>
+        )}
+
+        <a href={canAct ? "/talent" : "#company-form"} style={{ display: 'block', background: canAct ? '#0071e3' : '#6e6e73', borderRadius: 18, padding: '2rem 2.5rem', textDecoration: 'none', marginBottom: '1rem' }}>
           <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: '0.5rem' }}>Core product</p>
           <h2 style={{ fontSize: 26, fontWeight: 700, color: 'white', letterSpacing: '-0.02em', marginBottom: '0.4rem' }}>Search talent</h2>
           <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.8)', marginBottom: '1.5rem' }}>Browse and contact verified AI-native builders directly.</p>
@@ -233,10 +270,10 @@ export default function HirerDashboardClient({
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Browse talent</h3>
             <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>Find verified AI-native builders and message them directly.</p>
           </a>
-          <a href={hasProfile ? "/messages?as=hirer" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: hasProfile ? 1 : 0.5 }}>
+          <a href={canAct ? "/messages?as=hirer" : "#company-form"} style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none', opacity: canAct ? 1 : 0.5 }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Conversations</p>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1d1d1f', letterSpacing: '-0.02em', marginBottom: '0.3rem' }}>Messages</h3>
-            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{hasProfile ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
+            <p style={{ fontSize: 13, color: '#6e6e73', lineHeight: 1.5 }}>{canAct ? 'Your conversations with builders.' : 'Set up your profile first.'}</p>
           </a>
           <a href="/post-job" style={{ display: 'block', background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', textDecoration: 'none' }}>
             <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6e6e73', marginBottom: '0.5rem' }}>Hiring</p>
@@ -364,9 +401,14 @@ export default function HirerDashboardClient({
 
         <div style={{ borderTop: '0.5px solid #e0e0e5', paddingTop: '2rem', marginBottom: '2.5rem' }}>
           <div style={{ marginBottom: '0.5rem' }}>
-            <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>Company profile</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 600, color: '#1d1d1f', letterSpacing: '-0.01em' }}>
+              Company profile
+              {suppressCompanyPush && <span style={{ fontSize: 12, fontWeight: 500, color: '#6e6e73', marginLeft: '0.5rem' }}>· optional</span>}
+            </h2>
             <p style={{ fontSize: 13, color: '#6e6e73', marginTop: '0.25rem' }}>
-              {isPublic && profile.slug ? 'Public at shipstacked.com/company/' + profile.slug : 'Your profile is private — only you can see this.'}
+              {suppressCompanyPush
+                ? `Optional. You already hire as ${teamLabel} — only add this if you want a separate employer identity distinct from your team.`
+                : (isPublic && profile.slug ? 'Public at shipstacked.com/company/' + profile.slug : 'Your profile is private — only you can see this.')}
             </p>
           </div>
 
