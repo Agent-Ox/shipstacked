@@ -77,5 +77,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }))
 
-  return [...staticPages, ...profilePages, ...jobPages, ...companyPages, ...feedPages]
+  // Per-capability answer pages (Stage C) — one crawlable /talent/<slug> per
+  // canonical capability/tool/domain in the vocabulary.
+  const { data: caps } = await admin
+    .from('capability_vocab')
+    .select('slug')
+
+  const capabilityPages: MetadataRoute.Sitemap = (caps || []).map(cap => ({
+    url: `${base}/talent/${cap.slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.7,
+  }))
+
+  return [...staticPages, ...profilePages, ...jobPages, ...companyPages, ...feedPages, ...capabilityPages]
 }
