@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import HirerDashboardClient from './HirerDashboardClient'
 import BuyerOnlyEmptyState from './BuyerOnlyEmptyState'
@@ -41,27 +42,66 @@ export default async function HirerDashboardPage() {
     .eq('status', 'active')
     .order('created_at', { ascending: false })
 
-  const { data: hirerProfile } = await supabase
-    .from('employer_profiles')
-    .select('*')
-    .eq('email', user.email)
-    .maybeSingle()
-
-  // A team owner (team_admins row) already has an org identity — their team.
-  // When they enable hiring they hire AS their team, so the /hirer dashboard
-  // must NOT push a second, overlapping company profile. Resolve team ownership
-  // + the team's slug/display name (mirrors getUserState / NavBar team query).
+  // Resolve the user's ORG (team_admins → entity). A team owner already has an
+  // org identity — their team; when they hire, they hire AS it (6994de2). Stage 3:
+  // this org's team_profiles row IS the company profile the hirer form edits.
   const { data: teamRow } = await supabase
     .from('team_admins')
-    .select('team:entities!team_admins_team_entity_id_fkey(slug, display_name)')
+    .select('team_entity_id, team:entities!team_admins_team_entity_id_fkey(id, slug, display_name)')
     .eq('user_id', user.id)
     .limit(1)
     .maybeSingle()
   const teamRel = (teamRow as any)?.team
   const team = Array.isArray(teamRel) ? teamRel[0] : teamRel
   const isTeamOwner = !!teamRow
+  const orgEntityId: number | null = (teamRow as any)?.team_entity_id ?? null
   const teamSlug: string | null = team?.slug ?? null
   const teamName: string | null = team?.display_name ?? null
+
+  // Stage 3: load the company profile from the ORG's team_profiles row (mapped to
+  // the HirerProfile shape the form expects). team_profiles has no authenticated
+  // self-read RLS, so read it with the service-role client, scoped to the org the
+  // user is verified team_admin of (resolved above via self-read RLS). Pre-Stage-2
+  // hirers (no org) fall back to employer_profiles for compat until Stage 7.
+  let hirerProfile: any = null
+  if (orgEntityId != null) {
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const { data: op } = await admin
+      .from('team_profiles')
+      .select('*')
+      .eq('entity_id', orgEntityId)
+      .maybeSingle()
+    if (op) {
+      // team_profiles → HirerProfile (reverse of the /api/hirer/org-profile map).
+      hirerProfile = {
+        id: String(orgEntityId), // org profile row always exists → hasProfile=true
+        email: user.email!,
+        company_name: op.team_name ?? undefined,
+        about: op.description ?? undefined,
+        what_they_build: op.what_they_build ?? undefined,
+        location: op.location ?? undefined,
+        team_size: op.team_size_range ?? undefined,
+        website_url: op.website_url ?? undefined,
+        linkedin_url: op.linkedin_url ?? undefined,
+        x_url: op.x_url ?? undefined,
+        logo_url: op.logo_url ?? undefined,
+        industry: op.industry ?? undefined,
+        hiring_type: op.hiring_type ?? undefined,
+        public: op.published ?? false,
+        slug: teamSlug ?? undefined,
+      }
+    }
+  } else {
+    const { data: ep } = await supabase
+      .from('employer_profiles')
+      .select('*')
+      .eq('email', user.email)
+      .maybeSingle()
+    hirerProfile = ep
+  }
 
   const jobIds = (jobs || []).map(j => j.id)
   const { data: applications } = jobIds.length > 0
@@ -87,6 +127,7 @@ export default async function HirerDashboardPage() {
       isTeamOwner={isTeamOwner}
       teamSlug={teamSlug}
       teamName={teamName}
+      orgEntityId={orgEntityId}
     />
   )
 }

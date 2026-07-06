@@ -46,7 +46,7 @@ function Tag({ label, selected, onClick }: { label: string; selected: boolean; o
 
 export default function HirerDashboardClient({
   email, renewsString, jobs, hirerProfile: initial, applications,
-  isTeamOwner = false, teamSlug = null, teamName = null,
+  isTeamOwner = false, teamSlug = null, teamName = null, orgEntityId = null,
 }: {
   email: string
   renewsString: string
@@ -56,6 +56,7 @@ export default function HirerDashboardClient({
   isTeamOwner?: boolean
   teamSlug?: string | null
   teamName?: string | null
+  orgEntityId?: number | null
 }) {
   const [profile, setProfile] = useState<HirerProfile>(initial || { email, public: true })
   const [saving, setSaving] = useState(false)
@@ -129,24 +130,49 @@ export default function HirerDashboardClient({
     if (!profile.company_name?.trim()) { setError('Company name is required'); return }
     setSaving(true); setError(''); setSaved(false)
     try {
-      const supabase = createClient()
-      const slug = profile.slug || slugify(profile.company_name)
-      const data = {
-        email, company_name: profile.company_name, slug,
-        about: profile.about, what_they_build: profile.what_they_build,
-        location: profile.location, team_size: profile.team_size,
-        website_url: profile.website_url, linkedin_url: profile.linkedin_url,
-        x_url: profile.x_url, logo_url: profile.logo_url,
-        industry: profile.industry, hiring_type: profile.hiring_type,
-        public: profile.public ?? true,
-      }
-      if (hasProfile) {
-        await supabase.from('employer_profiles').update(data).eq('email', email)
+      if (orgEntityId != null) {
+        // Stage 3: org mode — the company profile IS the org's team_profiles row.
+        // team_profiles isn't writable by the browser client under RLS, so save
+        // via the server route (ownership-checked; maps fields → team_profiles).
+        const res = await fetch('/api/hirer/org-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_name: profile.company_name,
+            about: profile.about, what_they_build: profile.what_they_build,
+            location: profile.location, team_size: profile.team_size,
+            website_url: profile.website_url, linkedin_url: profile.linkedin_url,
+            x_url: profile.x_url, logo_url: profile.logo_url,
+            industry: profile.industry, hiring_type: profile.hiring_type,
+            public: profile.public ?? false,
+          }),
+        })
+        const body = await res.json()
+        if (!res.ok) throw new Error(body.error || 'Save failed')
+        setHasProfile(true)
+        if (body.slug) setProfile(p => ({ ...p, slug: body.slug }))
       } else {
-        const { data: inserted } = await supabase.from('employer_profiles').insert([data]).select('id').single()
-        if (inserted?.id) setHasProfile(true)
+        // Compat: pre-Stage-2 hirer with no org — direct employer_profiles write
+        // (unchanged; migrated to an org in Stage 7).
+        const supabase = createClient()
+        const slug = profile.slug || slugify(profile.company_name)
+        const data = {
+          email, company_name: profile.company_name, slug,
+          about: profile.about, what_they_build: profile.what_they_build,
+          location: profile.location, team_size: profile.team_size,
+          website_url: profile.website_url, linkedin_url: profile.linkedin_url,
+          x_url: profile.x_url, logo_url: profile.logo_url,
+          industry: profile.industry, hiring_type: profile.hiring_type,
+          public: profile.public ?? true,
+        }
+        if (hasProfile) {
+          await supabase.from('employer_profiles').update(data).eq('email', email)
+        } else {
+          const { data: inserted } = await supabase.from('employer_profiles').insert([data]).select('id').single()
+          if (inserted?.id) setHasProfile(true)
+        }
+        setProfile(p => ({ ...p, slug }))
       }
-      setProfile(p => ({ ...p, slug }))
       setSaved(true)
     } catch (e: any) {
       setError(e.message || 'Something went wrong')
