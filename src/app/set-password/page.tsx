@@ -69,7 +69,7 @@ export default function SetPasswordPage() {
       setLoading(false)
     } else {
       const { data: { user } } = await supabase.auth.getUser()
-      const modes = user ? await deriveModesClientSide(supabase, user) : { builder: false, hirer: false, client: false, admin: false, team_admin: false, agent_owner: false }
+      const modes = user ? await deriveModesClientSide(supabase, user) : { builder: false, hirer: false, member: false, client: false, admin: false, team_admin: false, agent_owner: false }
       window.location.href = routeAfterAuth(modes)
     }
   }
@@ -81,7 +81,7 @@ export default function SetPasswordPage() {
       supabase.from('subscriptions').select('id').eq('email', user.email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
       supabase.from('profiles').select('id').eq('email', user.email).maybeSingle(),
     ])
-    return { builder: !!profile, hirer: !!sub, client: metaRole === 'client', admin: metaRole === 'admin', team_admin: false, agent_owner: false }
+    return { builder: !!profile, hirer: !!sub, member: !!sub, client: metaRole === 'client', admin: metaRole === 'admin', team_admin: false, agent_owner: false }
   }
 
   const inputStyle: React.CSSProperties = {

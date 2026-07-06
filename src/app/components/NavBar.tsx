@@ -17,7 +17,7 @@ type NavUser = {
   companyPublic: boolean
 }
 
-const EMPTY_MODES: EntityModes = { builder: false, hirer: false, client: false, admin: false, team_admin: false, agent_owner: false }
+const EMPTY_MODES: EntityModes = { builder: false, hirer: false, member: false, client: false, admin: false, team_admin: false, agent_owner: false }
 
 export default function NavBar() {
   const [navUser, setNavUser] = useState<NavUser | null>(null)
@@ -138,6 +138,7 @@ export default function NavBar() {
       const modes: EntityModes = {
         builder: !!profile,
         hirer: !!sub,
+        member: !!sub,
         client: metaRole === 'client',
         admin: metaRole === 'admin',
         team_admin: !!teamAdmin,

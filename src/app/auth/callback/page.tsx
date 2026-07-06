@@ -28,6 +28,7 @@ async function deriveModesClientSide(supabase: ReturnType<typeof createClient>, 
   return {
     builder: !!profile,
     hirer: !!sub,
+    member: !!sub,
     client: metaRole === 'client',
     admin: metaRole === 'admin',
     // Client-side derivation does not query team/agent; routeAfterAuth sends
