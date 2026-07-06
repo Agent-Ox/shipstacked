@@ -104,8 +104,11 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
 
   const admin = adminClient()
 
-  // Check paid hirer subscription
-  let isPaidHirer = false
+  // Active membership (any paid user with a full_access subscription). Members
+  // see the FULL directory (vs the 6-profile teaser). Same subscription query as
+  // before — the semantics are now "member", not "hirer": a paying BUILDER gets
+  // the full directory too, not just hirers. (cap-stage 2)
+  let isMember = false
   if (user) {
     const now = new Date().toISOString()
     const { data: sub } = await supabase
@@ -116,7 +119,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
       .eq('product', 'full_access')
       .or(`expires_at.is.null,expires_at.gt.${now}`)
       .maybeSingle()
-    isPaidHirer = !!sub
+    isMember = !!sub
   }
 
   // Quality-ranked builders (Formula E).
@@ -171,8 +174,8 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     .filter(b => allBuilders.some((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)))
     .map(b => ({ value: b.key, label: b.label, count: profiles.filter((p: any) => bucketsForEvents(p.eventTypes || []).includes(b.key)).length }))
   const verifiedCount = profiles.filter((p: any) => p.verified).length
-  const displayProfiles = isPaidHirer ? profiles : profiles.slice(0, 6)
-  const isTeaser = !isPaidHirer
+  const displayProfiles = isMember ? profiles : profiles.slice(0, 6)
+  const isTeaser = !isMember
 
   // Total unfiltered count for the header (only when filters are active)
   const hasFilters = !!(filterProfession || filterAvailability || filterVerified || filterCluster || filterShipped)
@@ -180,7 +183,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
 
   // Fetch hirer profile to check if they have set up their company
   let hasHirerProfile = false
-  if (isPaidHirer && user) {
+  if (isMember && user) {
     const { data: hirerProfile } = await admin
       .from('employer_profiles')
       .select('id, company_name')
@@ -191,7 +194,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
 
   // Fetch saved profile IDs for this hirer
   let savedIds: string[] = []
-  if (isPaidHirer && user) {
+  if (isMember && user) {
     const { data: saved } = await admin
       .from('saved_profiles')
       .select('profile_id')
@@ -225,7 +228,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
           type="builder"
           profiles={displayProfiles}
           savedIds={savedIds}
-          isPaidHirer={isPaidHirer}
+          isPaidHirer={isMember}
           isTeaser={isTeaser}
           verifiedCount={verifiedCount}
           totalCount={profiles.length}

@@ -23,9 +23,9 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Handle ?new=profileId — find existing or create new conversation (hirer only)
+  // Handle ?new=profileId — find existing or create new conversation (member only)
   if (newProfileId) {
-    if (!modes.hirer) return NextResponse.json({ error: 'Hirer mode required' }, { status: 403 })
+    if (!modes.member) return NextResponse.json({ error: 'An active subscription is required to message members' }, { status: 403 })
 
     const { data: existing } = await admin
       .from('conversations')
@@ -229,9 +229,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'employer_email and builder_profile_id required for new conversation' }, { status: 400 })
     }
 
-    // Paywall: only a paid hirer, acting as themselves, may START a conversation.
-    if (!modes.hirer) {
-      return NextResponse.json({ error: 'An active hirer subscription is required to message builders' }, { status: 403 })
+    // Paywall: only a paid member, acting as themselves, may START a conversation.
+    if (!modes.member) {
+      return NextResponse.json({ error: 'An active subscription is required to message members' }, { status: 403 })
     }
     if (employer_email !== user.email) {
       return NextResponse.json({ error: 'employer_email must match the authenticated user' }, { status: 403 })
