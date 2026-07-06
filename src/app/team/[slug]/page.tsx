@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { extractHost, isSharedDocHost } from '@/lib/ranking/quality-score'
 import { buildTeamOrgJsonLd } from '@/lib/jsonld/team-org'
+import { buildHirerOrgJsonLd } from '@/lib/jsonld/hirer-org'
 import { getAtlasRolesForSubject } from '@/lib/atlas/matching'
 import { getTeamMembers } from '@/lib/team/members'
 import ContactTeamButton from './ContactTeamButton'
@@ -38,6 +39,14 @@ interface TeamProfile {
   founded_year: number | null
   team_size_range: string | null
   verified: boolean
+  // Stage 1 capability flags + hiring-lens columns (select('*') returns them).
+  offers_services: boolean
+  hires: boolean
+  what_they_build: string | null
+  industry: string | null
+  hiring_type: string | null
+  linkedin_url: string | null
+  x_url: string | null
 }
 
 async function resolveTeam(
@@ -48,7 +57,10 @@ async function resolveTeam(
     .from('entities')
     .select('id, slug, display_name, owner_user_id')
     .eq('slug', slug)
-    .eq('kind', 'team')
+    // Unified org page (Stage 4): serves both service teams (kind='team') and
+    // hiring orgs (kind='org', e.g. Stage-2 buyers). The lens rendered is driven
+    // by the team_profiles capability flags, not the entity kind.
+    .in('kind', ['team', 'org'])
     .maybeSingle()
   if (!entity) return null
   const { data: profile } = await admin
@@ -151,26 +163,65 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
   const teamAtlasRows = await getAtlasRolesForSubject(admin, entity.id)
   const teamAtlasRoles = [...new Set(teamAtlasRows.map((r) => r.atlas_role))].sort()
 
-  const jsonLd = buildTeamOrgJsonLd({
-    slug: entity.slug,
-    team_name: profile.team_name,
-    tagline: profile.tagline,
-    description: profile.description,
-    website_url: profile.website_url,
-    logo_url: profile.logo_url,
-    location: profile.location,
-    services,
-    team_size_range: profile.team_size_range,
-    founded_year: profile.founded_year,
-    verified: profile.verified,
-    l1_receipt_count: l1Count,
-    members: memberList.filter((m) => m.username).map((m) => ({ username: m.username! })),
-    atlasRoles: teamAtlasRoles,
-  })
+  // ── Capability lenses (Stage 4). A service org renders the service lens; a
+  // hiring org renders the hiring lens; an org with both renders both. Existing
+  // teams are offers_services=true / hires=false (Stage-1 default) → service lens
+  // only, byte-unchanged.
+  const offersServices = profile.offers_services
+  const hires = profile.hires
+
+  // Hiring lens — the org's OWN open roles (entity-attributed). Email-posted jobs
+  // fold in at Stage 5; today subject_entity_id is the org identity on jobs.
+  let orgJobs: any[] = []
+  if (hires) {
+    const { data: jd } = await admin
+      .from('jobs')
+      .select('id, role_title, location, employment_type, salary_range')
+      .eq('subject_entity_id', entity.id)
+      .eq('status', 'active')
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+    orgJobs = jd ?? []
+  }
+
+  // Service-lens JSON-LD (Organization/team) when offers_services; hiring-lens
+  // JSON-LD (Organization/Employer) when hires. Both when both.
+  const serviceLd = offersServices
+    ? buildTeamOrgJsonLd({
+        slug: entity.slug,
+        team_name: profile.team_name,
+        tagline: profile.tagline,
+        description: profile.description,
+        website_url: profile.website_url,
+        logo_url: profile.logo_url,
+        location: profile.location,
+        services,
+        team_size_range: profile.team_size_range,
+        founded_year: profile.founded_year,
+        verified: profile.verified,
+        l1_receipt_count: l1Count,
+        members: memberList.filter((m) => m.username).map((m) => ({ username: m.username! })),
+        atlasRoles: teamAtlasRoles,
+      })
+    : null
+  const hiringLd = hires
+    ? buildHirerOrgJsonLd({
+        slug: entity.slug,
+        company_name: profile.team_name,
+        about: profile.description,
+        website_url: profile.website_url,
+        logo_url: profile.logo_url,
+        location: profile.location,
+        linkedin_url: profile.linkedin_url,
+        x_url: profile.x_url,
+        industry: profile.industry,
+      })
+    : null
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {serviceLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }} />}
+      {hiringLd && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(hiringLd) }} />}
       <style>{`
         .t-card { background: #111118; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; transition: border-color 0.2s; }
         .t-card:hover { border-color: rgba(255,255,255,0.15); }
@@ -232,7 +283,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
           </div>
 
           {/* Services */}
-          {services.length > 0 && (
+          {offersServices && services.length > 0 && (
             <div className="t-card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
               <p className="t-label">Services</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -254,8 +305,49 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
             </div>
           )}
 
+          {/* Hiring lens (hires=true) — what they build + hiring info + open roles */}
+          {hires && (
+            <>
+              {profile.what_they_build && (
+                <div className="t-card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
+                  <p className="t-label">What they build</p>
+                  <p style={{ fontSize: 15, color: '#8888a0', lineHeight: 1.8, fontWeight: 300 }}>{profile.what_they_build}</p>
+                </div>
+              )}
+              {(profile.industry || profile.hiring_type) && (
+                <div className="t-card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
+                  <p className="t-label">Hiring</p>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {profile.industry && <span className="t-tag">{profile.industry}</span>}
+                    {profile.hiring_type && <span className="t-tag">{profile.hiring_type}</span>}
+                  </div>
+                </div>
+              )}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <p className="t-label">Open roles {orgJobs.length > 0 ? `(${orgJobs.length})` : ''}</p>
+                {orgJobs.length === 0 ? (
+                  <div className="t-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: 14, color: '#8888a0' }}>No open roles right now.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {orgJobs.map((job: any) => (
+                      <a key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
+                        <div className="t-card" style={{ padding: '1.25rem 1.5rem' }}>
+                          <p style={{ fontSize: 15, fontWeight: 600, marginBottom: '0.3rem', letterSpacing: '-0.01em' }}>{job.role_title}</p>
+                          <p style={{ fontSize: 13, color: '#8888a0' }}>{[job.location, job.employment_type].filter(Boolean).join(' · ')}{job.salary_range ? ` · ${job.salary_range}` : ''}</p>
+                        </div>
+                      </a>
+                    ))}
+                    <a href="/jobs" className="t-link" style={{ fontSize: 13, fontWeight: 500, marginTop: '0.25rem' }}>All roles →</a>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
           {/* Proof of work */}
-          {l1Count > 0 && (
+          {offersServices && l1Count > 0 && (
             <div className="t-card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
               <p className="t-label">Proof of work</p>
               <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
@@ -278,7 +370,7 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
           )}
 
           {/* Recent shipped */}
-          {receipts.length > 0 && (
+          {offersServices && receipts.length > 0 && (
             <div style={{ marginBottom: '1.5rem' }}>
               <p className="t-label">Recent shipped work <span style={{ color: '#555568', fontWeight: 400 }}>({receipts.length})</span></p>
               {receipts.map((r: any) => (
@@ -309,7 +401,8 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
             </div>
           )}
 
-          {/* People */}
+          {/* People (service lens) */}
+          {offersServices && (
           <div style={{ marginBottom: '1.5rem' }}>
             <p className="t-label">People</p>
             {memberList.length === 0 ? (
@@ -341,9 +434,10 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
               </div>
             )}
           </div>
+          )}
 
-          {/* Contact CTA */}
-          {profile.contact_email && (
+          {/* Contact CTA (service lens) */}
+          {offersServices && profile.contact_email && (
             <div style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(167,139,250,0.08) 100%)', border: '1px solid rgba(108,99,255,0.25)', borderRadius: 16, padding: '2rem', textAlign: 'center' }}>
               <p style={{ fontSize: 13, color: '#a78bfa', fontWeight: 600, letterSpacing: '0.05em', marginBottom: '0.5rem', fontFamily: 'monospace' }}>READY TO HIRE?</p>
               <p style={{ fontSize: 17, fontWeight: 600, marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>Hire {profile.team_name}</p>
