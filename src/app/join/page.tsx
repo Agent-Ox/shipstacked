@@ -115,7 +115,8 @@ export default function JoinPage() {
   const [agentCapabilities, setAgentCapabilities] = useState('') // textarea, one per line
   const [agentFocus, setAgentFocus] = useState('')
 
-  // Card 4 buyer fields (none beyond email/password — minimal per D4 logic)
+  // Card 4 buyer fields — optional company name (Stage 2: buyer becomes an org).
+  const [companyName, setCompanyName] = useState('')
 
   // Initial check: existing session + existing profile?
   useEffect(() => {
@@ -372,7 +373,17 @@ export default function JoinPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/join/buyer', { method: 'POST' })
+      // Optional company name → first-class org (server defaults from email when
+      // absent). Slug is auto-derived from the name; server uniquifies/validates.
+      const trimmedCompany = companyName.trim()
+      const res = await fetch('/api/join/buyer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_name: trimmedCompany || undefined,
+          slug: trimmedCompany ? deriveSignupSlug(trimmedCompany) : undefined,
+        }),
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Buyer signup failed')
       try {
@@ -721,6 +732,11 @@ export default function JoinPage() {
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Email</label>
         <input type="email" value={email} disabled style={{ ...inputStyle, background: '#f5f5f7', color: '#6e6e73' }} />
+      </div>
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={labelStyle}>Company name</label>
+        <input autoComplete="organization" type="text" placeholder="Acme AI" value={companyName} onChange={e => setCompanyName(e.target.value)} style={inputStyle} />
+        <p style={{ fontSize: 12, color: '#6e6e73', marginTop: '0.3rem' }}>Optional — you can set this later.</p>
       </div>
       <ul style={{ paddingLeft: '1.25rem', marginBottom: '1rem', color: '#3d3d3f', fontSize: 14, lineHeight: 1.7 }}>
         <li>Browse verified builders free</li>
