@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
+import { normalizeUrl } from '@/lib/url/normalize'
 
 const AI_TOOLS = ['Cursor', 'Replit', 'Bolt', 'Lovable', 'v0', 'Windsurf', 'Midjourney', 'ElevenLabs', 'Pinecone', 'Weaviate', 'Claude Code']
 const FRAMEWORKS = ['Next.js', 'React', 'Vue', 'LangChain', 'LlamaIndex', 'n8n', 'Make', 'Zapier', 'Supabase', 'Firebase', 'FastAPI', 'Node.js', 'Vercel', 'AWS', 'Docker']
@@ -219,7 +220,7 @@ export default function JoinPage() {
         role: role.trim(),
         location: location.trim() || null,
         bio: bio.trim(),
-        github_url: githubUrl.trim() || null,
+        github_url: normalizeUrl(githubUrl),
         x_url: xUrl.trim() || null,
         published: true,
         verified: false,
@@ -236,7 +237,7 @@ export default function JoinPage() {
             profile_id: profile.id,
             title: projectTitle.trim(),
             description: projectOutcome.trim() || null,
-            project_url: projectUrl.trim() || null,
+            project_url: normalizeUrl(projectUrl),
             display_order: 0,
           }])
           if (projErr) console.warn('[builder signup] project insert failed:', projErr)

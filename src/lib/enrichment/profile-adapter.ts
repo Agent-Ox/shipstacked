@@ -62,6 +62,7 @@ import {
 } from '@/services/atlas-classifier'
 import { findOrCreateHumanEntity, type EntityRow } from '@/lib/entities'
 import { publishProofReceipt, type PasteDraft } from '@/lib/paste/publish'
+import { normalizeUrl } from '@/lib/url/normalize'
 
 // Batch 5: dedupe_key format = sha256(subject_id|normalized_artifact_url|event_type).
 // Both the adapter (write site) and /api/enrich orchestration must use this
@@ -362,7 +363,10 @@ interface ValidationOutcome {
 function validateAndGuard(rawUrl: string): ValidationOutcome {
   let parsed: URL
   try {
-    parsed = validateUrl(rawUrl.trim())
+    // Stage B3: heal schemeless raw-stored URLs (e.g. "github.com/me") by
+    // prepending https:// before validation. validateUrl itself is unchanged
+    // (still strict https-only); null → '' preserves the prior skip behavior.
+    parsed = validateUrl(normalizeUrl(rawUrl) ?? '')
   } catch (err) {
     const detail = err instanceof InvalidUrlError ? err.reason : String(err)
     return { ok: false, skip: { reason: 'malformed_url', detail } }

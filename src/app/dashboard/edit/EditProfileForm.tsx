@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { normalizeUrl } from '@/lib/url/normalize'
 
 type TeamResult = { entity_id: number; slug: string; name: string; logo_url: string | null; tagline: string | null }
 type InitialTeam = { entity_id: number; slug: string; team_name: string; logo_url: string | null }
@@ -304,7 +305,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
         .from('profiles')
         .update({
           full_name: fullName, role, location, availability, bio, about,
-          github_url: githubUrl, x_url: xUrl, linkedin_url: linkedinUrl, website_url: websiteUrl,
+          github_url: normalizeUrl(githubUrl), x_url: xUrl, linkedin_url: linkedinUrl, website_url: normalizeUrl(websiteUrl),
           primary_profession: primaryProfession,
           seniority,
           work_type: workType,
@@ -330,7 +331,7 @@ export default function EditProfileForm({ profile, projects: initialProjects, sk
             description: p.description,
             prompt_approach: p.prompt_approach,
             outcome: p.outcome,
-            project_url: p.project_url,
+            project_url: normalizeUrl(p.project_url),
             display_order: i,
           }))
         )
