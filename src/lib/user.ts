@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from './supabase-server'
+import { createClient } from '@supabase/supabase-js'
 
 export type EntityModes = {
   builder: boolean        // has a profiles row
@@ -18,6 +19,12 @@ export type EntityRefs = {
   team_slug?: string
   agent_entity_id?: number
   agent_slug?: string
+  // Stage 2 unification: the owned org's capability flags (team_profiles). An
+  // org that offers_services is a service team/agency; one that only hires is a
+  // pure buyer/hirer org. Resolved via the service-role client below because
+  // team_profiles has no authenticated self-read RLS.
+  org_offers_services?: boolean
+  org_hires?: boolean
 }
 
 export type ResolvedUser = {
@@ -102,6 +109,32 @@ export async function getUserState(): Promise<UserState> {
     const teamRel = teamRow?.team
     const team_slug = (Array.isArray(teamRel) ? teamRel[0]?.slug : teamRel?.slug) ?? undefined
 
+    // Owned org capability flags. The cookie client above CANNOT read
+    // team_profiles (no authenticated self-read RLS — only team_admins has a
+    // self-read policy), so read the flags with the service-role client keyed by
+    // the resolved org entity_id. Only fires for org owners; defensive — any
+    // failure leaves the flags undefined rather than breaking mode resolution.
+    let org_offers_services: boolean | undefined
+    let org_hires: boolean | undefined
+    const teamEntityId = teamRow?.team_entity_id
+    if (teamEntityId != null) {
+      try {
+        const svc = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        )
+        const { data: orgProfile } = await svc
+          .from('team_profiles')
+          .select('offers_services, hires')
+          .eq('entity_id', teamEntityId)
+          .maybeSingle()
+        if (orgProfile) {
+          org_offers_services = (orgProfile as any).offers_services ?? undefined
+          org_hires = (orgProfile as any).hires ?? undefined
+        }
+      } catch { /* leave flags undefined — never break modes over a flag read */ }
+    }
+
     const modes: EntityModes = {
       builder: !!profile,
       hirer: !!subscription,
@@ -118,6 +151,8 @@ export async function getUserState(): Promise<UserState> {
       team_slug,
       agent_entity_id: agentRow?.id ?? undefined,
       agent_slug: agentRow?.slug ?? undefined,
+      org_offers_services,
+      org_hires,
     }
 
     return { user, modes, refs, profile, subscription }

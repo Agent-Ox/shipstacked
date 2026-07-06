@@ -89,9 +89,16 @@ export default function NavBar() {
       links.push({ label: 'Edit builder profile', href: '/dashboard/edit' })
     }
 
-    // Pure team owner → "Dashboard". A builder already has "Builder dashboard"
-    // (same /dashboard, now rendering both pillars), so don't double it up.
-    if (modes.team_admin && !modes.builder) {
+    // Pure service-org owner → "Dashboard" (the team command center). A Stage-2
+    // buyer also owns an org (team_admin=true) but offers no services and must
+    // NOT get this link — they keep "Hirer dashboard" from the modes.hirer
+    // branch above. The canonical capability is team_profiles.offers_services
+    // (resolved server-side in getUserState refs.org_offers_services), but NavBar
+    // is a self-resolving client component and team_profiles has no authenticated
+    // self-read RLS, so gate on the client-visible equivalent: a buyer org is
+    // always role='client'; a service-team/agency owner never is. (A builder
+    // already has "Builder dashboard", so !modes.builder avoids doubling up.)
+    if (modes.team_admin && !modes.builder && !modes.client) {
       links.push({ label: 'Dashboard', href: '/dashboard' })
     }
 
