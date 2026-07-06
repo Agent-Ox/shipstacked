@@ -9,6 +9,8 @@ import { getRankedTeams } from '@/lib/ranking/get-ranked-teams'
 import { getRankedAgents } from '@/lib/ranking/get-ranked-agents'
 import { CLUSTER_LABELS, CLUSTER_ORDER, SHIPPED_BUCKETS, bucketsForEvents } from '@/lib/ranking/facets'
 import { findAtlasMatches } from '@/lib/atlas/matching'
+import { loadVocab, type CapabilityLayer } from '@/lib/capability/vocab'
+import { getSubjectsForCapability } from '@/lib/capability/practitioners'
 
 export const metadata: Metadata = {
   title: 'AI-Native Builder Directory | ShipStacked',
@@ -97,12 +99,28 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const filterVerified = params.verified === 'true'
   const filterCluster = params.cluster || ''   // Atlas cluster letter (Batch 8)
   const filterShipped = params.shipped || ''    // Shipped bucket key (Batch 8)
+  const filterCapabilityRaw = params.capability || '' // Canonical capability slug (Stage E)
   const filterSort = params.sort || 'quality'
 
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   const admin = adminClient()
+
+  // Capability filter (Stage E) — validate against the canonical vocabulary; an
+  // unknown slug is ignored (no filter). The grouped facet is always rendered
+  // (one cheap vocab read); the heavier capability→subjects match only runs when
+  // a capability is actually active.
+  const vocab = await loadVocab(admin)
+  const filterCapability = filterCapabilityRaw && vocab.some(v => v.slug === filterCapabilityRaw) ? filterCapabilityRaw : ''
+  const CAP_LAYERS: { layer: CapabilityLayer; label: string }[] = [
+    { layer: 'capability', label: 'Capabilities' },
+    { layer: 'tool', label: 'Tools' },
+    { layer: 'domain', label: 'Domains' },
+  ]
+  const capabilityGroups = CAP_LAYERS
+    .map(g => ({ layer: g.layer as string, label: g.label, options: vocab.filter(v => v.layer === g.layer).map(v => ({ slug: v.slug, label: v.label })).sort((a, b) => a.label.localeCompare(b.label)) }))
+    .filter(g => g.options.length > 0)
 
   // Active membership (any paid user with a full_access subscription). Members
   // see the FULL directory (vs the 6-profile teaser). Same subscription query as
@@ -147,6 +165,14 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
     )
   }
 
+  // Capability match set (Stage E) — same logic as the /talent/[slug] pages
+  // (crosswalk ∪ resolved freetext). Only computed when a capability is active.
+  let capabilityMatchedUsernames: Set<string> | null = null
+  if (filterCapability) {
+    const subj = await getSubjectsForCapability(admin, filterCapability, vocab)
+    capabilityMatchedUsernames = new Set(subj.builders.map(b => b.username))
+  }
+
   // Filters applied in JS (small dataset; keeps one ranking source of truth).
   // `verified` is a filter + badge only — no longer a sort key (D3).
   let profiles = allBuilders
@@ -156,6 +182,8 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   // Cluster — matching engine (L1-only, §G.1). Shipped stays JS (bucketsForEvents).
   if (filterCluster) profiles = profiles.filter((p: any) => clusterMatchedProfiles?.has(p.id))
   if (filterShipped) profiles = profiles.filter((p: any) => bucketsForEvents(p.eventTypes || []).includes(filterShipped))
+  // Capability — the searchable capability/tool/domain axis (Stage E). Composes.
+  if (filterCapability && capabilityMatchedUsernames) profiles = profiles.filter((p: any) => capabilityMatchedUsernames!.has(p.username))
 
   // Default sort is the quality order from getRankedBuilders; "newest" overrides.
   if (filterSort === 'newest') {
@@ -183,7 +211,7 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const isTeaser = !isMember
 
   // Total unfiltered count for the header (only when filters are active)
-  const hasFilters = !!(filterProfession || filterAvailability || filterVerified || filterCluster || filterShipped)
+  const hasFilters = !!(filterProfession || filterAvailability || filterVerified || filterCluster || filterShipped || filterCapability)
   const totalUnfilteredCount = hasFilters ? totalPublished : profiles.length
 
   // Fetch hirer profile to check if they have set up their company
@@ -242,7 +270,8 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
           hasHirerProfile={hasHirerProfile}
           clusterFacets={clusterFacets}
           shippedFacets={shippedFacets}
-          filters={{ profession: filterProfession, availability: filterAvailability, verified: filterVerified, sort: filterSort, cluster: filterCluster, shipped: filterShipped }}
+          capabilityGroups={capabilityGroups}
+          filters={{ profession: filterProfession, availability: filterAvailability, verified: filterVerified, sort: filterSort, cluster: filterCluster, shipped: filterShipped, capability: filterCapability }}
         />
       </div>
     </div>

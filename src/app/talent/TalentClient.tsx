@@ -17,7 +17,8 @@ const PROFESSIONS = ['Developer', 'Designer', 'Product Manager', 'Consultant', '
 const AVAILABILITIES = ['freelance', 'full-time', 'contract', 'part-time', 'open']
 
 type FacetOpt = { value: string; label: string; count: number }
-type TalentFilters = { profession: string; availability: string; verified: boolean; sort: string; cluster: string; shipped: string }
+type TalentFilters = { profession: string; availability: string; verified: boolean; sort: string; cluster: string; shipped: string; capability: string }
+type CapabilityGroup = { layer: string; label: string; options: { slug: string; label: string }[] }
 
 function vColor(score: number) {
   return score >= 75 ? '#1a7f37' : score >= 50 ? '#0071e3' : score >= 25 ? '#bf7e00' : '#6e6e73'
@@ -42,7 +43,7 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
 }
 
 function FilterDrawer({
-  open, onClose, filters, onApply, clusterFacets, shippedFacets,
+  open, onClose, filters, onApply, clusterFacets, shippedFacets, capabilityGroups,
 }: {
   open: boolean
   onClose: () => void
@@ -50,14 +51,15 @@ function FilterDrawer({
   onApply: (f: TalentFilters) => void
   clusterFacets: FacetOpt[]
   shippedFacets: FacetOpt[]
+  capabilityGroups: CapabilityGroup[]
 }) {
   const [draft, setDraft] = useState(filters)
 
   React.useEffect(() => {
     setDraft(filters)
-  }, [filters.profession, filters.availability, filters.verified, filters.sort, filters.cluster, filters.shipped])
+  }, [filters.profession, filters.availability, filters.verified, filters.sort, filters.cluster, filters.shipped, filters.capability])
 
-  const activeCount = [draft.profession, draft.availability, draft.verified, draft.cluster, draft.shipped].filter(Boolean).length
+  const activeCount = [draft.profession, draft.availability, draft.verified, draft.cluster, draft.shipped, draft.capability].filter(Boolean).length
 
   function SheetChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
     return (
@@ -142,6 +144,24 @@ function FilterDrawer({
           </div>
         )}
 
+        {capabilityGroups.length > 0 && (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Capability / tool / domain</p>
+            <select
+              value={draft.capability}
+              onChange={e => setDraft(d => ({ ...d, capability: e.target.value }))}
+              style={{ width: '100%', padding: '0.7rem 0.9rem', borderRadius: 12, border: '1.5px solid #d2d2d7', fontSize: 14, fontFamily: 'inherit', background: 'white', color: '#1d1d1f' }}
+            >
+              <option value="">Any capability</option>
+              {capabilityGroups.map(g => (
+                <optgroup key={g.layer} label={g.label}>
+                  {g.options.map(o => <option key={o.slug} value={o.slug}>{o.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div style={{ marginBottom: '1.5rem' }}>
           <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Sort by</p>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -163,7 +183,7 @@ function FilterDrawer({
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           {activeCount > 0 && (
             <button
-              onClick={() => { const reset = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '' }; setDraft(reset); onApply(reset) }}
+              onClick={() => { const reset = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '', capability: '' }; setDraft(reset); onApply(reset) }}
               style={{ flex: 1, padding: '0.875rem', borderRadius: 12, border: '1.5px solid #d2d2d7', background: 'white', fontSize: 15, fontWeight: 500, color: '#3d3d3f', cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Clear all
@@ -361,8 +381,8 @@ export default function TalentClient({
   type = 'builder',
   profiles = [], savedIds: initialSavedIds = [], isPaidHirer = false, isTeaser = false,
   verifiedCount = 0, totalCount = 0, totalUnfilteredCount = 0, user = null, hasHirerProfile = false,
-  filters = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '' },
-  clusterFacets = [], shippedFacets = [],
+  filters = { profession: '', availability: '', verified: false, sort: 'quality', cluster: '', shipped: '', capability: '' },
+  clusterFacets = [], shippedFacets = [], capabilityGroups = [],
   teams = [],
   agents = [],
   activeCluster = '',
@@ -380,6 +400,7 @@ export default function TalentClient({
   filters?: TalentFilters
   clusterFacets?: FacetOpt[]
   shippedFacets?: FacetOpt[]
+  capabilityGroups?: CapabilityGroup[]
   teams?: RankedTeam[]
   agents?: RankedAgent[]
   activeCluster?: string
@@ -405,6 +426,7 @@ export default function TalentClient({
     if (merged.verified) p.set('verified', 'true')
     if (merged.cluster) p.set('cluster', merged.cluster)
     if (merged.shipped) p.set('shipped', merged.shipped)
+    if (merged.capability) p.set('capability', merged.capability)
     if (merged.sort && merged.sort !== 'quality') p.set('sort', merged.sort)
     const qs = p.toString()
     startTransition(() => { router.push('/talent' + (qs ? '?' + qs : '')) })
@@ -422,13 +444,14 @@ export default function TalentClient({
     if (f.verified) p.set('verified', 'true')
     if (f.cluster) p.set('cluster', f.cluster)
     if (f.shipped) p.set('shipped', f.shipped)
+    if (f.capability) p.set('capability', f.capability)
     if (f.sort && f.sort !== 'quality') p.set('sort', f.sort)
     const qs = p.toString()
     startTransition(() => { router.push('/talent' + (qs ? '?' + qs : '')) })
   }
 
-  const hasActiveFilters = !!(filters.profession || filters.availability || filters.verified || filters.cluster || filters.shipped)
-  const activeFilterCount = [filters.profession, filters.availability, filters.verified, filters.cluster, filters.shipped].filter(Boolean).length
+  const hasActiveFilters = !!(filters.profession || filters.availability || filters.verified || filters.cluster || filters.shipped || filters.capability)
+  const activeFilterCount = [filters.profession, filters.availability, filters.verified, filters.cluster, filters.shipped, filters.capability].filter(Boolean).length
   const shortlisted = profiles.filter(p => savedIds.includes(p.id))
   const displayProfiles = tab === 'shortlist' ? shortlisted : profiles
 
@@ -601,6 +624,23 @@ export default function TalentClient({
             ))}
           </div>
         )}
+        {capabilityGroups.length > 0 && (
+          <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: '#aeaeb2', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.2rem' }}>Capability</span>
+            <select
+              value={filters.capability}
+              onChange={e => pushFilters({ capability: e.target.value })}
+              style={{ padding: '0.4rem 0.7rem', borderRadius: 980, border: `1.5px solid ${filters.capability ? '#1d1d1f' : '#d2d2d7'}`, fontSize: 14, fontFamily: 'inherit', background: filters.capability ? '#1d1d1f' : 'white', color: filters.capability ? 'white' : '#3d3d3f', cursor: 'pointer', fontWeight: filters.capability ? 600 : 400 }}
+            >
+              <option value="" style={{ color: '#1d1d1f', background: 'white' }}>Any capability / tool / domain</option>
+              {capabilityGroups.map(g => (
+                <optgroup key={g.layer} label={g.label} style={{ color: '#1d1d1f' }}>
+                  {g.options.map(o => <option key={o.slug} value={o.slug} style={{ color: '#1d1d1f', background: 'white' }}>{o.label}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+        )}
         {hasActiveFilters && (
           <button onClick={clearAll} style={{ marginTop: '0.6rem', fontSize: 12, color: '#0071e3', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
             Clear all filters
@@ -642,7 +682,7 @@ export default function TalentClient({
         )}
       </div>
 
-      <FilterDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} filters={filters} onApply={handleDrawerApply} clusterFacets={clusterFacets} shippedFacets={shippedFacets} />
+      <FilterDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} filters={filters} onApply={handleDrawerApply} clusterFacets={clusterFacets} shippedFacets={shippedFacets} capabilityGroups={capabilityGroups} />
 
       {/* Tabs */}
       {isPaidHirer && (
