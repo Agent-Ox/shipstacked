@@ -19,7 +19,7 @@ import { generateUniqueSlug, normalizeSlug } from './paste/slug.ts';
 export interface EntityRow {
   id: number;
   external_id: string;
-  kind: 'human' | 'operator' | 'fleet' | 'agent' | 'team';
+  kind: 'human' | 'operator' | 'fleet' | 'agent' | 'team' | 'org';
   display_name: string;
   slug: string;
   owner_user_id: string;
@@ -458,6 +458,73 @@ export async function findOrCreateTeamEntity(
       throw conflict;
     }
     throw new Error(`team entity insert failed: ${insertErr?.message ?? 'unknown'}`);
+  }
+
+  return { entity: inserted as EntityRow, was_created: true };
+}
+
+/**
+ * Create an org entity (unification Stage 1).
+ *
+ * Mirrors `findOrCreateTeamEntity` EXACTLY — same slug-keyed idempotency, same
+ * external_id generation, same 23505 conflict re-throw, same return shape — with
+ * the single difference that it inserts kind='org' instead of kind='team'. The
+ * unified org model treats team and hiring company as one entity kind; this is
+ * the factory that mints it.
+ *
+ * INERT as of Stage 1: nothing calls this yet. Stage 2 wires it into the
+ * signup/create paths. `findOrCreateTeamEntity` stays the live team factory
+ * until later stages migrate teams onto the org kind.
+ *
+ * Caller is responsible for the corresponding org profile + team_admins rows.
+ */
+export async function findOrCreateOrgEntity(
+  admin: SupabaseClient,
+  user: User,
+  orgName: string,
+  slug: string,
+): Promise<FindOrCreateResult> {
+  const cleanName = orgName.trim();
+  if (!cleanName) throw new Error('org name is required');
+  if (!slug) throw new Error('org slug is required');
+
+  // Idempotent: this owner re-submitting the same slug returns the existing org.
+  const { data: existing, error: existingErr } = await admin
+    .from('entities')
+    .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+    .eq('kind', 'org')
+    .eq('slug', slug)
+    .eq('owner_user_id', user.id)
+    .limit(1)
+    .maybeSingle();
+  if (existingErr && existingErr.code !== 'PGRST116') {
+    throw new Error(`org entity lookup failed: ${existingErr.message}`);
+  }
+  if (existing) return { entity: existing as EntityRow, was_created: false };
+
+  const row = {
+    external_id: entityExternalId(),
+    kind: 'org' as const,
+    display_name: cleanName,
+    slug,
+    owner_user_id: user.id,
+  };
+
+  const { data: inserted, error: insertErr } = await admin
+    .from('entities')
+    .insert(row)
+    .select('id, external_id, kind, display_name, slug, owner_user_id, profile_id')
+    .single();
+
+  if (insertErr || !inserted) {
+    // 23505 = slug already taken (by this or another owner). Bubble up with the
+    // code intact so the route maps it to a 409 conflict (mirrors team factory).
+    if (insertErr?.code === '23505') {
+      const conflict: Error & { code?: string } = new Error('org slug already taken');
+      conflict.code = '23505';
+      throw conflict;
+    }
+    throw new Error(`org entity insert failed: ${insertErr?.message ?? 'unknown'}`);
   }
 
   return { entity: inserted as EntityRow, was_created: true };
