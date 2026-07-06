@@ -184,6 +184,18 @@ export function buildAgentCard(): AgentCard {
       outputModes: ['text/html'],
     }),
     fetchSkill({
+      id: 'fetch-capability-page',
+      name: 'Fetch a per-capability answer page by slug',
+      description:
+        'Fetch https://shipstacked.com/talent/<slug> → returns text/html with embedded schema.org/ItemList JSON-LD. ' +
+        'One page per canonical capability, tool, or domain in the vocabulary — a ranked, proof-verified list of the builders, teams, and agents with real shipped work in that area (each item an @id ref into /u/<username>, /team/<slug>, or /agent/<slug>). ' +
+        'Every /talent/<slug> URL is enumerated in /llms.txt and /sitemap.xml; unknown slugs return 404 by design. ' +
+        'This is a plain HTTP GET; no A2A invocation.',
+      tags: ['schema.org', 'ItemList', 'capability', 'directory', 'geo', 'http-get'],
+      examples: [`GET ${CANONICAL_HOST}/talent/rag`],
+      outputModes: ['text/html'],
+    }),
+    fetchSkill({
       id: 'fetch-proof-receipt',
       name: 'Fetch a public proof receipt by slug',
       description:
@@ -219,7 +231,7 @@ export function buildAgentCard(): AgentCard {
       name: 'Fetch the LLM-discoverable plain-text index',
       description:
         'Fetch https://shipstacked.com/llms.txt → returns text/plain. ' +
-        'A flat index of Atlas roles and recent public proof receipts, formatted per the llms.txt convention. ' +
+        'A flat index of Atlas roles, the per-capability answer pages (/talent/<slug>), and recent public proof receipts, formatted per the llms.txt convention. ' +
         'Plain HTTP GET; no A2A invocation.',
       tags: ['llms.txt', 'discovery', 'http-get'],
       examples: [`GET ${CANONICAL_HOST}/llms.txt`],
@@ -230,7 +242,7 @@ export function buildAgentCard(): AgentCard {
       name: 'Fetch the public sitemap',
       description:
         'Fetch https://shipstacked.com/sitemap.xml → returns application/xml. ' +
-        'XML sitemap of public pages (homepage, published builder profiles, active job listings, public hirer pages, build-feed posts). ' +
+        'XML sitemap of public pages (homepage, published builder profiles, published team and agent pages, active job listings, public hirer pages, build-feed posts, per-capability answer pages, Atlas role definitions, and public proof receipts). ' +
         'Plain HTTP GET; no A2A invocation.',
       tags: ['sitemap', 'discovery', 'http-get'],
       examples: [`GET ${CANONICAL_HOST}/sitemap.xml`],

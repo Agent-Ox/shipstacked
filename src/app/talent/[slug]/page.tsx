@@ -178,6 +178,7 @@ export default async function CapabilityTalentPage({ params }: { params: Promise
 
         <Section label="Browse">
           <p style={{ fontSize: 13, color: '#6e6e73', margin: 0, lineHeight: 1.5 }}>
+            <Link href={`/talent?capability=${entry.slug}`} style={{ color: '#0071e3', textDecoration: 'none' }}>Filter the full directory by {entry.label} →</Link>{'   '}
             <Link href="/talent" style={{ color: '#0071e3', textDecoration: 'none' }}>All builders →</Link>{'   '}
             <Link href="/atlas" style={{ color: '#0071e3', textDecoration: 'none' }}>The AI Atlas →</Link>
           </p>

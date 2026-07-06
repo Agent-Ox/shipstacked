@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { ATLAS_VERSION_DEFAULT } from '@/lib/atlas/roles'
 import { getRecentPublicReceipts } from '@/lib/receipts/render'
+import { loadVocab, getVocabByLayer, type CapabilityLayer } from '@/lib/capability/vocab'
 
 export const revalidate = 300
 
@@ -79,6 +80,26 @@ export async function GET() {
     }
   }
 
+  // Capabilities — the per-capability answer-page surface (Stage C/F). Every
+  // canonical vocab slug resolves to a ranked, proof-backed /talent/<slug>
+  // page; grouped by layer so LLM crawlers can walk Tools / Capabilities /
+  // Domains and discover all of them.
+  const vocab = await loadVocab(admin)
+  const LAYER_HEADINGS: Array<{ layer: CapabilityLayer; heading: string }> = [
+    { layer: 'tool', heading: 'Tools' },
+    { layer: 'capability', heading: 'Capabilities' },
+    { layer: 'domain', heading: 'Domains' },
+  ]
+  const capText: string[] = []
+  for (const { layer, heading } of LAYER_HEADINGS) {
+    const entries = getVocabByLayer(vocab, layer).sort((a, b) => a.label.localeCompare(b.label))
+    if (entries.length === 0) continue
+    capText.push(`\n### ${heading}\n`)
+    for (const e of entries) {
+      capText.push(`- [${e.label} builders](https://shipstacked.com/talent/${e.slug}): Ranked, proof-verified ${e.label} builders, teams, and agents.`)
+    }
+  }
+
   const recent = await getRecentPublicReceipts(admin, 20)
   const receiptsText: string[] = []
   if (recent.length === 0) {
@@ -94,6 +115,9 @@ export async function GET() {
   const body = [
     HEADER,
     rolesText.join('\n'),
+    '\n## Capabilities — per-capability answer pages',
+    '\nEvery capability, tool, and domain in the vocabulary resolves to a ranked, proof-backed /talent/<slug> page (schema.org ItemList JSON-LD) listing the builders, teams, and agents with verified work in that area.',
+    capText.join('\n'),
     '\n## Build feed',
     '\n- [/feed](https://shipstacked.com/feed): recent public proofs',
     '\n## Recent proof receipts',
