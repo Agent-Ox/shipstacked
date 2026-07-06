@@ -32,6 +32,7 @@ interface Body {
   industry?: string
   hiring_type?: string
   public?: boolean
+  hires?: boolean   // cap-stage 3: explicit "we're actively hiring" opt-in
 }
 
 export async function POST(req: Request) {
@@ -78,6 +79,10 @@ export async function POST(req: Request) {
     industry: trim(body.industry),
     hiring_type: trim(body.hiring_type),
     published: body.public ?? false,
+    // Only write hires when the client explicitly sends it — a save without the
+    // toggle must not silently flip an org's hiring state. offers_services is
+    // left untouched (owned by the service/team lens).
+    ...(typeof body.hires === 'boolean' ? { hires: body.hires } : {}),
     updated_at: new Date().toISOString(),
   }
 

@@ -22,6 +22,7 @@ type HirerProfile = {
   industry?: string
   hiring_type?: string
   public?: boolean
+  hires?: boolean
 }
 
 const TEAM_SIZES = ['1-5', '6-20', '21-50', '51-200', '200+']
@@ -145,6 +146,7 @@ export default function HirerDashboardClient({
             x_url: profile.x_url, logo_url: profile.logo_url,
             industry: profile.industry, hiring_type: profile.hiring_type,
             public: profile.public ?? false,
+            hires: profile.hires ?? false,
           }),
         })
         const body = await res.json()
@@ -569,6 +571,19 @@ export default function HirerDashboardClient({
                 </div>
               )}
             </div>
+
+            {/* cap-stage 3: explicit "we're actively hiring" opt-in. Only orgs
+                (team_profiles-backed) carry the hires flag; legacy hirers with no
+                org don't show it. Posting a job also flips this on server-side. */}
+            {orgEntityId != null && (
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', cursor: 'pointer', background: '#f5f5f7', border: '1px solid #e0e0e5', borderRadius: 12, padding: '0.875rem 1rem' }}>
+                <input type="checkbox" checked={profile.hires ?? false} onChange={e => setProfile(p => ({ ...p, hires: e.target.checked }))} style={{ marginTop: '0.15rem', width: 16, height: 16, flexShrink: 0 }} />
+                <span>
+                  <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: '#1d1d1f' }}>We&apos;re actively hiring</span>
+                  <span style={{ display: 'block', fontSize: 12, color: '#6e6e73', lineHeight: 1.5 }}>Shows the hiring section (roles, what you build) on your public company page. Posting a job turns this on automatically.</span>
+                </span>
+              </label>
+            )}
 
             <button onClick={handleSave} disabled={saving}
               style={{ padding: '0.75rem', background: saving ? '#d2d2d7' : '#0071e3', color: 'white', border: 'none', borderRadius: 980, fontSize: 14, fontWeight: 500, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'inherit', width: '100%' }}>

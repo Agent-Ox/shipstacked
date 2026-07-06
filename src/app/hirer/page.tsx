@@ -91,6 +91,7 @@ export default async function HirerDashboardPage() {
         industry: op.industry ?? undefined,
         hiring_type: op.hiring_type ?? undefined,
         public: op.published ?? false,
+        hires: op.hires ?? false,
         slug: teamSlug ?? undefined,
       }
     }

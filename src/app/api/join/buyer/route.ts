@@ -10,7 +10,7 @@ import { generateUniqueSlug, normalizeSlug } from '@/lib/paste/slug'
 // not a bare kind='human' entity. Signup mints THREE rows for the signing-up
 // human, mirroring /api/join/team:
 //   1. entities (kind='org', owner_user_id=user.id)  — via findOrCreateOrgEntity
-//   2. team_profiles (org profile, hires=true, offers_services=false, published=false)
+//   2. team_profiles (org profile, hires=false, offers_services=false, published=false)
 //   3. team_admins (single 'owner' row)
 // plus user_metadata.role='client' for routing/badge (a buyer is still a client;
 // now they also OWN an org). The rich company profile is completed on /hirer
@@ -73,7 +73,10 @@ export async function POST(req: Request) {
       if (!prof) {
         await admin.from('team_profiles').insert({
           entity_id: org.id, team_name: org.display_name, services: [],
-          hires: true, offers_services: false, published: false,
+          // cap-stage 3: hires is a CHOSEN state (posting a job / opt-in toggle),
+          // never forced by the signup door. A buyer is a member with an org;
+          // hires stays false until they act.
+          hires: false, offers_services: false, published: false,
         })
       }
       const { data: adm } = await admin
@@ -139,7 +142,7 @@ export async function POST(req: Request) {
         entity_id: entity.id,
         team_name: displayName,
         services: [],
-        hires: true,
+        hires: false, // cap-stage 3: chosen state (post a job / opt-in), not door-forced
         offers_services: false,
         published: false,
       })

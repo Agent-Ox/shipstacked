@@ -95,5 +95,11 @@ export async function POST(req: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // cap-stage 3: posting AS the org is the hiring opt-in — flip the org's hiring
+  // lens on. Ownership was validated above (entity owned by user, kind team/agent).
+  // Best-effort: the job is already created; a no-match (agent has no team_profiles
+  // row) or transient error must not fail the successful post.
+  await admin.from('team_profiles').update({ hires: true }).eq('entity_id', entity.id)
+
   return NextResponse.json({ job })
 }
