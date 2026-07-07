@@ -28,14 +28,14 @@ type State =
   | { kind: 'authed_hiring'; email: string }
 
 /**
- * Phase 2: composable Buyer Mode toggle. Renders one of four UI states based on session +
+ * Phase 2: composable Full Access toggle. Renders one of four UI states based on session +
  * subscription. Self-resolves via supabase.auth.getUser() + a subscriptions check
  * (decision D1 in docs/audit/DISCOVERY_phase2_buyer_mode.md).
  *
  * - Loading: brief spinner during initial auth resolve.
  * - Anonymous: returns null. Host page renders its existing email-input flow.
- * - Authed, no hiring: "Enable hiring — $199/mo" + "Billed to <email>" → session-keyed checkout.
- * - Authed, hiring active: "✓ Buyer Mode active — Manage at hirer dashboard" → links to /hirer.
+ * - Authed, no hiring: "Get Full Access — $199/mo" + "Billed to <email>" → session-keyed checkout.
+ * - Authed, hiring active: "✓ Full Access active — Manage at hirer dashboard" → links to /hirer.
  */
 export default function EnableHiringButton({ source, variant = 'primary' }: Props) {
   const [state, setState] = useState<State>({ kind: 'loading' })
@@ -122,7 +122,7 @@ export default function EnableHiringButton({ source, variant = 'primary' }: Prop
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
         }}>
           <div>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Buyer Mode</p>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Full Access</p>
             <p style={{ fontSize: 14, color: '#1d1d1f' }}>✓ Active — Billed to {state.email}</p>
           </div>
           <a href="/hirer" style={{ fontSize: 13, padding: '0.5rem 1.25rem', background: 'white', color: '#1d1d1f', border: '1px solid #d2d2d7', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Manage at hirer dashboard →</a>
@@ -134,7 +134,7 @@ export default function EnableHiringButton({ source, variant = 'primary' }: Prop
         display: 'inline-block', fontSize: 14, padding: '0.75rem 1.5rem',
         background: '#1a7f37', color: 'white', borderRadius: 980,
         textDecoration: 'none', fontWeight: 600,
-      }}>✓ Buyer Mode active — Manage at hirer dashboard</a>
+      }}>✓ Full Access active — Manage at hirer dashboard</a>
     )
   }
 
@@ -145,7 +145,7 @@ export default function EnableHiringButton({ source, variant = 'primary' }: Prop
         background: 'white', border: '1px solid #e0e0e5', borderRadius: 14,
         padding: '1.5rem', marginBottom: '1rem',
       }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Buyer Mode</p>
+        <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Full Access</p>
         <p style={{ fontSize: 14, color: '#1d1d1f', marginBottom: '0.5rem', lineHeight: 1.5 }}>Hire AI builders, teams, and agents from this network. Browse the full talent directory, message builders, post jobs.</p>
         <p style={{ fontSize: 12, color: '#6e6e73', marginBottom: '1rem' }}>Billed to {state.email}</p>
         <button onClick={handleEnable} disabled={submitting} style={{
@@ -153,7 +153,7 @@ export default function EnableHiringButton({ source, variant = 'primary' }: Prop
           background: submitting ? '#aeaeb2' : '#0071e3',
           color: 'white', border: 'none', borderRadius: 980,
           cursor: submitting ? 'not-allowed' : 'pointer', fontWeight: 600, fontFamily: 'inherit',
-        }}>{submitting ? 'Loading…' : 'Enable hiring — $199/mo'}</button>
+        }}>{submitting ? 'Loading…' : 'Get Full Access — $199/mo'}</button>
       </div>
     )
   }
@@ -165,7 +165,7 @@ export default function EnableHiringButton({ source, variant = 'primary' }: Prop
         background: submitting ? '#aeaeb2' : '#0071e3',
         color: 'white', border: 'none', borderRadius: 980,
         cursor: submitting ? 'not-allowed' : 'pointer', fontWeight: 600, fontFamily: 'inherit',
-      }}>{submitting ? 'Loading…' : 'Enable hiring — $199/mo'}</button>
+      }}>{submitting ? 'Loading…' : 'Get Full Access — $199/mo'}</button>
       <p style={{ fontSize: 11, color: '#6e6e73' }}>Billed to {state.email}</p>
     </div>
   )

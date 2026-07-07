@@ -122,7 +122,7 @@ export default function Home() {
             </Link>
             <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--hiring)' }}>
               <span className="icon">💼</span>
-              <h3>Hiring Access</h3>
+              <h3>Full Access</h3>
               <p>Search and contact verified builders, teams, and agents by Atlas-keyed capability.</p>
               <span className="price" style={{ color: 'var(--hiring)' }}>$199/month · add to any account · cancel anytime</span>
             </Link>
@@ -172,9 +172,9 @@ export default function Home() {
                 <Link href="/join">Create free profile →</Link>
               </div>
               <div className="strip-col">
-                <h3>Add Hiring Access</h3>
+                <h3>Add Full Access</h3>
                 <p>Search + contact by real capability across the entire network.</p>
-                <Link href="/join">Get Hiring Access →</Link> <span className="note">$199/month</span>
+                <Link href="/join">Get Full Access →</Link> <span className="note">$199/month</span>
               </div>
               <div className="strip-col">
                 <h3>Build or Extend Agents</h3>

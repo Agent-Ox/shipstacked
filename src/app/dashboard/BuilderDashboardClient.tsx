@@ -215,7 +215,7 @@ export default function BuilderDashboardClient({
 
             <RankingCard effectiveReceiptCount={effectiveReceiptCount} distinctHosts={distinctHosts} />
 
-            {/* Buyer Mode toggle — composable, per Phase 2 spec */}
+            {/* Full Access toggle — composable, per Phase 2 spec */}
             <EnableHiringButton source="dashboard_enable_hiring" variant="card" />
 
             {/* Top grid — verification */}

@@ -63,10 +63,10 @@ export default async function AgentSection({
         </div>
       </div>
 
-      {/* Hiring Access — per-user billing for Part 1 */}
+      {/* Full Access — per-user billing for Part 1 */}
       <div style={{ borderTop: '0.5px solid #f0f0f5', paddingTop: '1.25rem', marginTop: '1.25rem' }}>
         <EnableHiringButton source="agent_dashboard" variant="card" />
-        <p style={{ fontSize: 11, color: '#aeaeb2', lineHeight: 1.5 }}>Hiring Access is billed per-user, on your account email.</p>
+        <p style={{ fontSize: 11, color: '#aeaeb2', lineHeight: 1.5 }}>Full Access is billed per-user, on your account email.</p>
       </div>
     </div>
   )

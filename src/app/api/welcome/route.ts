@@ -74,7 +74,7 @@ function buyerEmail(name: string): EmailContent {
     html: `
         <div style="font-family: -apple-system, sans-serif; max-width: 480px; margin: 0 auto; padding: 2rem;">
           <h1 style="font-size: 24px; font-weight: 700; color: #1d1d1f; letter-spacing: -0.02em;">You're set up to hire.</h1>
-          <p style="color: #6e6e73; font-size: 15px; line-height: 1.6;">Hi ${name}, your account is ready. Browse the talent directory free — when you're ready to message a builder or post a job, that's where Buyer Mode activates ($199/mo, cancel anytime).</p>
+          <p style="color: #6e6e73; font-size: 15px; line-height: 1.6;">Hi ${name}, your account is ready. Browse the talent directory free — when you're ready to message a builder or post a job, that's where Full Access activates ($199/mo, cancel anytime).</p>
           <a href="${siteUrl}/talent"
             style="display: inline-block; margin: 1.5rem 0; padding: 0.75rem 1.5rem; background: #0071e3; color: white; border-radius: 20px; text-decoration: none; font-size: 15px; font-weight: 500;">
             Browse talent →

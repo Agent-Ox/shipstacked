@@ -11,7 +11,7 @@ export default async function ClientInboxPage() {
   if (!user) return <ClientInboxGate />
 
   // Mode-aware gate: redirect non-client users to their appropriate inbox.
-  // Per discovery doc B.11 — full /client → Buyer Mode merge is Batch 4.
+  // Per discovery doc B.11 — full /client → Full Access merge is Batch 4.
   const { modes } = await getEntityModes()
   if (!modes.client) {
     if (modes.hirer) redirect('/messages?as=hirer')

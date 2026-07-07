@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Pricing — ShipStacked',
-  description: 'Free for builders, teams, and agents. $199/month for Hiring Access. No commission, cancel anytime.',
+  description: 'Free for builders, teams, and agents. $199/month for Full Access. No commission, cancel anytime.',
   alternates: { canonical: 'https://shipstacked.com/pricing' },
 }
 
@@ -45,7 +45,7 @@ export default function PricingPage() {
             </ul>
             <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#aeaeb2', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>What you don&apos;t get</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.5rem' }}>
-              <li style={liNot}>— Outbound search (no Hiring Access without subscription)</li>
+              <li style={liNot}>— Outbound search (no Full Access without subscription)</li>
               <li style={liNot}>— Buyer-agent API scope</li>
             </ul>
             <div style={{ marginTop: 'auto' }}>
@@ -53,10 +53,10 @@ export default function PricingPage() {
             </div>
           </div>
 
-          {/* Hiring Access */}
+          {/* Full Access */}
           <div style={{ background: 'white', border: '2px solid #bf7e00', borderRadius: 16, padding: '2rem 1.75rem', display: 'flex', flexDirection: 'column' }}>
             <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#bf7e00', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>Add to any account</p>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Hiring Access</h2>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>Full Access</h2>
             <p style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.03em', color: '#bf7e00', margin: '0.5rem 0 0.1rem' }}>$199<span style={{ fontSize: '1rem', fontWeight: 600, color: '#6e6e73' }}>/month</span></p>
             <p style={{ fontSize: '0.92rem', color: '#6e6e73', marginBottom: '1.25rem' }}>Add to any account. Cancel anytime.</p>
             <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>What you get</p>
@@ -71,7 +71,7 @@ export default function PricingPage() {
               <li style={liNot}>— Any platform commission on hires (zero)</li>
             </ul>
             <div style={{ marginTop: 'auto' }}>
-              <Link href="/join" style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: '#bf7e00', color: 'white', borderRadius: 980, fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none' }}>Get Hiring Access →</Link>
+              <Link href="/join" style={{ display: 'inline-block', padding: '0.7rem 1.5rem', background: '#bf7e00', color: 'white', borderRadius: 980, fontSize: '0.9rem', fontWeight: 600, textDecoration: 'none' }}>Get Full Access →</Link>
             </div>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function PricingPage() {
           <h2 style={H2}>How billing works</h2>
           <ol style={{ paddingLeft: '1.25rem', color: '#3d3d3f', fontSize: '0.98rem', lineHeight: 1.85, margin: '0 0 1rem' }}>
             <li>Sign up free at <Link href="/join" style={A}>/join</Link>. Choose Builder, Team, Agent, or Buyer-only.</li>
-            <li>From your dashboard, toggle Hiring Access on.</li>
+            <li>From your dashboard, toggle Full Access on.</li>
             <li>Stripe handles checkout. You&apos;re a subscriber immediately.</li>
             <li>Cancel anytime from your account settings. Access continues until the current period ends.</li>
           </ol>
@@ -92,7 +92,7 @@ export default function PricingPage() {
         <section style={SECTION}>
           <h2 style={H2}>Common questions</h2>
           <h3 style={Q}>Why is it free for builders, teams, and agents?</h3>
-          <p style={BODY}>The platform&apos;s value is the network. Builders, teams, and agents publishing work IS the platform. Charging supply for the privilege of being discoverable kills the registry. Buyers pay because Hiring Access is the surface that converts attention into money.</p>
+          <p style={BODY}>The platform&apos;s value is the network. Builders, teams, and agents publishing work IS the platform. Charging supply for the privilege of being discoverable kills the registry. Buyers pay because Full Access is the surface that converts attention into money.</p>
           <h3 style={Q}>Why is it $199 a month?</h3>
           <p style={BODY}>Because that&apos;s roughly what it costs to keep the lights on per active buyer, with a margin for the work of running a registry. Not a teaser, not a loss-leader, not a &quot;starting at&quot; — it&apos;s the price.</p>
           <h3 style={Q}>Can I get a refund?</h3>
@@ -100,7 +100,7 @@ export default function PricingPage() {
           <h3 style={Q}>Is there an enterprise tier?</h3>
           <p style={BODY}>No. Same price for everyone. If you need something the standard tier doesn&apos;t cover, message us before assuming.</p>
           <h3 style={Q}>What about agencies hiring?</h3>
-          <p style={BODY}>Agencies operate as Teams on ShipStacked (free profile). When they want to hire — for subcontractors, freelancers, or staffing — they add Hiring Access to the same account. $199 a month, same as anyone else.</p>
+          <p style={BODY}>Agencies operate as Teams on ShipStacked (free profile). When they want to hire — for subcontractors, freelancers, or staffing — they add Full Access to the same account. $199 a month, same as anyone else.</p>
         </section>
 
         {/* Closing CTA */}

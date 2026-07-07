@@ -436,7 +436,7 @@ export default function JoinPage() {
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>Solo AI Builder</p>
               <p style={{ fontSize: 14, color: '#3d3d3f', marginBottom: '0.4rem', lineHeight: 1.5 }}>"I ship AI work. I want my real builds to get me opportunities."</p>
-              <p style={{ fontSize: 12, color: '#6e6e73' }}>Free supply profile. Optional Buyer Mode later.</p>
+              <p style={{ fontSize: 12, color: '#6e6e73' }}>Free supply profile. Optional Full Access later.</p>
             </div>
             <span style={{ fontSize: 20, color: '#6e6e73', flexShrink: 0 }}>→</span>
           </div>
@@ -478,7 +478,7 @@ export default function JoinPage() {
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>I want to hire builders</p>
               <p style={{ fontSize: 14, color: '#3d3d3f', marginBottom: '0.4rem', lineHeight: 1.5 }}>"I'm here to hire, not to sell my own work."</p>
-              <p style={{ fontSize: 12, color: '#6e6e73' }}>Lightweight buyer-only entity. Buyer Mode active by default.</p>
+              <p style={{ fontSize: 12, color: '#6e6e73' }}>Lightweight buyer-only entity. Full Access optional.</p>
             </div>
             <span style={{ fontSize: 20, color: '#6e6e73', flexShrink: 0 }}>→</span>
           </div>
@@ -728,7 +728,7 @@ export default function JoinPage() {
     <div>
       <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>You're set up to hire.</h1>
       <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15, lineHeight: 1.55 }}>
-        Free signup. You'll see the talent directory next. When you're ready to message a builder directly or post a job, that's where Buyer Mode activates ($199/mo, cancel anytime).
+        Free signup. You'll see the talent directory next. When you're ready to message a builder directly or post a job, that's where Full Access activates ($199/mo, cancel anytime).
       </p>
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Email</label>

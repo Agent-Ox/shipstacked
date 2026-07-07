@@ -342,6 +342,7 @@ export default function HirersPage() {
             One flat monthly fee. Browse, message, post, hire — as much as you need. No commission ever.
           </p>
           <div className="pricing-card">
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text2)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Full Access</p>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginBottom: '0.4rem', justifyContent: 'center' }}>
               <span style={{ fontSize: 48, fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)' }}>$199</span>
               <span style={{ fontSize: 18, color: 'var(--text2)', fontWeight: 400 }}>/month</span>

@@ -3,9 +3,9 @@
 // Users who signed up via the /join Card 4 path arrive here with:
 //   - auth user with user_metadata.role='client'
 //   - kind='human' entity
-//   - NO subscription (Buyer Mode not yet activated)
+//   - NO subscription (Full Access not yet activated)
 //
-// Buyer Mode activates on first paid action (post-job, message builder)
+// Full Access activates on first paid action (post-job, message builder)
 // via the existing /api/checkout flow — same as any other path into the
 // paid product. No Stripe touch happens here.
 
@@ -19,7 +19,7 @@ export default function BuyerOnlyEmptyState({ email }: { email: string }) {
         <div style={{ marginBottom: '2.5rem' }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: '#0071e3', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '0.4rem' }}>Hirer dashboard</p>
           <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.4rem' }}>Welcome to ShipStacked.</h1>
-          <p style={{ fontSize: 15, color: '#6e6e73' }}>Signed in as {email}. Browse the talent directory free — Buyer Mode activates when you message a builder or post a job.</p>
+          <p style={{ fontSize: 15, color: '#6e6e73' }}>Signed in as {email}. Browse the talent directory free — Full Access activates when you message a builder or post a job.</p>
         </div>
 
         {/* Primary CTA — browse talent */}
@@ -32,7 +32,7 @@ export default function BuyerOnlyEmptyState({ email }: { email: string }) {
 
         {/* Secondary cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '1rem', marginTop: '1rem', marginBottom: '2.5rem' }}>
-          {/* Buyer Mode — live toggle (Phase 2). Replaces the static "See pricing"
+          {/* Full Access — live toggle (Phase 2). Replaces the static "See pricing"
               card so a buyer-only user activates directly via session-keyed checkout
               instead of bouncing to /hirers#pricing. */}
           <EnableHiringButton source="buyer_empty_state" variant="card" />

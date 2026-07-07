@@ -9,7 +9,7 @@ function adminClient() {
 }
 
 // Phase 9 Part 1 — buyer-only home on /dashboard. Talent shortcut + saved
-// shortlists + Hiring Access + subscription status.
+// shortlists + Full Access + subscription status.
 export default async function BuyerSection({
   email, hasSubscription,
 }: { email: string; hasSubscription: boolean }) {
@@ -40,12 +40,12 @@ export default async function BuyerSection({
         <a href="/talent" style={{ fontSize: 13, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>Add more →</a>
       </div>
 
-      {/* Subscription status + Hiring Access toggle */}
+      {/* Subscription status + Full Access toggle */}
       <div style={{ borderTop: '0.5px solid #f0f0f5', paddingTop: '1.25rem' }}>
         {hasSubscription ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Buyer Mode</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#1a7f37', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Full Access</p>
               <p style={{ fontSize: 14, color: '#1d1d1f' }}>✓ Active — billed to {email}</p>
             </div>
             <a href="/hirer" style={{ fontSize: 13, padding: '0.5rem 1.25rem', background: 'white', color: '#1d1d1f', border: '1px solid #d2d2d7', borderRadius: 980, textDecoration: 'none', fontWeight: 500 }}>Manage at hirer dashboard →</a>

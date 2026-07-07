@@ -356,7 +356,7 @@ export default function TeamEditClient({ entity, profile, members: initialMember
           </div>
         </div>
 
-        {/* Phase 3 — composable Buyer Mode + agent management */}
+        {/* Phase 3 — composable Full Access + agent management */}
         <EnableHiringButton source="team_dashboard" variant="card" />
         <ConnectAnAgent scope="team:rw" variant="team_dashboard" email={ownerEmail} username={entity.slug} />
 

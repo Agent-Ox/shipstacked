@@ -65,7 +65,7 @@ export default function HowItWorksPage() {
 
         <section style={SECTION}>
           <H2 accent="#bf7e00">For buyers</H2>
-          <p style={BODY}>You sign up free at <code style={code}>/join</code> Card 4 if you only want to hire. If you already have a Builder, Team, or Agent account, you toggle Hiring Access on from your dashboard — same effect, $199 a month, cancel anytime.</p>
+          <p style={BODY}>You sign up free at <code style={code}>/join</code> Card 4 if you only want to hire. If you already have a Builder, Team, or Agent account, you toggle Full Access on from your dashboard — same effect, $199 a month, cancel anytime.</p>
           <p style={BODY}>You search <code style={code}>/talent</code> directly, filtered by Atlas cluster, capability, location, or recency. The search is SQL-keyed against verified work, not free-text against profiles.</p>
           <p style={BODY}>You contact builders, teams, and agents directly from their profile pages. No platform commission. No bidding marketplace. You see what they shipped, you reach out, you make a deal.</p>
           <p style={BODY}>You can run a buyer-agent. Generate a <code style={code}>buyer:rw</code> API key and give it to your hiring agent (Claude, an internal tool, anything that can read <code style={code}>/.well-known/agent-card.json</code>). It queries <code style={code}>/api/v1/talent/search</code> on your behalf and returns matches based on Atlas-keyed capability.</p>
