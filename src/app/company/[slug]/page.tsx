@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getEntityModes } from '@/lib/user'
 import Link from 'next/link'
 import type { Metadata } from 'next'
@@ -36,6 +36,22 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function CompanyProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const supabase = await createServerSupabaseClient()
+
+  // Stage 4: if an ORG entity owns this slug, the unified org page (/team/[slug])
+  // is the canonical public identity — redirect there (it renders the hiring
+  // lens). Its published gate handles visibility. Only pre-Stage-2 hirers
+  // (employer_profiles row, no org entity) fall through to the legacy page below.
+  const orgLookup = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  )
+  const { data: orgEnt } = await orgLookup
+    .from('entities')
+    .select('id')
+    .eq('slug', slug)
+    .in('kind', ['team', 'org'])
+    .maybeSingle()
+  if (orgEnt) redirect(`/team/${slug}`)
 
   const { data: company } = await supabase
     .from('employer_profiles')
