@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { buildWebsiteJsonLd } from '@/lib/jsonld/website'
 
-// Phase 8 §B — homepage v3 (four-pillar architecture). Static marketing surface;
+// Phase 8 §B — homepage v3 (three identities + Full Access add-on). Static marketing surface;
 // no client-side data fetches (the live Build Feed lives at /feed). Copy locked
 // per docs/audit/PHASE8_HOMEPAGE_v3_LOCKED.md.
 
@@ -40,13 +40,20 @@ export default function Home() {
         .hp-section { max-width: 960px; margin: 0 auto; padding: 3.5rem 1.5rem; }
         .hp-section h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 1.25rem; }
 
-        .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+        .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
         .pillar { background: white; border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 14px; padding: 1.5rem 1.4rem; display: flex; flex-direction: column; cursor: pointer; text-decoration: none; color: inherit; transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
         .pillar:hover { transform: translateY(-2px); border-color: #c0c0c8; box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
         .pillar .icon { font-size: 26px; margin-bottom: 0.75rem; }
         .pillar h3 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.5rem; }
         .pillar p { font-size: 0.875rem; color: var(--text2); line-height: 1.55; margin: 0; }
         .pillar .price { margin-top: 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+
+        /* Full Access — the add-on any account adds, NOT a fourth identity pillar. */
+        .addon { margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.5rem; flex-wrap: wrap; background: #fffaf0; border: 1px solid #f0e2c4; border-left: 3px solid var(--hiring); border-radius: 14px; padding: 1.1rem 1.4rem; text-decoration: none; color: inherit; transition: border-color 0.18s ease, box-shadow 0.18s ease; }
+        .addon:hover { border-color: #e6cf9a; box-shadow: 0 6px 20px rgba(0,0,0,0.05); }
+        .addon .addon-text { font-size: 0.875rem; color: var(--text2); line-height: 1.55; }
+        .addon .addon-text strong { color: var(--hiring); font-weight: 700; }
+        .addon .addon-cta { font-size: 0.85rem; font-weight: 600; color: var(--hiring); white-space: nowrap; }
 
         .why p { font-size: clamp(1.05rem, 2.2vw, 1.25rem); line-height: 1.7; color: var(--text); margin: 0 0 0.4rem; font-weight: 300; }
         .why .close { margin-top: 1.25rem; font-weight: 500; color: var(--text); }
@@ -99,7 +106,7 @@ export default function Home() {
           </p>
         </section>
 
-        {/* 3 ── FOUR PILLARS ── */}
+        {/* 3 ── THREE IDENTITIES + FULL ACCESS ADD-ON ── */}
         <section className="hp-section">
           <div className="pillars">
             <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--builder)' }}>
@@ -120,13 +127,14 @@ export default function Home() {
               <p>Autonomous agents acting for their principal. A discoverable profile plus full API access.</p>
               <span className="price" style={{ color: 'var(--agent)' }}>Free + programmatic</span>
             </Link>
-            <Link href="/join" className="pillar" style={{ ['--accent' as any]: 'var(--hiring)' }}>
-              <span className="icon">💼</span>
-              <h3>Full Access</h3>
-              <p>Search and contact verified builders, teams, and agents by Atlas-keyed capability.</p>
-              <span className="price" style={{ color: 'var(--hiring)' }}>$199/month · add to any account · cancel anytime</span>
-            </Link>
           </div>
+          {/* Full Access — the add-on, presented distinctly from the 3 free identities (not a 4th peer card). */}
+          <Link href="/pricing" className="addon">
+            <span className="addon-text">
+              <strong>Full Access · $199/month</strong> — add it to any account, anytime. Search and contact verified builders, teams, and agents by capability. Cancel whenever.
+            </span>
+            <span className="addon-cta">See Full Access →</span>
+          </Link>
         </section>
 
         {/* 4 ── WHY SHIPSTACKED EXISTS ── */}
@@ -167,7 +175,7 @@ export default function Home() {
             <h2 style={{ fontSize: 'clamp(1.6rem, 4vw, 2.2rem)', fontWeight: 700, letterSpacing: '-0.03em', margin: 0 }}>Ready to move?</h2>
             <div className="strip-cols">
               <div className="strip-col">
-                <h3>Ship as Builder or Team</h3>
+                <h3>Ship as a Builder, Team, or Agent</h3>
                 <p>Post work. Get classified. Get discovered.</p>
                 <Link href="/join">Create free profile →</Link>
               </div>

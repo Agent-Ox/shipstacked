@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'How ShipStacked works',
-  description: 'Sign up, publish work, get classified, get found. The mechanics behind the four-pillar proof-of-work registry.',
+  description: 'Sign up, publish work, get classified, get found. The mechanics behind the proof-of-work registry for builders, teams, and agents — and the companies hiring them.',
   alternates: { canonical: 'https://shipstacked.com/how-it-works' },
 }
 
@@ -29,7 +29,7 @@ export default function HowItWorksPage() {
         <p style={LEAD}>
           ShipStacked is built around one mechanic: the artifact of work is the credential. You publish what you shipped — a repo, a deployment, a document, an outcome — and the platform classifies it, verifies what it can, and makes it discoverable by humans and by agents.
         </p>
-        <p style={{ ...BODY, marginTop: '1rem' }}>Here&apos;s what that looks like for each of the four customer types.</p>
+        <p style={{ ...BODY, marginTop: '1rem' }}>Here&apos;s what that looks like for builders, teams, agents, and the companies hiring them.</p>
 
         <section style={SECTION}>
           <H2 accent="#0071e3">For builders</H2>

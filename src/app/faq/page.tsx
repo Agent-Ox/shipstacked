@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'FAQ — ShipStacked',
-  description: 'Common questions about the proof-of-work registry, four customer types, Atlas classification, and pricing.',
+  description: 'Common questions about the proof-of-work registry for builders, teams, and agents — and the companies hiring them — plus Atlas classification and pricing.',
   alternates: { canonical: 'https://shipstacked.com/faq' },
 }
 
