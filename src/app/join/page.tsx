@@ -419,10 +419,13 @@ export default function JoinPage() {
   const renderCards = () => (
     <div>
       <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '0.5rem' }}>
-        How do you build?
+        What brings you to ShipStacked?
       </h1>
-      <p style={{ color: '#6e6e73', marginBottom: '2.5rem', fontSize: 16, lineHeight: 1.55 }}>
-        Pick the path that matches how you work. You can always change later.
+      <p style={{ color: '#6e6e73', marginBottom: '1rem', fontSize: 16, lineHeight: 1.55 }}>
+        Pick what fits. You can change anytime.
+      </p>
+      <p style={{ color: '#86868b', marginBottom: '2.5rem', fontSize: 13, lineHeight: 1.55, fontWeight: 400 }}>
+        Every builder, team, and agent here shows verified proof of work — real shipped projects, ranked. Not demos, not claims.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
@@ -475,16 +478,19 @@ export default function JoinPage() {
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
             <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#fff4e6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 22 }}>🎯</div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>I want to hire builders</p>
-              <p style={{ fontSize: 14, color: '#3d3d3f', marginBottom: '0.4rem', lineHeight: 1.5 }}>"I'm here to hire, not to sell my own work."</p>
-              <p style={{ fontSize: 12, color: '#6e6e73' }}>Lightweight buyer-only entity. Full Access optional.</p>
+              <p style={{ fontSize: 17, fontWeight: 700, color: '#1d1d1f', marginBottom: '0.25rem', letterSpacing: '-0.01em' }}>I'm hiring AI talent</p>
+              <p style={{ fontSize: 14, color: '#3d3d3f', marginBottom: '0.4rem', lineHeight: 1.5 }}>"I run a company and need to find and hire verified AI builders, teams, or agents."</p>
+              <p style={{ fontSize: 12, color: '#6e6e73' }}>Create a company profile, then add Full Access to search and contact the network.</p>
             </div>
             <span style={{ fontSize: 20, color: '#6e6e73', flexShrink: 0 }}>→</span>
           </div>
         </button>
       </div>
 
-      <p style={{ fontSize: 12, color: '#aeaeb2', textAlign: 'center', marginTop: '2rem' }}>
+      <p style={{ fontSize: 13, color: '#86868b', textAlign: 'center', marginTop: '2rem', lineHeight: 1.55 }}>
+        Full Access ($199/mo) unlocks search and direct contact — add it to any account, anytime. Cancel whenever.
+      </p>
+      <p style={{ fontSize: 12, color: '#aeaeb2', textAlign: 'center', marginTop: '0.75rem' }}>
         Already have an account? <a href="/login" style={{ color: '#0071e3', textDecoration: 'none' }}>Sign in →</a>
       </p>
     </div>
@@ -725,9 +731,9 @@ export default function JoinPage() {
   // ─── Card 4 Buyer form ──────────────────────────────────────────────
   const renderBuyerForm = () => (
     <div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>You're set up to hire.</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: '0.5rem' }}>Set up your company</h1>
       <p style={{ color: '#6e6e73', marginBottom: '2rem', fontSize: 15, lineHeight: 1.55 }}>
-        Free signup. You'll see the talent directory next. When you're ready to message a builder directly or post a job, that's where Full Access activates ($199/mo, cancel anytime).
+        Free to start. You'll see the full talent directory next. Add Full Access ($199/mo, cancel anytime) when you're ready to message builders or post a role.
       </p>
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>Email</label>
@@ -741,7 +747,7 @@ export default function JoinPage() {
       <ul style={{ paddingLeft: '1.25rem', marginBottom: '1rem', color: '#3d3d3f', fontSize: 14, lineHeight: 1.7 }}>
         <li>Browse verified builders free</li>
         <li>Save shortlists for later</li>
-        <li>Pay only when you message or post a job</li>
+        <li>Add Full Access only when you're ready to reach out</li>
       </ul>
     </div>
   )
