@@ -71,7 +71,7 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
   // /api/apply status-filter hardening.
   const { data: post } = await supabase
     .from('posts')
-    .select('*, profiles!inner(id, email, username, full_name, avatar_url, verified, published, github_connected, role, location, accepts_project_inquiries)')
+    .select('*, profiles!inner(id, email, username, full_name, avatar_url, verified, published, github_connected, role, location)')
     .eq('id', id)
     .eq('profiles.published', true)
     .maybeSingle()
@@ -222,11 +222,6 @@ export default async function FeedPostPage({ params }: { params: Promise<{ id: s
             modes={modes}
             isLoggedIn={!!resolvedUser}
             isOwnPost={isOwnPost}
-            builderFirstName={profile?.full_name?.split(' ')[0] || ''}
-            builderUsername={profile?.username || ''}
-            builderProfileId={profile?.id || ''}
-            postId={id}
-            acceptsInquiries={profile?.accepts_project_inquiries !== false}
           />
 
           <div style={{ marginTop: '1rem', textAlign: 'center' }}>

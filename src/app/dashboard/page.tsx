@@ -130,7 +130,7 @@ export default async function DashboardPage() {
 
   // Zero pillar identity → onboarding. This is the ONLY remaining redirect to
   // /join — team admins, agent owners, buyers, and builders all have a home.
-  if (!modes.builder && !modes.team_admin && !modes.agent_owner && !modes.hirer && !modes.client) {
+  if (!modes.builder && !modes.team_admin && !modes.agent_owner && !modes.hirer) {
     redirect('/join')
   }
 

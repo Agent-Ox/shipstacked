@@ -96,7 +96,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Routes that require auth — /talent is PUBLIC (handles its own access tiers server-side)
-  const authRequired = ['/dashboard', '/post-job', '/admin', '/hirer/', '/hirer/messages', '/employer/', '/employer/messages', '/messages', '/client']
+  const authRequired = ['/dashboard', '/post-job', '/admin', '/hirer/', '/hirer/messages', '/employer/', '/employer/messages', '/messages']
   const isProtected = authRequired.some(route => pathname.startsWith(route))
 
   if (isProtected && !session) {

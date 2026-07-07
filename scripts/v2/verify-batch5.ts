@@ -23,7 +23,6 @@ import {
 } from '../../src/lib/enrichment/profile-adapter.ts'
 import {
   findOrCreateTeamEntity,
-  findOrCreateBuyerEntity,
   findOrCreateAgentEntity,
 } from '../../src/lib/entities.ts'
 
@@ -580,33 +579,9 @@ async function main(): Promise<void> {
   if ((teamRuns ?? 0) > 0) fatal(8, `Card 2 unexpectedly has ${teamRuns} enrichment_runs rows`)
   console.log(`    ✓ no profile row; no enrichment_runs row`)
 
-  // Card 4 — buyer
-  console.log('\n  Card 4 — Buyer-only entity:')
-  let buyerUser = existingTeamUsers?.users?.find(u => u.email === BUYER_EMAIL)
-  if (!buyerUser) {
-    const { data, error } = await admin.auth.admin.createUser({
-      email: BUYER_EMAIL,
-      password: TEST_PASSWORD,
-      email_confirm: true,
-      user_metadata: { role: 'client' },
-    })
-    if (error || !data?.user) fatal(8, `buyer auth createUser failed: ${error?.message}`)
-    buyerUser = data!.user!
-  }
-  // Buyer endpoint stamps user_metadata.role and creates entity
-  const { entity: buyerEntity } = await findOrCreateBuyerEntity(admin, buyerUser)
-  console.log(`    buyer auth: ${buyerUser.id.slice(0, 8)}…`)
-  console.log(`    buyer entity: id=${buyerEntity.id} kind=${buyerEntity.kind} slug=${buyerEntity.slug}`)
-  const { data: buyerProfile } = await admin.from('profiles').select('id').eq('user_id', buyerUser.id).maybeSingle()
-  if (buyerProfile) fatal(8, `Card 4 unexpectedly created a profile row: ${buyerProfile.id}`)
-  const { count: buyerRuns } = await admin
-    .from('enrichment_runs')
-    .select('id', { count: 'exact', head: true })
-    .eq('entity_id', buyerEntity.id)
-  if ((buyerRuns ?? 0) > 0) fatal(8, `Card 4 unexpectedly has ${buyerRuns} enrichment_runs rows`)
-  const { data: buyerSub } = await admin.from('subscriptions').select('id').eq('email', BUYER_EMAIL).maybeSingle()
-  if (buyerSub) fatal(8, `Card 4 unexpectedly created subscription: ${buyerSub.id}`)
-  console.log(`    ✓ no profile, no subscription, no enrichment_runs row`)
+  // Card 4 — buyer: REMOVED in D2b-1. The old buyer path (findOrCreateBuyerEntity,
+  // kind='human' + role='client') is retired; buyers are now first-class kind='org'
+  // owners minted by /api/join/buyer. This dead-history one-shot no longer exercises it.
 
   // Card 3 — agent
   console.log('\n  Card 3 — Agent entity:')
@@ -634,7 +609,7 @@ async function main(): Promise<void> {
   if ((agentRuns ?? 0) > 0) fatal(8, `Card 3 unexpectedly has ${agentRuns} enrichment_runs rows`)
   console.log(`    ✓ no enrichment_runs row (agent enrichment fires at /api/v1/builds time, not signup)`)
 
-  record(8, 'PASS', `Card 2 team#${teamEntity.id}, Card 3 agent#${agentEntity.id}, Card 4 buyer#${buyerEntity.id}; no enrichment for any`)
+  record(8, 'PASS', `Card 2 team#${teamEntity.id}, Card 3 agent#${agentEntity.id}; no enrichment for any`)
 
   printSummary()
   console.log()
@@ -642,7 +617,7 @@ async function main(): Promise<void> {
   console.log('Cleanup (operator):')
   console.log(`  - auth users: ${TEST_EMAIL}, ${TEAM_EMAIL}, ${BUYER_EMAIL}, ${AGENT_EMAIL}`)
   console.log(`  - profile: ${TEST_USERNAME}`)
-  console.log(`  - entity ids (cascade): ${entity.id}, ${teamEntity.id}, ${buyerEntity.id}, ${agentEntity.id}`)
+  console.log(`  - entity ids (cascade): ${entity.id}, ${teamEntity.id}, ${agentEntity.id}`)
 }
 
 main().catch((e) => {

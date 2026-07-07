@@ -19,7 +19,7 @@ export default function JobDetailClient({
 
   const isBuilder = modes.builder
   const isHirer = modes.hirer || modes.admin
-  const isLoggedOut = !modes.builder && !modes.hirer && !modes.client && !modes.admin
+  const isLoggedOut = !modes.builder && !modes.hirer && !modes.admin
   const justApplied = applyState === 'done' && !alreadyApplied
   const shareUrl = `${siteUrl}/jobs/${job.id}`
 

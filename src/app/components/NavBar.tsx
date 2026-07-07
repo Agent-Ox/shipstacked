@@ -17,13 +17,18 @@ type NavUser = {
   companyPublic: boolean
 }
 
-const EMPTY_MODES: EntityModes = { builder: false, hirer: false, member: false, client: false, admin: false, team_admin: false, agent_owner: false }
+const EMPTY_MODES: EntityModes = { builder: false, hirer: false, member: false, admin: false, team_admin: false, agent_owner: false }
 
 export default function NavBar() {
   const [navUser, setNavUser] = useState<NavUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  // org_offers_services — resolved server-side (via /api/messages/unread; the
+  // browser client can't read team_profiles). Distinguishes a service-org owner
+  // (gets the team "Dashboard" link) from a buyer-org owner (does not). Replaces
+  // the retired `!modes.client` proxy.
+  const [orgOffersServices, setOrgOffersServices] = useState(false)
   const pathname = usePathname()
 
   const isDark = pathname.startsWith('/u/')
@@ -58,11 +63,6 @@ export default function NavBar() {
       ]
     }
 
-    // ---- Client-only ---- (unchanged: special JSX block in the render path)
-    if (modes.client && !modes.builder && !modes.hirer) {
-      return []
-    }
-
     const links: { label: string; href: string }[] = []
 
     // Admin link is additive — admins may also be builders/hirers/etc.
@@ -89,16 +89,16 @@ export default function NavBar() {
       links.push({ label: 'Edit builder profile', href: '/dashboard/edit' })
     }
 
-    // Pure service-org owner → "Dashboard" (the team command center). A Stage-2
-    // buyer also owns an org (team_admin=true) but offers no services and must
-    // NOT get this link — they keep "Hirer dashboard" from the modes.hirer
-    // branch above. The canonical capability is team_profiles.offers_services
-    // (resolved server-side in getUserState refs.org_offers_services), but NavBar
-    // is a self-resolving client component and team_profiles has no authenticated
-    // self-read RLS, so gate on the client-visible equivalent: a buyer org is
-    // always role='client'; a service-team/agency owner never is. (A builder
-    // already has "Builder dashboard", so !modes.builder avoids doubling up.)
-    if (modes.team_admin && !modes.builder && !modes.client) {
+    // Pure service-org owner → "Dashboard" (the team command center). A buyer
+    // also owns an org (team_admin=true) but offers no services and must NOT get
+    // this link — they keep "Hirer dashboard" from the modes.hirer branch above.
+    // The canonical capability is team_profiles.offers_services, resolved
+    // server-side (getUserState refs.org_offers_services) and delivered to this
+    // client component via /api/messages/unread as `orgOffersServices` — the
+    // browser client can't read team_profiles directly (no self-read RLS). This
+    // replaces the retired `!modes.client` proxy. (A builder already has "Builder
+    // dashboard", so !modes.builder avoids doubling up.)
+    if (modes.team_admin && !modes.builder && orgOffersServices) {
       links.push({ label: 'Dashboard', href: '/dashboard' })
     }
 
@@ -139,7 +139,6 @@ export default function NavBar() {
         builder: !!profile,
         hirer: !!sub,
         member: !!sub,
-        client: metaRole === 'client',
         admin: metaRole === 'admin',
         team_admin: !!teamAdmin,
         agent_owner: !!agentEntity,
@@ -156,8 +155,12 @@ export default function NavBar() {
         companyPublic: (company as any)?.public === true,
       })
       setLoading(false)
-      // Aggregated unread count across all active messaging modes
-      fetch('/api/messages/unread').then(r => r.json()).then(({ unread }) => setUnreadCount(unread || 0)).catch(() => {})
+      // Aggregated unread count + server-resolved org_offers_services (for the
+      // buyer-org vs service-org "Dashboard" link distinction; see below).
+      fetch('/api/messages/unread').then(r => r.json()).then(({ unread, org_offers_services }) => {
+        setUnreadCount(unread || 0)
+        setOrgOffersServices(org_offers_services === true)
+      }).catch(() => {})
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => loadAuthState(session))
@@ -203,10 +206,8 @@ export default function NavBar() {
   const menuLinks = [...getMenuLinks(), ...getIdentityLinks()]
 
   // Resolve messages href: hirer-mode users get ?as=hirer; builders get plain /messages.
-  // Client-only users get /client/inbox (handled in the early return below).
   const messagesHref =
-    modes.client && !modes.builder && !modes.hirer ? null
-      : modes.hirer && !modes.builder ? '/messages?as=hirer'
+    modes.hirer && !modes.builder ? '/messages?as=hirer'
       : modes.team_admin && !modes.builder && !modes.hirer ? '/messages?as=team'
       : '/messages'
 
@@ -270,24 +271,6 @@ export default function NavBar() {
               </a>
             )
           })}
-
-          {/* Client-only nav links */}
-          {modes.client && !modes.builder && !modes.hirer && (
-            <>
-              <a href="/client/inbox" onClick={() => setMenuOpen(false)}
-                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
-                My inbox
-              </a>
-              <a href="/join" onClick={() => setMenuOpen(false)}
-                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
-                Showcase your work
-              </a>
-              <a href="/for-hirers" onClick={() => setMenuOpen(false)}
-                style={{ fontSize: 15, color: textColor, textDecoration: 'none', padding: '0.7rem 0', borderBottom: `0.5px solid ${mobileBorder}` }}>
-                Hire talent
-              </a>
-            </>
-          )}
 
           {!loading && (
             navUser ? (

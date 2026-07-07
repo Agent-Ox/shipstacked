@@ -131,17 +131,6 @@ export default function BuilderDashboardClient({
   const [requestSent, setRequestSent] = useState(false)
   const [requesting, setRequesting] = useState(false)
   const [githubStatus, setGithubStatus] = useState<'idle' | 'just_connected' | 'error'>('idle')
-  const [acceptsInquiries, setAcceptsInquiries] = useState<boolean>(profile?.accepts_project_inquiries !== false)
-  const [savingInquiryPref, setSavingInquiryPref] = useState(false)
-
-  const toggleInquiries = async () => {
-    setSavingInquiryPref(true)
-    const newVal = !acceptsInquiries
-    const supabase = (await import('@/lib/supabase')).createClient()
-    await supabase.from('profiles').update({ accepts_project_inquiries: newVal }).eq('email', email)
-    setAcceptsInquiries(newVal)
-    setSavingInquiryPref(false)
-  }
 
   const profileUrl = profile ? 'https://shipstacked.com/u/' + profile.username : ''
   const firstName = profile?.full_name?.split(' ')[0] || 'there'
@@ -426,32 +415,6 @@ export default function BuilderDashboardClient({
               </div>
             )}
 
-
-            {/* Project enquiries toggle */}
-            <div style={{ background: 'white', border: '1px solid #e0e0e5', borderRadius: 14, padding: '1.5rem', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#6e6e73', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Project enquiries</p>
-                  <p style={{ fontSize: 13, color: '#6e6e73' }}>Allow people to contact you about project work via your Build Feed posts.</p>
-                </div>
-                <button
-                  onClick={toggleInquiries}
-                  disabled={savingInquiryPref}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.5rem',
-                    padding: '0.4rem 0.875rem',
-                    background: acceptsInquiries ? '#e3f3e3' : '#f5f5f7',
-                    color: acceptsInquiries ? '#1a7f37' : '#6e6e73',
-                    border: `1px solid ${acceptsInquiries ? '#b3e0b3' : '#e0e0e5'}`,
-                    borderRadius: 980, fontSize: 13, fontWeight: 500,
-                    cursor: savingInquiryPref ? 'not-allowed' : 'pointer',
-                    fontFamily: 'inherit', transition: 'all 0.2s',
-                  }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: acceptsInquiries ? '#1a7f37' : '#aeaeb2' }} />
-                  {savingInquiryPref ? 'Saving...' : acceptsInquiries ? 'Accepting enquiries' : 'Not accepting enquiries'}
-                </button>
-              </div>
-            </div>
 
             {/* Consented Collections — one card per active collection, gated on
                 profile.published. Zero collections → zero cards (byte-identical

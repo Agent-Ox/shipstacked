@@ -1,17 +1,23 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getEntityModes } from '@/lib/user'
+import { getUserState } from '@/lib/user'
 
 // GET — unread message count for current user.
 // Optional ?as=builder|hirer scopes to one side. With no param, returns the
 // aggregate across all modes the user has active (so NavBar can show one
 // combined badge for multi-mode entities).
+//
+// Also returns org_offers_services (resolved server-side via getUserState —
+// team_profiles has no authenticated self-read RLS, so the browser NavBar
+// can't read it itself). NavBar uses it to distinguish a service-org owner
+// (gets the team "Dashboard" link) from a buyer-org owner (does not).
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const asParam = searchParams.get('as')
 
-  const { user, modes, profile } = await getEntityModes()
-  if (!user) return NextResponse.json({ unread: 0 })
+  const { user, modes, refs, profile } = await getUserState()
+  const orgOffersServices = refs?.org_offers_services === true
+  if (!user) return NextResponse.json({ unread: 0, org_offers_services: false })
 
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -38,11 +44,9 @@ export async function GET(req: Request) {
   let conversationIds: string[] = []
 
   if (asParam === 'hirer') {
-    if (!modes.hirer) return NextResponse.json({ unread: 0 })
-    conversationIds = await fetchHirerConvIds()
+    if (modes.hirer) conversationIds = await fetchHirerConvIds()
   } else if (asParam === 'builder') {
-    if (!modes.builder) return NextResponse.json({ unread: 0 })
-    conversationIds = await fetchBuilderConvIds()
+    if (modes.builder) conversationIds = await fetchBuilderConvIds()
   } else {
     // No ?as= — aggregate across all active messaging modes
     const sets: string[][] = []
@@ -51,14 +55,16 @@ export async function GET(req: Request) {
     conversationIds = [...new Set(sets.flat())]
   }
 
-  if (conversationIds.length === 0) return NextResponse.json({ unread: 0 })
+  let unread = 0
+  if (conversationIds.length > 0) {
+    const { count } = await admin
+      .from('messages')
+      .select('id', { count: 'exact', head: true })
+      .in('conversation_id', conversationIds)
+      .eq('read', false)
+      .neq('sender_email', user.email!)
+    unread = count || 0
+  }
 
-  const { count } = await admin
-    .from('messages')
-    .select('id', { count: 'exact', head: true })
-    .in('conversation_id', conversationIds)
-    .eq('read', false)
-    .neq('sender_email', user.email!)
-
-  return NextResponse.json({ unread: count || 0 })
+  return NextResponse.json({ unread, org_offers_services: orgOffersServices })
 }

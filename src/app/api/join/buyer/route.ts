@@ -12,9 +12,10 @@ import { generateUniqueSlug, normalizeSlug } from '@/lib/paste/slug'
 //   1. entities (kind='org', owner_user_id=user.id)  — via findOrCreateOrgEntity
 //   2. team_profiles (org profile, hires=false, offers_services=false, published=false)
 //   3. team_admins (single 'owner' row)
-// plus user_metadata.role='client' for routing/badge (a buyer is still a client;
-// now they also OWN an org). The rich company profile is completed on /hirer
-// (Stage 3 points that form at THIS org profile instead of employer_profiles).
+// D2b-1: NO user_metadata.role='client' stamp — `client` mode is retired. A buyer
+// is identified purely as an org owner (team_admin) whose org offers_services=false.
+// The rich company profile is completed on /hirer (Stage 3 points that form at THIS
+// org profile instead of employer_profiles).
 //
 // Company name is OPTIONAL — kept frictionless. When absent, display_name
 // defaults to the email local-part and the slug is auto-derived + uniquified.
@@ -22,8 +23,6 @@ import { generateUniqueSlug, normalizeSlug } from '@/lib/paste/slug'
 // exactly like team signup.
 //
 // Idempotent: a returning buyer who already owns an org reuses it (no duplicate).
-// The old kind='human' buyer path (findOrCreateBuyerEntity) is retained in
-// lib/entities.ts but no longer called here.
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/ // 3–40 chars, kebab-case (mirrors /api/join/team)
 
@@ -52,15 +51,9 @@ export async function POST(req: Request) {
   try { body = await req.json() } catch { /* empty body → defaults below */ }
 
   try {
-    // Stamp user_metadata.role='client' (idempotent — preserves other metadata
-    // like full_name/password_set).
-    const currentMeta = (user.user_metadata as Record<string, unknown>) || {}
-    if (currentMeta.role !== 'client') {
-      await admin.auth.admin.updateUserById(user.id, {
-        user_metadata: { ...currentMeta, role: 'client' },
-      })
-    }
-
+    // D2b-1: the buyer is a first-class ORG owner (rows below) — no role='client'
+    // stamp. `client` mode is retired; a buyer is identified as an org owner
+    // (team_admin) whose org has hires-not-services capability flags.
     const emailLocal = (user.email?.split('@')[0] || '').trim()
     const displayName = (body.company_name?.trim()) || emailLocal || 'Company'
 

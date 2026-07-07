@@ -1,8 +1,8 @@
-// Batch 4 D3=(b): empty-state for Card 4 buyer-only users.
+// Empty-state for Card 4 buyer-only users (D2b-1: identified by org-ownership,
+// not the retired role='client').
 //
 // Users who signed up via the /join Card 4 path arrive here with:
-//   - auth user with user_metadata.role='client'
-//   - kind='human' entity
+//   - a kind='org' entity they own (+ team_admins owner row)
 //   - NO subscription (Full Access not yet activated)
 //
 // Full Access activates on first paid action (post-job, message builder)

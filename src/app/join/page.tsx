@@ -224,7 +224,6 @@ export default function JoinPage() {
         x_url: xUrl.trim() || null,
         published: true,
         verified: false,
-        accepts_project_inquiries: true,
         ...(teamEntityIdToLink ? { team_entity_id: teamEntityIdToLink } : {}),
       }])
 

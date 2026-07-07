@@ -24,12 +24,18 @@ export default async function HirerDashboardPage() {
     .maybeSingle()
 
   if (!sub) {
-    // Batch 4 D3=(b): Card 4 buyer-only users (no subscription, came in via
-    // the /join Card 4 path with user_metadata.role='client') see a dedicated
-    // empty state instead of the /hirers#pricing bounce. Full Access activates on
-    // first paid action via /api/checkout (D1=b).
-    const metaRole = user.user_metadata?.role
-    if (metaRole === 'client') {
+    // D2b-1: buyer-org owners (no subscription, came in via /join Card 4 which
+    // mints a kind='org' entity) see a dedicated empty state instead of the
+    // /hirers#pricing bounce. Identified by org-ownership now that `client` mode
+    // is retired. Full Access activates on first paid action via /api/checkout.
+    const { data: ownsOrg } = await supabase
+      .from('entities')
+      .select('id')
+      .eq('owner_user_id', user.id)
+      .eq('kind', 'org')
+      .limit(1)
+      .maybeSingle()
+    if (ownsOrg) {
       return <BuyerOnlyEmptyState email={user.email!} />
     }
     redirect('/hirers#pricing')

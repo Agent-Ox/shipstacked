@@ -68,15 +68,9 @@ function MessagesInner() {
         supabase.from('subscriptions').select('id').eq('email', email).eq('status', 'active').eq('product', 'full_access').or(`expires_at.is.null,expires_at.gt.${now}`).maybeSingle(),
         supabase.from('profiles').select('id').eq('email', email).maybeSingle(),
       ])
-      const metaRole = session.user.user_metadata?.role
       const builder = !!profile
       const hirer = !!sub
 
-      // Client-mode-only users → redirect to /client/inbox (complementary forward gate per discovery doc D.5)
-      if (!builder && !hirer && metaRole === 'client') {
-        window.location.href = '/client/inbox'
-        return
-      }
       // Teams this user admins → team-inbox tabs.
       const { data: adminRows } = await supabase.from('team_admins').select('team_entity_id').eq('user_id', session.user.id)
       const teamIds = [...new Set((adminRows || []).map((r: any) => String(r.team_entity_id)))]

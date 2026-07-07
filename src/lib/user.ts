@@ -5,7 +5,6 @@ export type EntityModes = {
   builder: boolean        // has a profiles row
   hirer: boolean          // has an active full_access subscription (retired later; kept during transition)
   member: boolean         // has an active subscription — canonical paid-access primitive (messaging, directory)
-  client: boolean         // user_metadata.role === 'client'
   admin: boolean          // user_metadata.role === 'admin'
   team_admin: boolean     // has a row in team_admins (Phase 9)
   agent_owner: boolean    // owns at least one entity where kind='agent' (Phase 9)
@@ -48,7 +47,7 @@ export type UserState = {
 }
 
 const EMPTY_MODES: EntityModes = {
-  builder: false, hirer: false, member: false, client: false, admin: false, team_admin: false, agent_owner: false,
+  builder: false, hirer: false, member: false, admin: false, team_admin: false, agent_owner: false,
 }
 
 /**
@@ -140,7 +139,6 @@ export async function getUserState(): Promise<UserState> {
       builder: !!profile,
       hirer: !!subscription,
       member: !!subscription,
-      client: metaRole === 'client',
       admin: metaRole === 'admin',
       team_admin: !!teamRow,
       agent_owner: !!agentRow,

@@ -19,7 +19,6 @@ export default function robots(): MetadataRoute.Robots {
           '/success',
           '/auth',
           '/api/',
-          '/client',
           '/get-found/',
           '/hire/',
         ],

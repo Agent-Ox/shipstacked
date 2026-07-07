@@ -239,7 +239,7 @@ export default function JobsClient({
 }) {
   const isBuilder = modes.builder
   const isHirer = modes.hirer || modes.admin
-  const isLoggedOut = !modes.builder && !modes.hirer && !modes.client && !modes.admin
+  const isLoggedOut = !modes.builder && !modes.hirer && !modes.admin
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }}>

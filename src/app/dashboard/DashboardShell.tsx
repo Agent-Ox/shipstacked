@@ -33,9 +33,14 @@ export default function DashboardShell({
             </div>
           )}
 
-          {modes.team_admin && <TeamSection teamEntityId={refs.team_entity_id} teamSlug={refs.team_slug} email={email} />}
+          {/* D2b-1: `client` retired. A service-org owner (offers_services) gets
+              the team command center; a buyer-org owner (offers_services=false)
+              gets the buyer home. org_offers_services is resolved server-side in
+              getUserState. Fail-open (!== false) keeps TeamSection for a service
+              org if the flag read ever comes back undefined. */}
+          {modes.team_admin && refs.org_offers_services !== false && <TeamSection teamEntityId={refs.team_entity_id} teamSlug={refs.team_slug} email={email} />}
           {modes.agent_owner && <AgentSection agentEntityId={refs.agent_entity_id} agentSlug={refs.agent_slug} />}
-          {modes.client && <BuyerSection email={email} hasSubscription={modes.hirer} />}
+          {modes.team_admin && refs.org_offers_services === false && <BuyerSection email={email} hasSubscription={modes.hirer} />}
           {modes.hirer && <HirerSection />}
 
           {/* Invite a colleague — generic platform-growth prompt. Suppressed for
