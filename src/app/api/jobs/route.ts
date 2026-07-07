@@ -22,10 +22,31 @@ export async function POST(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  // Stage 5b: attribute the job to the poster's org identity (subject_entity_id).
+  // Mirrors /api/jobs/post-as-team's ownership resolution (entities owned by the
+  // poster), but resolves the entity here — the personal-post path carries no
+  // explicit subject_entity_id. Post-D2b-1 a hirer IS an org owner (buyers mint
+  // kind='org'; teams have kind='team'), so this normally resolves. Dual-write
+  // subject_entity_id alongside employer_email during the transition (5d removes
+  // the employer_profiles dependency). If (rarely) no entity resolves, fall back
+  // to an employer_email-only write — don't block posting — and log it.
+  const { data: ownedOrg } = await admin
+    .from('entities')
+    .select('id')
+    .eq('owner_user_id', user.id)
+    .in('kind', ['org', 'team'])
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (!ownedOrg) {
+    console.warn(`[api/jobs] poster ${user.id} (${user.email}) has no org/team entity — job written employer_email-only (subject_entity_id null). Post-D2b-1 every hirer should own an org.`)
+  }
+
   const { data: job, error } = await admin
     .from('jobs')
     .insert({
       employer_email: user.email,
+      subject_entity_id: ownedOrg?.id ?? null,
       role_title: role_title.trim(),
       company_name: company_name?.trim() || '',
       description: description?.trim() || '',
