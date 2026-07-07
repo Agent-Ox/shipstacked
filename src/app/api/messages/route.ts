@@ -4,6 +4,7 @@ import { Resend } from 'resend'
 import { getEntityModes } from '@/lib/user'
 import { defaultMessagingMode } from '@/lib/auth-routing'
 import { notifyTeamAdminsOfContact } from '@/lib/team/notify'
+import { resolveOrgByEmail } from '@/lib/org/resolve-by-email'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'
@@ -91,53 +92,24 @@ export async function GET(req: Request) {
     const teamConvsRaw = rawTeamConvs || []
 
     // Resolve the OTHER party (the contacter on employer_email) for display.
+    // Stage 5d: entity-first via the shared resolveOrgByEmail helper (the
+    // contacter's org is NOT this conv's subject_entity_id — that's the team being
+    // viewed). Fall back to the builder profile name, then the raw email.
     const contacterEmails = [...new Set(teamConvsRaw.map((c: any) => c.employer_email))]
-    const [{ data: eps }, { data: profs }] = contacterEmails.length > 0
-      ? await Promise.all([
-          admin.from('employer_profiles').select('email, company_name, logo_url').in('email', contacterEmails),
-          admin.from('profiles').select('email, full_name, username, avatar_url').in('email', contacterEmails),
-        ])
-      : [{ data: [] as any[] }, { data: [] as any[] }]
-    const epMap = Object.fromEntries((eps || []).map((e: any) => [e.email, e]))
+    const { data: profs } = contacterEmails.length > 0
+      ? await admin.from('profiles').select('email, full_name, username, avatar_url').in('email', contacterEmails)
+      : { data: [] as any[] }
     const prMap = Object.fromEntries((profs || []).map((p: any) => [p.email, p]))
-
-    // Stage 5c: entity-first — if a contacter owns an org (kind org/team), prefer
-    // its team_profiles name/logo. The contacter's org is NOT this conv's
-    // subject_entity_id (that's the team being viewed), so resolve email→org:
-    // auth.users (email→id) → entities.owner_user_id → team_profiles. Built as an
-    // email-keyed map (orgByEmail), mirroring epMap/prMap. auth.users is the only
-    // table indexing all org-owner emails; low-frequency admin surface — a 5d
-    // denormalization could drop this listUsers if it ever gets hot.
-    const orgByEmail = new Map<string, { team_name: string; logo_url: string | null }>()
-    if (contacterEmails.length > 0) {
-      const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
-      const emailByUserId = new Map<string, string>()
-      for (const u of authUsers) if (u.email && contacterEmails.includes(u.email)) emailByUserId.set(u.id, u.email)
-      const ownerIds = [...emailByUserId.keys()]
-      if (ownerIds.length > 0) {
-        const { data: ownerEnts } = await admin
-          .from('entities').select('id, owner_user_id').in('owner_user_id', ownerIds).in('kind', ['org', 'team'])
-        const entIds = (ownerEnts || []).map((e: any) => e.id)
-        const { data: tps } = entIds.length > 0
-          ? await admin.from('team_profiles').select('entity_id, team_name, logo_url').in('entity_id', entIds)
-          : { data: [] }
-        const tpByEnt = new Map((tps || []).map((t: any) => [t.entity_id, t]))
-        for (const e of (ownerEnts || [])) {
-          const email = emailByUserId.get(e.owner_user_id)
-          const tp = tpByEnt.get(e.id) as { team_name: string; logo_url: string | null } | undefined
-          if (email && tp) orgByEmail.set(email, { team_name: tp.team_name, logo_url: tp.logo_url ?? null })
-        }
-      }
-    }
+    const orgByEmail = await resolveOrgByEmail(admin, contacterEmails)
 
     const teamConvs = teamConvsRaw.map((c: any) => {
-      const ep = epMap[c.employer_email], pr = prMap[c.employer_email]
+      const pr = prMap[c.employer_email]
       const org = orgByEmail.get(c.employer_email)
       return {
         ...c,
         contacter: {
-          name: org?.team_name || ep?.company_name || pr?.full_name || c.employer_email,
-          logo_url: org?.logo_url || ep?.logo_url || pr?.avatar_url || null,
+          name: org?.team_name || pr?.full_name || c.employer_email,
+          logo_url: org?.logo_url || pr?.avatar_url || null,
           username: pr?.username || null,
         },
       }
@@ -196,40 +168,21 @@ export async function GET(req: Request) {
 
       const convs = data || []
 
-      // Hirer identity — Stage 5c: prefer the org's team_profiles via the conv's
-      // subject_entity_id (the hirer's org). Published-gated: builders see the org
-      // name only if it's published (parity with the employer_profiles public gate).
-      // Fall back to employer_email → employer_profiles (public-gated) for legacy/
-      // unkeyed convs (or orgs that aren't published).
+      // Hirer identity — Stage 5d: resolve via the conv's subject_entity_id (the
+      // hirer's org) → team_profiles. Published-gated: builders see the org name
+      // only if it's published (the private-hirer promise — an unpublished or
+      // legacy/unkeyed conv shows no name/logo). employer_profiles is gone.
       const subjIds = [...new Set(convs.map((c: any) => c.subject_entity_id).filter(Boolean))]
       const { data: orgTps } = subjIds.length > 0
         ? await admin.from('team_profiles').select('entity_id, team_name, logo_url, published').in('entity_id', subjIds)
         : { data: [] }
       const orgByEnt = Object.fromEntries((orgTps || []).map((t: any) => [t.entity_id, t]))
 
-      const hirerEmails = [...new Set(convs.map((c: any) => c.employer_email))]
-      const { data: hirerProfileRows } = hirerEmails.length > 0
-        ? await admin
-            .from('employer_profiles')
-            .select('email, company_name, logo_url, public')
-            .in('email', hirerEmails)
-        : { data: [] }
-
-      const hirerMap = Object.fromEntries((hirerProfileRows || []).map((e: any) => [e.email, e]))
       conversations = convs.map((conv: any) => {
         const org = conv.subject_entity_id ? orgByEnt[conv.subject_entity_id] : null
-        let employer_profile: { company_name: string | null; logo_url: string | null } | null
-        if (org && org.published) {
-          // Entity-keyed, published org → show its team identity.
-          employer_profile = { company_name: org.team_name, logo_url: org.logo_url ?? null }
-        } else {
-          const ep = hirerMap[conv.employer_email]
-          // Private hirers (and unpublished orgs): hide name + logo from builders
-          // (the dashboard promise).
-          employer_profile = ep
-            ? (ep.public ? { company_name: ep.company_name, logo_url: ep.logo_url } : { company_name: null, logo_url: null })
-            : null
-        }
+        const employer_profile = (org && org.published)
+          ? { company_name: org.team_name, logo_url: org.logo_url ?? null }
+          : null
         return { ...conv, employer_profile }
       })
     }
@@ -402,16 +355,18 @@ export async function POST(req: Request) {
     .eq('id', convId)
     .maybeSingle()
 
+  // Stage 5d: hirer identity for the notification email — resolve the org's
+  // team_profiles via subject_entity_id (published-gated), not employer_profiles.
   let hirerProfileRow: any = null
-  if (conv) {
-    const { data: ep } = await admin
-      .from('employer_profiles')
-      .select('company_name, public')
-      .eq('email', conv.employer_email)
+  if (conv && (conv as any).subject_entity_id) {
+    const { data: tp } = await admin
+      .from('team_profiles')
+      .select('team_name, published')
+      .eq('entity_id', (conv as any).subject_entity_id)
       .maybeSingle()
-    hirerProfileRow = ep
-    ;(conv as any).employer_profile = hirerProfileRow
+    if (tp && (tp as any).published) hirerProfileRow = { company_name: (tp as any).team_name, public: true }
   }
+  ;(conv as any).employer_profile = hirerProfileRow
 
   // Team conversation: when the contacter (employer_email) sends inbound, notify
   // the team's admins (fire-and-forget). Admin replies are handled by the

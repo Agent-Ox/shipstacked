@@ -67,8 +67,9 @@ export default async function HirerDashboardPage() {
   // Stage 3: load the company profile from the ORG's team_profiles row (mapped to
   // the HirerProfile shape the form expects). team_profiles has no authenticated
   // self-read RLS, so read it with the service-role client, scoped to the org the
-  // user is verified team_admin of (resolved above via self-read RLS). Pre-Stage-2
-  // hirers (no org) fall back to employer_profiles for compat until Stage 7.
+  // user is verified team_admin of (resolved above via self-read RLS). Stage 5d:
+  // the legacy employer_profiles fallback is removed — every hirer is an org owner
+  // (buyers mint kind='org'), so orgEntityId is always set for a real hirer.
   let hirerProfile: any = null
   if (orgEntityId != null) {
     const admin = createClient(
@@ -101,13 +102,6 @@ export default async function HirerDashboardPage() {
         slug: teamSlug ?? undefined,
       }
     }
-  } else {
-    const { data: ep } = await supabase
-      .from('employer_profiles')
-      .select('*')
-      .eq('email', user.email)
-      .maybeSingle()
-    hirerProfile = ep
   }
 
   const jobIds = (jobs || []).map(j => j.id)

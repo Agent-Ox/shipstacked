@@ -29,10 +29,6 @@ const TEAM_SIZES = ['1-5', '6-20', '21-50', '51-200', '200+']
 const INDUSTRIES = ['AI / Machine Learning', 'Software / SaaS', 'Fintech', 'Healthcare', 'Legal', 'Marketing / AdTech', 'E-commerce', 'Education', 'Real estate', 'Media / Content', 'Consulting', 'Other']
 const HIRING_TYPES = ['Freelance', 'Full-time', 'Both']
 
-function slugify(name: string) {
-  return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').slice(0, 40)
-}
-
 function Tag({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} style={{
@@ -154,26 +150,11 @@ export default function HirerDashboardClient({
         setHasProfile(true)
         if (body.slug) setProfile(p => ({ ...p, slug: body.slug }))
       } else {
-        // Compat: pre-Stage-2 hirer with no org — direct employer_profiles write
-        // (unchanged; migrated to an org in Stage 7).
-        const supabase = createClient()
-        const slug = profile.slug || slugify(profile.company_name)
-        const data = {
-          email, company_name: profile.company_name, slug,
-          about: profile.about, what_they_build: profile.what_they_build,
-          location: profile.location, team_size: profile.team_size,
-          website_url: profile.website_url, linkedin_url: profile.linkedin_url,
-          x_url: profile.x_url, logo_url: profile.logo_url,
-          industry: profile.industry, hiring_type: profile.hiring_type,
-          public: profile.public ?? true,
-        }
-        if (hasProfile) {
-          await supabase.from('employer_profiles').update(data).eq('email', email)
-        } else {
-          const { data: inserted } = await supabase.from('employer_profiles').insert([data]).select('id').single()
-          if (inserted?.id) setHasProfile(true)
-        }
-        setProfile(p => ({ ...p, slug }))
+        // Stage 5d-1: the legacy employer_profiles compat write is removed. Every
+        // hirer is a first-class org owner post-D2b-1 (buyers mint kind='org'), so
+        // the org branch above is the only save path. A null orgEntityId is an
+        // anomaly — surface it rather than silently writing the deprecated table.
+        throw new Error('No company profile to save — this account has no org. Contact support.')
       }
       setSaved(true)
     } catch (e: any) {

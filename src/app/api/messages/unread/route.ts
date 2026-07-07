@@ -17,7 +17,8 @@ export async function GET(req: Request) {
 
   const { user, modes, refs, profile } = await getUserState()
   const orgOffersServices = refs?.org_offers_services === true
-  if (!user) return NextResponse.json({ unread: 0, org_offers_services: false })
+  const orgPublished = refs?.org_published === true
+  if (!user) return NextResponse.json({ unread: 0, org_offers_services: false, org_published: false })
 
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -66,5 +67,5 @@ export async function GET(req: Request) {
     unread = count || 0
   }
 
-  return NextResponse.json({ unread, org_offers_services: orgOffersServices })
+  return NextResponse.json({ unread, org_offers_services: orgOffersServices, org_published: orgPublished })
 }

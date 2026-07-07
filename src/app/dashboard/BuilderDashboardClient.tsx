@@ -398,7 +398,7 @@ export default function BuilderDashboardClient({
                   {hirers.map((emp: any) => {
                     const initials = emp.company_name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
                     return (
-                      <a key={emp.id} href={"/company/" + emp.slug} style={{ display: 'block', background: '#f5f5f7', borderRadius: 12, padding: '1rem', textDecoration: 'none', transition: 'background 0.2s' }}
+                      <a key={emp.id} href={"/team/" + emp.slug} style={{ display: 'block', background: '#f5f5f7', borderRadius: 12, padding: '1rem', textDecoration: 'none', transition: 'background 0.2s' }}
                         onMouseEnter={e => (e.currentTarget.style.background = '#e8e8ed')}
                         onMouseLeave={e => (e.currentTarget.style.background = '#f5f5f7')}
                       >

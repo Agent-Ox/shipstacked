@@ -66,32 +66,19 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
     alreadyApplied = !!existing
   }
 
-  // Company link. Stage 5b: prefer the entity-keyed org identity
-  // (subject_entity_id → entities.slug); the /company/<slug> link redirects
-  // org/team entities to the unified /team/<slug> page (Stage 5a). Gate on the
-  // org's team_profiles being published (parity with the employer_profiles
-  // public=true filter). Fall back to employer_email → employer_profiles for
-  // legacy/unkeyed jobs (and agent-subject jobs, which have no team_profiles).
+  // Company link — Stage 5d: entity-keyed only. Resolve the org's slug via
+  // subject_entity_id (5b), gated on team_profiles published. The link points at
+  // the unified /team/<slug> page. Legacy/agent/unkeyed jobs simply show no
+  // company link (the employer_profiles fallback is removed).
   let companySlug: string | null = null
-  if (!job.anonymous) {
-    if (job.subject_entity_id) {
-      const { data: ent } = await admin
-        .from('entities')
-        .select('slug, team_profiles!inner(published)')
-        .eq('id', job.subject_entity_id)
-        .eq('team_profiles.published', true)
-        .maybeSingle()
-      companySlug = (ent as any)?.slug || null
-    }
-    if (!companySlug) {
-      const { data: ep } = await admin
-        .from('employer_profiles')
-        .select('slug')
-        .eq('email', job.employer_email)
-        .eq('public', true)
-        .maybeSingle()
-      companySlug = ep?.slug || null
-    }
+  if (!job.anonymous && job.subject_entity_id) {
+    const { data: ent } = await admin
+      .from('entities')
+      .select('slug, team_profiles!inner(published)')
+      .eq('id', job.subject_entity_id)
+      .eq('team_profiles.published', true)
+      .maybeSingle()
+    companySlug = (ent as any)?.slug || null
   }
 
   // Beacon 1 — JobPosting JSON-LD with shipstacked: namespace. This code

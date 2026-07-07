@@ -32,17 +32,10 @@ export default async function JobsPage() {
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
 
-  // Bulk fetch hirer logos
+  // Hirer identity — Stage 5d: entity-keyed only (subject_entity_id, written by
+  // 5b). The employer_email → employer_profiles logo fallback is removed; a job
+  // with no subject_entity_id (legacy) simply shows no company logo/link.
   const jobList = jobs || []
-  const hirerEmails = [...new Set(jobList.map((j: any) => j.employer_email))]
-  const { data: hirerProfileRows } = hirerEmails.length > 0
-    ? await admin.from('employer_profiles').select('email, logo_url, slug').in('email', hirerEmails)
-    : { data: [] }
-  const hirerMap = Object.fromEntries((hirerProfileRows || []).map((e: any) => [e.email, e]))
-
-  // Team/agent-posted jobs (subject_entity_id) — fetch the entity identity +
-  // logo so the card can show the team/agent instead of the email-based hirer.
-  // Jobs with null subject_entity_id are untouched (the existing path below).
   const subjectIds = [...new Set(jobList.map((j: any) => j.subject_entity_id).filter(Boolean))]
   let subjectMap: Record<number, { display_name: string; slug: string; kind: string; logo_url: string | null }> = {}
   if (subjectIds.length > 0) {
@@ -60,7 +53,7 @@ export default async function JobsPage() {
 
   const jobsWithLogos = jobList.map((j: any) => ({
     ...j,
-    employer_profile: hirerMap[j.employer_email] || null,
+    employer_profile: null,
     subject_profile: j.subject_entity_id ? (subjectMap[j.subject_entity_id] || null) : null,
   }))
 

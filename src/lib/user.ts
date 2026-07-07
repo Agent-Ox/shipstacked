@@ -25,6 +25,10 @@ export type EntityRefs = {
   // team_profiles has no authenticated self-read RLS.
   org_offers_services?: boolean
   org_hires?: boolean
+  // Stage 5d: the owned org's public/published state (team_profiles.published) —
+  // resolved server-side (team_profiles has no client self-read RLS) so the NavBar
+  // can gate the "View company profile" link → /team/<slug> without 404ing.
+  org_published?: boolean
 }
 
 export type ResolvedUser = {
@@ -116,6 +120,7 @@ export async function getUserState(): Promise<UserState> {
     // failure leaves the flags undefined rather than breaking mode resolution.
     let org_offers_services: boolean | undefined
     let org_hires: boolean | undefined
+    let org_published: boolean | undefined
     const teamEntityId = teamRow?.team_entity_id
     if (teamEntityId != null) {
       try {
@@ -125,12 +130,13 @@ export async function getUserState(): Promise<UserState> {
         )
         const { data: orgProfile } = await svc
           .from('team_profiles')
-          .select('offers_services, hires')
+          .select('offers_services, hires, published')
           .eq('entity_id', teamEntityId)
           .maybeSingle()
         if (orgProfile) {
           org_offers_services = (orgProfile as any).offers_services ?? undefined
           org_hires = (orgProfile as any).hires ?? undefined
+          org_published = (orgProfile as any).published ?? undefined
         }
       } catch { /* leave flags undefined — never break modes over a flag read */ }
     }
@@ -153,6 +159,7 @@ export async function getUserState(): Promise<UserState> {
       agent_slug: agentRow?.slug ?? undefined,
       org_offers_services,
       org_hires,
+      org_published,
     }
 
     return { user, modes, refs, profile, subscription }

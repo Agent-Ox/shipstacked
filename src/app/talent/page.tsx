@@ -214,15 +214,25 @@ export default async function TalentPage({ searchParams }: { searchParams: Promi
   const hasFilters = !!(filterProfession || filterAvailability || filterVerified || filterCluster || filterShipped || filterCapability)
   const totalUnfilteredCount = hasFilters ? totalPublished : profiles.length
 
-  // Fetch hirer profile to check if they have set up their company
+  // Has the member set up their company? Stage 5d: check the member's owned org
+  // (kind org/team) → team_profiles.team_name, replacing the employer_profiles lookup.
   let hasHirerProfile = false
   if (isMember && user) {
-    const { data: hirerProfile } = await admin
-      .from('employer_profiles')
-      .select('id, company_name')
-      .eq('email', user.email)
+    const { data: ownedOrg } = await admin
+      .from('entities')
+      .select('id')
+      .eq('owner_user_id', user.id)
+      .in('kind', ['org', 'team'])
+      .limit(1)
       .maybeSingle()
-    hasHirerProfile = !!(hirerProfile?.company_name)
+    if (ownedOrg) {
+      const { data: tp } = await admin
+        .from('team_profiles')
+        .select('team_name')
+        .eq('entity_id', (ownedOrg as { id: number }).id)
+        .maybeSingle()
+      hasHirerProfile = !!(tp as { team_name?: string } | null)?.team_name
+    }
   }
 
   // Fetch saved profile IDs for this hirer

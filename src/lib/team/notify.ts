@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
+import { resolveOrgByEmail } from '@/lib/org/resolve-by-email'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'
 
@@ -31,12 +32,13 @@ export async function notifyTeamAdminsOfContact(opts: {
     .maybeSingle()
   const teamName = ent?.display_name || 'your team'
 
-  // Contacter display name — company name, then builder name, then email.
-  const [{ data: ep }, { data: pr }] = await Promise.all([
-    admin.from('employer_profiles').select('company_name').eq('email', senderEmail).maybeSingle(),
+  // Contacter display name — Stage 5d: the contacter's org (team_profiles.team_name
+  // via resolveOrgByEmail), then their builder name, then the raw email.
+  const [orgByEmail, { data: pr }] = await Promise.all([
+    resolveOrgByEmail(admin, [senderEmail]),
     admin.from('profiles').select('full_name').eq('email', senderEmail).maybeSingle(),
   ])
-  const contacterName = ep?.company_name || pr?.full_name || senderEmail
+  const contacterName = orgByEmail.get(senderEmail)?.team_name || pr?.full_name || senderEmail
 
   // All admins → emails (via auth; owners may have no profiles row). Dedupe +
   // never notify the sender themselves.

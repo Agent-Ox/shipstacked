@@ -50,19 +50,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }))
 
-  // Public company profiles
-  const { data: companies } = await admin
-    .from('employer_profiles')
-    .select('slug, updated_at')
-    .eq('public', true)
-    .not('slug', 'is', null)
-
-  const companyPages: MetadataRoute.Sitemap = (companies || []).map(company => ({
-    url: `${base}/company/${company.slug}`,
-    lastModified: new Date(company.updated_at || new Date()),
-    changeFrequency: 'weekly' as const,
-    priority: 0.6,
-  }))
+  // Stage 5d: the /company/<slug> employer_profiles sitemap block is removed —
+  // hiring orgs are now published team/org entities, already sitemapped as
+  // /team/<slug> by the published-team block (Stage F). /company/[slug] is a
+  // redirect-stub, not a canonical URL.
 
   // Feed posts (individual build pages)
   const { data: posts } = await admin
@@ -158,7 +149,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticPages,
     ...profilePages,
     ...jobPages,
-    ...companyPages,
     ...feedPages,
     ...capabilityPages,
     ...teamPages,

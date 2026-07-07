@@ -4,6 +4,7 @@ import ConnectAnAgent from '@/app/components/ConnectAnAgent'
 import InviteCard from './InviteCard'
 import TeamJobsManager from './TeamJobsManager'
 import { getTeamMembers } from '@/lib/team/members'
+import { resolveOrgByEmail } from '@/lib/org/resolve-by-email'
 
 function adminClient() {
   return createClient(
@@ -86,16 +87,15 @@ export default async function TeamSection({
 
   // Resolve contacter display name for recent conversations (mirrors the
   // ?as=team listing in api/messages/route.ts).
+  // Stage 5d: contacter name via the org (team_profiles.team_name), then builder
+  // name, then email — replacing the employer_profiles lookup.
   const convEmails = [...new Set((recentConvs || []).map((c: any) => c.employer_email))]
-  const [{ data: eps }, { data: profs }] = convEmails.length > 0
-    ? await Promise.all([
-        admin.from('employer_profiles').select('email, company_name').in('email', convEmails),
-        admin.from('profiles').select('email, full_name').in('email', convEmails),
-      ])
-    : [{ data: [] as any[] }, { data: [] as any[] }]
-  const epMap = Object.fromEntries((eps || []).map((e: any) => [e.email, e]))
+  const orgByEmail = await resolveOrgByEmail(admin, convEmails)
+  const { data: profs } = convEmails.length > 0
+    ? await admin.from('profiles').select('email, full_name').in('email', convEmails)
+    : { data: [] as any[] }
   const prMap = Object.fromEntries((profs || []).map((p: any) => [p.email, p]))
-  const contacterName = (em: string) => epMap[em]?.company_name || prMap[em]?.full_name || em
+  const contacterName = (em: string) => orgByEmail.get(em)?.team_name || prMap[em]?.full_name || em
 
   const teamName = profile?.team_name || teamSlug
   const initials = teamName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()

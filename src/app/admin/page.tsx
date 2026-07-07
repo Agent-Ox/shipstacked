@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import VerifyToggle from './VerifyToggle'
@@ -36,8 +37,17 @@ export default async function AdminPage() {
     supabase.from('post_comments').select('id, created_at').order('created_at', { ascending: false }),
     supabase.from('hire_confirmations').select('*').order('created_at', { ascending: false }),
     supabase.from('applications').select('*, jobs(role_title, company_name)').order('created_at', { ascending: false }).limit(20),
-    supabase.from('employer_profiles').select('*').order('created_at', { ascending: false }),
+    // Stage 5d: hiring orgs (entities + team_profiles) replace employer_profiles.
+    // team_profiles has no cookie-client read RLS, so use the service role.
+    createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+      .from('entities').select('id, team_profiles!inner(published)').in('kind', ['org', 'team']),
   ])
+
+  // Normalize hiring orgs to the { public } shape the stats below expect.
+  const hirerOrgs = (hirerProfiles || []).map((e: any) => {
+    const tp = Array.isArray(e.team_profiles) ? e.team_profiles[0] : e.team_profiles
+    return { public: tp?.published === true }
+  })
 
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active') || []
   const cancelledThisMonth = subscriptions?.filter(s => s.status === 'cancelled' && s.updated_at >= thisMonth) || []
@@ -163,8 +173,8 @@ export default async function AdminPage() {
                 { label: 'Active job listings', value: String(activeJobListings) },
                 { label: 'Total job listings', value: String(jobs?.length || 0) },
                 { label: 'Total applications', value: String(totalApplications) },
-                { label: 'Company profiles', value: String(hirerProfiles?.length || 0) },
-                { label: 'Public profiles', value: String(hirerProfiles?.filter((e: any) => e.public).length || 0) },
+                { label: 'Company profiles', value: String(hirerOrgs.length) },
+                { label: 'Public profiles', value: String(hirerOrgs.filter((e) => e.public).length) },
               ].map(s => (
                 <div key={s.label} style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: 10 }}>
                   <p style={{ fontSize: 11, color: 'rgba(240,240,245,0.4)', marginBottom: '0.3rem' }}>{s.label}</p>

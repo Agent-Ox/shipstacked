@@ -84,7 +84,7 @@ export default function JobDetailClient({
               </h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 {!job.anonymous && companySlug ? (
-                  <Link href={`/company/${companySlug}`} style={{ fontSize: 15, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>
+                  <Link href={`/team/${companySlug}`} style={{ fontSize: 15, color: '#0071e3', textDecoration: 'none', fontWeight: 500 }}>
                     {job.company_name}
                   </Link>
                 ) : (

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server'
+import { createClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import BuilderDashboardClient from './BuilderDashboardClient'
 import DashboardShell from './DashboardShell'
@@ -33,12 +34,24 @@ async function loadBuilderProps(supabase: Awaited<ReturnType<typeof createServer
     .order('created_at', { ascending: false })
     .limit(5)
 
-  const { data: hirers } = await supabase
-    .from('employer_profiles')
-    .select('*')
-    .eq('public', true)
+  // Companies actively hiring — Stage 5d: published orgs (entities kind org/team)
+  // whose team_profiles has hires=true, replacing the employer_profiles public
+  // list. team_profiles has no cookie-client read RLS, so use the service role
+  // (published/hiring org info is public). Shape mirrors the old employer_profiles
+  // rows the builder dashboard renders (id, company_name, slug, location, what_they_build).
+  const svc = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: hiringOrgs } = await svc
+    .from('entities')
+    .select('id, slug, created_at, team_profiles!inner(team_name, location, what_they_build, published, hires)')
+    .in('kind', ['org', 'team'])
+    .eq('team_profiles.published', true)
+    .eq('team_profiles.hires', true)
     .order('created_at', { ascending: false })
     .limit(6)
+  const hirers = (hiringOrgs || []).map((e: any) => {
+    const tp = Array.isArray(e.team_profiles) ? e.team_profiles[0] : e.team_profiles
+    return { id: e.id, slug: e.slug, company_name: tp?.team_name ?? e.slug, location: tp?.location ?? null, what_they_build: tp?.what_they_build ?? null }
+  })
 
   const { data: githubData } = await supabase
     .from('github_data')
