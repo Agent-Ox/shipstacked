@@ -8,6 +8,23 @@ import { notifyTeamAdminsOfContact } from '@/lib/team/notify'
 const resend = new Resend(process.env.RESEND_API_KEY)
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://shipstacked.com'
 
+// Stage 5c: resolve the authed hirer's org entity to attribute a new conversation
+// to (subject_entity_id). Mirrors /api/jobs (5b) — a hirer IS an org owner
+// post-D2b-1 (buyers mint kind='org'; teams have kind='team'). Returns null if
+// none — callers dual-write with employer_email (don't block messaging).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveOwnedOrgId(admin: any, userId: string): Promise<number | null> {
+  const { data } = await admin
+    .from('entities')
+    .select('id')
+    .eq('owner_user_id', userId)
+    .in('kind', ['org', 'team'])
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  return (data as { id: number } | null)?.id ?? null
+}
+
 // GET — fetch conversations for current user (?as=builder|hirer),
 // or create/get one for ?new=profileId (hirer only)
 export async function GET(req: Request) {
@@ -43,6 +60,7 @@ export async function GET(req: Request) {
       .from('conversations')
       .insert({
         employer_email: user.email!,
+        subject_entity_id: await resolveOwnedOrgId(admin, user.id),
         builder_profile_id: newProfileId,
         job_id: null,
         last_message_at: new Date().toISOString(),
@@ -82,13 +100,44 @@ export async function GET(req: Request) {
       : [{ data: [] as any[] }, { data: [] as any[] }]
     const epMap = Object.fromEntries((eps || []).map((e: any) => [e.email, e]))
     const prMap = Object.fromEntries((profs || []).map((p: any) => [p.email, p]))
+
+    // Stage 5c: entity-first — if a contacter owns an org (kind org/team), prefer
+    // its team_profiles name/logo. The contacter's org is NOT this conv's
+    // subject_entity_id (that's the team being viewed), so resolve email→org:
+    // auth.users (email→id) → entities.owner_user_id → team_profiles. Built as an
+    // email-keyed map (orgByEmail), mirroring epMap/prMap. auth.users is the only
+    // table indexing all org-owner emails; low-frequency admin surface — a 5d
+    // denormalization could drop this listUsers if it ever gets hot.
+    const orgByEmail = new Map<string, { team_name: string; logo_url: string | null }>()
+    if (contacterEmails.length > 0) {
+      const { data: { users: authUsers } } = await admin.auth.admin.listUsers({ perPage: 1000 })
+      const emailByUserId = new Map<string, string>()
+      for (const u of authUsers) if (u.email && contacterEmails.includes(u.email)) emailByUserId.set(u.id, u.email)
+      const ownerIds = [...emailByUserId.keys()]
+      if (ownerIds.length > 0) {
+        const { data: ownerEnts } = await admin
+          .from('entities').select('id, owner_user_id').in('owner_user_id', ownerIds).in('kind', ['org', 'team'])
+        const entIds = (ownerEnts || []).map((e: any) => e.id)
+        const { data: tps } = entIds.length > 0
+          ? await admin.from('team_profiles').select('entity_id, team_name, logo_url').in('entity_id', entIds)
+          : { data: [] }
+        const tpByEnt = new Map((tps || []).map((t: any) => [t.entity_id, t]))
+        for (const e of (ownerEnts || [])) {
+          const email = emailByUserId.get(e.owner_user_id)
+          const tp = tpByEnt.get(e.id) as { team_name: string; logo_url: string | null } | undefined
+          if (email && tp) orgByEmail.set(email, { team_name: tp.team_name, logo_url: tp.logo_url ?? null })
+        }
+      }
+    }
+
     const teamConvs = teamConvsRaw.map((c: any) => {
       const ep = epMap[c.employer_email], pr = prMap[c.employer_email]
+      const org = orgByEmail.get(c.employer_email)
       return {
         ...c,
         contacter: {
-          name: ep?.company_name || pr?.full_name || c.employer_email,
-          logo_url: ep?.logo_url || pr?.avatar_url || null,
+          name: org?.team_name || ep?.company_name || pr?.full_name || c.employer_email,
+          logo_url: org?.logo_url || ep?.logo_url || pr?.avatar_url || null,
           username: pr?.username || null,
         },
       }
@@ -147,6 +196,17 @@ export async function GET(req: Request) {
 
       const convs = data || []
 
+      // Hirer identity — Stage 5c: prefer the org's team_profiles via the conv's
+      // subject_entity_id (the hirer's org). Published-gated: builders see the org
+      // name only if it's published (parity with the employer_profiles public gate).
+      // Fall back to employer_email → employer_profiles (public-gated) for legacy/
+      // unkeyed convs (or orgs that aren't published).
+      const subjIds = [...new Set(convs.map((c: any) => c.subject_entity_id).filter(Boolean))]
+      const { data: orgTps } = subjIds.length > 0
+        ? await admin.from('team_profiles').select('entity_id, team_name, logo_url, published').in('entity_id', subjIds)
+        : { data: [] }
+      const orgByEnt = Object.fromEntries((orgTps || []).map((t: any) => [t.entity_id, t]))
+
       const hirerEmails = [...new Set(convs.map((c: any) => c.employer_email))]
       const { data: hirerProfileRows } = hirerEmails.length > 0
         ? await admin
@@ -157,11 +217,19 @@ export async function GET(req: Request) {
 
       const hirerMap = Object.fromEntries((hirerProfileRows || []).map((e: any) => [e.email, e]))
       conversations = convs.map((conv: any) => {
-        const ep = hirerMap[conv.employer_email]
-        // Private hirers: hide name + logo from builders (the dashboard promise).
-        const employer_profile = ep
-          ? (ep.public ? { company_name: ep.company_name, logo_url: ep.logo_url } : { company_name: null, logo_url: null })
-          : null
+        const org = conv.subject_entity_id ? orgByEnt[conv.subject_entity_id] : null
+        let employer_profile: { company_name: string | null; logo_url: string | null } | null
+        if (org && org.published) {
+          // Entity-keyed, published org → show its team identity.
+          employer_profile = { company_name: org.team_name, logo_url: org.logo_url ?? null }
+        } else {
+          const ep = hirerMap[conv.employer_email]
+          // Private hirers (and unpublished orgs): hide name + logo from builders
+          // (the dashboard promise).
+          employer_profile = ep
+            ? (ep.public ? { company_name: ep.company_name, logo_url: ep.logo_url } : { company_name: null, logo_url: null })
+            : null
+        }
         return { ...conv, employer_profile }
       })
     }
@@ -237,6 +305,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'employer_email must match the authenticated user' }, { status: 403 })
     }
 
+    // Stage 5c: attribute the new conversation to the hirer's org entity
+    // (employer_email === user.email, validated above). Dual-write with
+    // employer_email; null if no entity resolves (don't block messaging).
+    const subjectEntityId = await resolveOwnedOrgId(admin, user.id)
+
     let conv: any = null
     let convError: any = null
 
@@ -255,7 +328,7 @@ export async function POST(req: Request) {
       } else {
         const { data: newConv, error } = await admin
           .from('conversations')
-          .insert([{ employer_email, builder_profile_id, job_id: null, last_message_at: new Date().toISOString() }])
+          .insert([{ employer_email, subject_entity_id: subjectEntityId, builder_profile_id, job_id: null, last_message_at: new Date().toISOString() }])
           .select().single()
         conv = newConv
         convError = error
@@ -263,7 +336,7 @@ export async function POST(req: Request) {
     } else {
       const { data: newConv, error } = await admin
         .from('conversations')
-        .upsert({ employer_email, builder_profile_id, job_id, last_message_at: new Date().toISOString() },
+        .upsert({ employer_email, subject_entity_id: subjectEntityId, builder_profile_id, job_id, last_message_at: new Date().toISOString() },
           { onConflict: 'employer_email,builder_profile_id,job_id' })
         .select().single()
       conv = newConv
