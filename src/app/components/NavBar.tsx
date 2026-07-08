@@ -196,7 +196,11 @@ export default function NavBar() {
       links.push({ label: 'Your builder profile', href: `/u/${profileUsername}` })
     }
     if (teamSlug) {
-      links.push({ label: 'Your team', href: `/team/${teamSlug}` })
+      // Label by the owned org's capability: a service team (offers_services) is
+      // "Your team"; a buyer/hiring org (offers_services=false) is "Your company".
+      // Both link to /team/<slug> (the unified page serves kind in team,org).
+      // orgOffersServices is resolved server-side via /api/messages/unread.
+      links.push({ label: orgOffersServices ? 'Your team' : 'Your company', href: `/team/${teamSlug}` })
     }
     if (agentSlug) {
       links.push({ label: 'Your agent', href: `/agent/${agentSlug}` })

@@ -28,7 +28,11 @@ export default async function TeamEditPage({ params }: { params: Promise<{ slug:
     .from('entities')
     .select('id, slug, display_name')
     .eq('slug', slug)
-    .eq('kind', 'team')
+    // Serve service teams AND hiring orgs (buyer orgs). Mirrors the display page
+    // (team/[slug]/page.tsx), which 5a widened to ['team','org']; the edit page
+    // was missed, so a buyer-org owner's "Publish" CTA 404'd. Both kinds live in
+    // team_profiles + team_admins, so the rest of this page is kind-agnostic.
+    .in('kind', ['team', 'org'])
     .maybeSingle()
   if (!entity) notFound()
 

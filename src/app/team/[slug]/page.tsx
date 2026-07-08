@@ -237,8 +237,8 @@ export default async function TeamProfilePage({ params }: { params: Promise<{ sl
           {preview && (
             <div style={{ background: 'rgba(254,188,46,0.1)', border: '1px solid rgba(254,188,46,0.3)', borderRadius: 12, padding: '0.9rem 1.25rem', marginBottom: '1.5rem' }}>
               <p style={{ fontSize: 13, color: '#fbbf24', fontWeight: 600 }}>
-                Preview — this team is not yet published. Visitors see a 404.{' '}
-                <a href={`/team/${entity.slug}/edit`} className="t-link" style={{ color: '#fbbf24', textDecoration: 'underline' }}>Publish in your team settings →</a>
+                Preview — this {profile.offers_services ? 'team' : 'company'} is not yet published. Visitors see a 404.{' '}
+                <a href={`/team/${entity.slug}/edit`} className="t-link" style={{ color: '#fbbf24', textDecoration: 'underline' }}>Publish in your {profile.offers_services ? 'team' : 'company'} settings →</a>
               </p>
             </div>
           )}

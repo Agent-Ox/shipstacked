@@ -28,7 +28,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     .from('entities')
     .select('id, slug, display_name')
     .eq('slug', slug)
-    .eq('kind', 'team')
+    // Service teams AND published hiring orgs (buyer orgs) — both in team_profiles.
+    .in('kind', ['team', 'org'])
     .maybeSingle()
   if (!entity) return apiError(404, 'Team not found')
 

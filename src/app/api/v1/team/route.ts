@@ -24,8 +24,10 @@ async function resolveTeamByOwner(db: ReturnType<typeof admin>, userId: string) 
   const { data } = await db
     .from('entities')
     .select(ENTITY_SELECT)
-    .eq('owner_user_id', userId)
-    .eq('kind', 'team')
+    // Service teams AND hiring orgs (buyer orgs) both save through team_profiles.
+    // (LIMIT 1 keeps the pre-existing single-entity assumption — a user owning
+    // both a team and an org resolves whichever comes first; multi-entity is deferred.)
+    .in('kind', ['team', 'org'])
     .limit(1)
     .maybeSingle()
   return data as { id: number; slug: string; display_name: string; owner_user_id: string } | null
@@ -92,7 +94,9 @@ export async function PATCH(req: Request) {
       .from('entities')
       .select(ENTITY_SELECT)
       .eq('id', entityId)
-      .eq('kind', 'team')
+      // Service teams AND hiring orgs — the cookie/edit-page save path. Without
+      // 'org' here a buyer-org owner's profile save + publish toggle 404'd.
+      .in('kind', ['team', 'org'])
       .maybeSingle()
     if (!ent) return apiError(404, 'Team not found')
     entity = ent as { id: number; slug: string; display_name: string; owner_user_id: string }
