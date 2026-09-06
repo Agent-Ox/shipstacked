@@ -51,16 +51,21 @@ export async function POST(req: Request) {
 
   // Ownership check — mirrors the paste publish route (publish.ts ~:145-156):
   // the entity must be owned by the current user. 403 otherwise.
+  // 'org' belongs here alongside 'team'/'agent': post-D2b-1 a buyer/hirer IS a
+  // first-class org, and hiring is the one thing an org exists to do. Omitting it
+  // 403'd every buyer, pushed them onto the browser fallback insert (which writes
+  // no subject_entity_id), and left the job invisible on the org's own page —
+  // the same kind-gate defect as the buyer edit-404 fixed in 0d9feaf.
   const { data: entity } = await admin
     .from('entities')
     .select('id, kind, slug')
     .eq('id', subject_entity_id)
     .eq('owner_user_id', user.id)
-    .in('kind', ['team', 'agent'])
+    .in('kind', ['team', 'agent', 'org'])
     .maybeSingle()
   if (!entity) {
     return NextResponse.json(
-      { error: 'subject_entity_id must reference a team or agent you own.' },
+      { error: 'subject_entity_id must reference a team, agent or company you own.' },
       { status: 403 },
     )
   }

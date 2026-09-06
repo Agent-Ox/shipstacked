@@ -47,7 +47,7 @@ function Section({ title, children }: { title: string, children: React.ReactNode
   )
 }
 
-type OwnedEntity = { id: number; slug: string; display_name: string; kind: 'team' | 'agent'; logo_url: string | null }
+type OwnedEntity = { id: number; slug: string; display_name: string; kind: 'team' | 'agent' | 'org'; logo_url: string | null }
 
 export default function PostJobForm({ hirerEmail, jobId, initialData, ownedEntities = [] }: {
   hirerEmail: string
@@ -234,9 +234,9 @@ export default function PostJobForm({ hirerEmail, jobId, initialData, ownedEntit
         {!jobId && ownedEntities.length > 0 && (
           <Section title="Post as">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-              {[{ id: null as number | null, label: 'Yourself', kind: null as 'team' | 'agent' | null }, ...ownedEntities.map(e => ({ id: e.id as number | null, label: e.display_name, kind: e.kind as 'team' | 'agent' | null }))].map(opt => {
+              {[{ id: null as number | null, label: 'Yourself', kind: null as 'team' | 'agent' | 'org' | null }, ...ownedEntities.map(e => ({ id: e.id as number | null, label: e.display_name, kind: e.kind as 'team' | 'agent' | 'org' | null }))].map(opt => {
                 const selected = subjectEntityId === opt.id
-                const icon = opt.kind === 'team' ? '👥 ' : opt.kind === 'agent' ? '🤖 ' : ''
+                const icon = opt.kind === 'team' ? '👥 ' : opt.kind === 'agent' ? '🤖 ' : opt.kind === 'org' ? '🏢 ' : ''
                 return (
                   <button
                     key={opt.id ?? 'self'}

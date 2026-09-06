@@ -1,16 +1,24 @@
 import { NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { createClient } from '@supabase/supabase-js'
+import { getEntityModes } from '@/lib/user'
 import { notifyTeamAdminsOfContact } from '@/lib/team/notify'
 
-// Contact a team (GAP 3). Anyone logged-in can message a PUBLISHED team; the
-// conversation is keyed to subject_entity_id (not a builder_profile_id), and any
-// admin of the team can read/reply (the shared inbox — see participant auth in
-// /api/messages/[id] GET and /api/messages POST).
+// Contact a team (GAP 3). The conversation is keyed to subject_entity_id (not a
+// builder_profile_id), and any admin of the team can read/reply (the shared
+// inbox — see participant auth in /api/messages/[id] GET and /api/messages POST).
+//
+// Paywalled: starting a conversation with a team requires an active Full Access
+// membership, exactly as starting one with a builder does (/api/messages POST).
+// Contact is contact — the gate does not depend on who is on the other end.
 export async function POST(req: Request) {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, modes } = await getEntityModes()
   if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  if (!modes.member) {
+    return NextResponse.json(
+      { error: 'An active subscription is required to message members' },
+      { status: 403 },
+    )
+  }
 
   const body = await req.json()
   const { team_entity_id, message } = body
@@ -61,12 +69,18 @@ export async function POST(req: Request) {
     convId = existing.id
     await admin.from('conversations').update({ last_message_at: new Date().toISOString() }).eq('id', existing.id)
   } else {
+    // A team conversation has no builder on the other end — the team IS the
+    // counterparty, carried by subject_entity_id. builder_profile_id is left
+    // unset rather than written as null: the column was NOT NULL, which made
+    // every call to this route fail the insert. See
+    // supabase/migrations/20260906_conversations_builder_profile_id_nullable.sql
+    // (readers already tolerate a null builder: /api/messages resolves the team
+    // inbox by subject_entity_id, and the hirer-side embed yields null).
     const { data: conv, error } = await admin
       .from('conversations')
       .insert([{
         employer_email: user.email!,
         subject_entity_id: team_entity_id,
-        builder_profile_id: null,
         job_id: null,
         last_message_at: new Date().toISOString(),
       }])

@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const {
     role_title, company_name, description, requirements,
     salary_range, day_rate, location, employment_type,
-    job_type, skills, timezone, urgency, hiring_for, anonymous
+    skills, timezone, urgency, hiring_for, anonymous
   } = body
 
   if (!role_title?.trim()) return NextResponse.json({ error: 'Role title required' }, { status: 400 })
@@ -55,7 +55,6 @@ export async function POST(req: Request) {
       day_rate: day_rate?.trim() || '',
       location: location || 'Remote',
       employment_type: employment_type || 'contract',
-      job_type: job_type || 'contract',
       skills: skills || [],
       timezone: timezone || 'Any',
       urgency: urgency || 'Actively hiring',
@@ -76,7 +75,7 @@ export async function POST(req: Request) {
     location: job.location,
     day_rate: job.day_rate,
     salary_range: job.salary_range,
-    job_type: job.job_type,
+    job_type: job.employment_type,
   }).then(result => {
     if (result.success) console.log('X post successful:', result.id)
     else console.error('X post failed:', result.error)

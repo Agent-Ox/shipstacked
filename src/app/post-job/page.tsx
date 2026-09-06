@@ -29,8 +29,11 @@ export default async function PostJobPage({
     redirect('/hirers#pricing')
   }
 
-  // "Post as" options — teams/agents this user OWNS (display only; the insert
-  // re-validates ownership server-side). Mirrors the paste flow's ownedEntities.
+  // "Post as" options — teams/agents/companies this user OWNS (display only; the
+  // insert re-validates ownership server-side). Mirrors the paste flow's
+  // ownedEntities. 'org' is included so a buyer's company is offered here at all:
+  // without it an org owner had no entity to post as, fell through to the
+  // browser insert, and the job was written with a null subject_entity_id.
   const admin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -39,7 +42,7 @@ export default async function PostJobPage({
     .from('entities')
     .select('id, slug, display_name, kind')
     .eq('owner_user_id', user.id)
-    .in('kind', ['team', 'agent'])
+    .in('kind', ['team', 'agent', 'org'])
   const ownedIds = (ownedRows ?? []).map((e: any) => e.id)
   const [{ data: teamLogos }, { data: agentLogos }] = ownedIds.length
     ? await Promise.all([
@@ -53,7 +56,7 @@ export default async function PostJobPage({
     id: e.id,
     slug: e.slug,
     display_name: e.display_name,
-    kind: e.kind as 'team' | 'agent',
+    kind: e.kind as 'team' | 'agent' | 'org',
     logo_url: logoByEntity.get(e.id) ?? null,
   }))
 

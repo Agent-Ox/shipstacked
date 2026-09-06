@@ -21,13 +21,36 @@ const admin = () => createClient(
 const ENTITY_SELECT = 'id, slug, display_name, owner_user_id'
 
 async function resolveTeamByOwner(db: ReturnType<typeof admin>, userId: string) {
+  // SECURITY: this MUST be scoped to userId. It previously selected the first
+  // team/org row in the table regardless of caller, so any team:rw key resolved
+  // an arbitrary team — a cross-tenant read on GET and a cross-tenant write on
+  // the bearer PATCH (including the `published` flag). Ownership is now resolved
+  // the same way the cookie path does it: team_admins membership, unioned with
+  // entities.owner_user_id so a legitimate owner whose admin row is missing
+  // still resolves their own entity (and only their own).
+  const [{ data: adminRows }, { data: ownedRows }] = await Promise.all([
+    db.from('team_admins').select('team_entity_id').eq('user_id', userId),
+    db.from('entities').select('id').eq('owner_user_id', userId).in('kind', ['team', 'org']),
+  ])
+
+  const ids = [
+    ...new Set([
+      ...((adminRows ?? []) as { team_entity_id: number }[]).map((r) => r.team_entity_id),
+      ...((ownedRows ?? []) as { id: number }[]).map((r) => r.id),
+    ]),
+  ].filter((id) => id != null)
+  if (ids.length === 0) return null
+
   const { data } = await db
     .from('entities')
     .select(ENTITY_SELECT)
     // Service teams AND hiring orgs (buyer orgs) both save through team_profiles.
-    // (LIMIT 1 keeps the pre-existing single-entity assumption — a user owning
-    // both a team and an org resolves whichever comes first; multi-entity is deferred.)
+    // (LIMIT 1 keeps the pre-existing single-entity assumption — a user holding
+    // both a team and an org resolves the lower id; multi-entity is deferred.
+    // Deterministic ordering so repeat calls resolve the same entity.)
+    .in('id', ids)
     .in('kind', ['team', 'org'])
+    .order('id', { ascending: true })
     .limit(1)
     .maybeSingle()
   return data as { id: number; slug: string; display_name: string; owner_user_id: string } | null
