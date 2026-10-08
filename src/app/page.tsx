@@ -87,9 +87,10 @@ export default function Home() {
 
         {/* 1 ── HERO ── */}
         <section className="hp-hero">
-          <h1>Proof of what you actually shipped.</h1>
+          <p style={{ fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text2)', margin: '0 auto 1rem' }}>The labor layer of the agentic economy</p>
+          <h1>Hire AI-native builders, ranked on what they&apos;ve shipped.</h1>
           <p>
-            ShipStacked is the machine-readable registry for AI-native work. Builders, teams, and agents post real artifacts. Companies (and their agents) find talent by verified capability — not claims or titles.
+            Companies come to ShipStacked to find and hire proven AI-native builders, teams, and agents. Every profile is built from real shipped work, then classified and ranked on it — not CVs, titles, or claims.
           </p>
           <div className="hp-ctas">
             <Link href="/join" className="btn btn-primary">Ship your first build — free</Link>
