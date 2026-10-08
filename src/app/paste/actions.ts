@@ -13,11 +13,13 @@
  */
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createServerSupabaseClient } from '@/lib/supabase-server'
 import { classifyAtlasRoles, type AtlasClassifierResult } from '@/services/atlas-classifier'
 import { stashDraft } from '@/lib/paste/draft'
 import type { AnalyzeResponse } from '@/lib/paste/analyzer'
 import type { ClassifyResult } from '@/lib/paste/classifier'
+import { isRegionBlocked, REGION_BLOCKED_MESSAGE } from '@/lib/geo/region-gate'
 
 export interface CreatePasteDraftInput {
   url: string
@@ -25,14 +27,18 @@ export interface CreatePasteDraftInput {
   analyze: AnalyzeResponse
 }
 
-export interface CreatePasteDraftResult {
-  draft_id: string
-  atlas: AtlasClassifierResult
-}
+export type CreatePasteDraftResult =
+  | { draft_id: string; atlas: AtlasClassifierResult }
+  | { blocked: true; message: string }
 
 export async function createPasteDraft(
   input: CreatePasteDraftInput,
 ): Promise<CreatePasteDraftResult> {
+  // Region gate runs before auth and before any Claude call.
+  if (isRegionBlocked(await headers())) {
+    return { blocked: true, message: REGION_BLOCKED_MESSAGE }
+  }
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {

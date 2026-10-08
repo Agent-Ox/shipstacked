@@ -122,7 +122,7 @@ export default function PasteForm({
       }
 
       setPhase('mapping')
-      const { draft_id } = await createPasteDraft({
+      const draft = await createPasteDraft({
         url: validation.url.toString(),
         classify: {
           source: classify.source as never,
@@ -133,6 +133,12 @@ export default function PasteForm({
         },
         analyze: analyze as never,
       })
+      if ('blocked' in draft) {
+        setError(draft.message)
+        setPhase('error')
+        return
+      }
+      const { draft_id } = draft
 
       // Carry the optional subject pin through to review so the receipt is
       // attributed to the team/agent entity (ownership re-validated at publish).

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import PasteForm from '@/components/paste/PasteForm'
+import { isRegionBlocked, REGION_BLOCKED_MESSAGE } from '@/lib/geo/region-gate'
 
 export const metadata: Metadata = {
   title: 'Paste what you built | ShipStacked',
@@ -17,6 +19,14 @@ export default async function PastePage({
 }: {
   searchParams: Promise<{ pasted_url?: string; subject?: string }>
 }) {
+  if (isRegionBlocked(await headers())) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#fbfbfd', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem' }}>
+        <p style={{ color: '#1d1d1f', fontSize: 16, margin: 0 }}>{REGION_BLOCKED_MESSAGE}</p>
+      </div>
+    )
+  }
+
   const params = await searchParams
   const pastedUrl = typeof params.pasted_url === 'string' ? params.pasted_url : ''
   // Optional subject pin (Phase: team/agent on-ramp). A team/agent owner lands
