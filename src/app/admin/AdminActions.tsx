@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { triggerHireNudge } from './actions'
 
 export default function AdminActions() {
   const [nudging, setNudging] = useState(false)
@@ -10,13 +11,8 @@ export default function AdminActions() {
     setNudging(true)
     setNudgeResult(null)
     try {
-      const res = await fetch('/api/hire-confirm/nudge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-cron-secret': 'shipstacked_cron_2026' },
-        body: JSON.stringify({})
-      })
-      const data = await res.json()
-      setNudgeResult('Nudge sent to ' + (data.nudged || 0) + ' conversations')
+      const result = await triggerHireNudge()
+      setNudgeResult(result.ok ? 'Nudge sent to ' + result.nudged + ' conversations' : 'Error: ' + result.error)
     } catch {
       setNudgeResult('Error triggering nudge')
     } finally {

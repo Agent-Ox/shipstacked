@@ -155,7 +155,7 @@ All 5 ledger items closed via record-correction or by reference to a prior commi
 
 ### F.3 Hardcoded `CRON_SECRET` in `src/app/api/hire-confirm/nudge/route.ts:6` — **DISTINCT near-term finding**
 
-- A hardcoded string constant `CRON_SECRET = 'shipstacked_cron_2026'` is present at line 6 of `src/app/api/hire-confirm/nudge/route.ts`. It gates a single cron-style nudger endpoint (low-criticality; not a JWT signing key, not a DB password). It is a secret in committed source code by definition, and the standing no-secrets rule applies.
+- A hardcoded string constant `CRON_SECRET = '<ROTATED_CRON_SECRET_REDACTED>'` is present at line 6 of `src/app/api/hire-confirm/nudge/route.ts`. It gates a single cron-style nudger endpoint (low-criticality; not a JWT signing key, not a DB password). It is a secret in committed source code by definition, and the standing no-secrets rule applies.
 - **This is a DISTINCT finding, NOT flattened into the F.2 feature-disposition pile.** It is its own small fix-in-place item (replace the constant with `process.env.CRON_SECRET!`, add the env var to Vercel, rotate the value). The fix is independent of any decision on whether `/api/hire-confirm/*` stays or goes — it is correct under any disposition.
 - **Sequencing:** should be its own small discovery-first step, scheduled BEFORE the MCP fast-follow (the post-Beacon-5 announcement step). Not acted on in this Tier 4 cycle (correctly out of Phase A scope), but explicitly NOT deferrable to the indefinite Phase B pile.
 - ~~**Status: TAGGED FOR NEAR-TERM, BEFORE MCP FAST-FOLLOW.** Its own micro-cycle.~~

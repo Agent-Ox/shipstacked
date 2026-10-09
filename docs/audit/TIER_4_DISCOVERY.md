@@ -44,7 +44,7 @@ Per Spec §6: *"Phase B investigation reveals the items are riskier/more entangl
 
 - **`src/app/admin/AdminActions.tsx:13`** — admin UI actively `fetch`'s `/api/hire-confirm/nudge` (POST cron-style nudger).
 - **`src/app/admin/page.tsx:36`** — admin page actively queries `hire_confirmations` table.
-- **`src/app/api/hire-confirm/nudge/route.ts:6`** — contains a hardcoded constant `CRON_SECRET = 'shipstacked_cron_2026'` (a secret-in-committed-code, separate concern from removal).
+- **`src/app/api/hire-confirm/nudge/route.ts:6`** — contains a hardcoded constant `CRON_SECRET = '<ROTATED_CRON_SECRET_REDACTED>'` (a secret-in-committed-code, separate concern from removal).
 - **`hire_confirmations` table state on prod:** 0 total rows, 0 confirmed (verified via read-only count query). The table is *empty* but the endpoints + admin UI references + the cron-secret leak are *not*.
 
 The "dead endpoints" framing in the Tier 0 commit was a planning assumption that doesn't survive verification. Removing the endpoints alone would break the admin UI inbound references. This is more entangled than the spec's framing implies — fully reported in §D.2 below; still **not executed**.
@@ -198,7 +198,7 @@ Files that exist:
 
 **The §6 escalation finding (per Spec §6):** these endpoints are NOT "truly dead." They're "0-rows-but-still-wired-into-admin-UI dead." Removing them in isolation breaks the two admin UI inbound references. The Tier 0 "known likely-dead" framing was a planning assumption; verification disproves it.
 
-**Adjacent finding (separate concern, not a removal-blocker):** `src/app/api/hire-confirm/nudge/route.ts:6` contains a hardcoded `CRON_SECRET = 'shipstacked_cron_2026'`. This is a secret in committed code. Low-criticality (gates a single email-nudger endpoint), but per the standing brand-free / no-secrets rule, secrets do not belong in committed source. Same concern applies whether the endpoints stay or go.
+**Adjacent finding (separate concern, not a removal-blocker):** `src/app/api/hire-confirm/nudge/route.ts:6` contains a hardcoded `CRON_SECRET = '<ROTATED_CRON_SECRET_REDACTED>'`. This is a secret in committed code. Low-criticality (gates a single email-nudger endpoint), but per the standing brand-free / no-secrets rule, secrets do not belong in committed source. Same concern applies whether the endpoints stay or go.
 
 **Honest options (each with exact change + exact reversal; NONE EXECUTED):**
 
@@ -262,7 +262,7 @@ Detailed in §D.2. Admin UI inbound references; cron-secret in committed code. R
 
 ### G.3 — Hardcoded `CRON_SECRET` in `src/app/api/hire-confirm/nudge/route.ts:6`
 
-`const CRON_SECRET = 'shipstacked_cron_2026'`. Low-criticality cron-only token, but a secret-in-committed-code by definition. The brand-free + no-secrets rule's standing form. **Flagged, NOT fixed in this beacon** (would be Phase B Option B — its own decision). Not unique to this beacon's work.
+`const CRON_SECRET = '<ROTATED_CRON_SECRET_REDACTED>'`. Low-criticality cron-only token, but a secret-in-committed-code by definition. The brand-free + no-secrets rule's standing form. **Flagged, NOT fixed in this beacon** (would be Phase B Option B — its own decision). Not unique to this beacon's work.
 
 ### G.4 — One profile row with NULL `user_id` and zero entity link (`thomasoxlee198`)
 

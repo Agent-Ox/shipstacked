@@ -14,6 +14,7 @@ import { Redis } from '@upstash/redis';
 import type { Artifact, StackElement } from '@/schemas/proof-receipt-v0.1';
 import type { AnalyzeResponse, ExtractorInput } from '@/lib/paste/analyzer';
 import stackVocab from '@/config/stack-vocab.json';
+import { pickGitHubTitle } from '@/lib/paste/title';
 
 const USER_AGENT = 'ShipStacked-Analyzer/0.1';
 const FETCH_TIMEOUT_MS = 5_000;
@@ -205,16 +206,6 @@ function extractDeploymentUrls(readme: string): string[] {
   return [...out];
 }
 
-/**
- * Pull the README's first H1 as a candidate title. Used when the repo's
- * GitHub `description` field is empty — SDK and library repos in particular
- * often leave the description blank but lead the README with a clean H1.
- */
-function readmeFirstHeading(readme: string): string | null {
-  const m = readme.match(/^#\s+(.+?)\s*$/m);
-  return m ? m[1].trim() : null;
-}
-
 function harvestCapabilities(readme: string): string[] {
   const found = new Set<string>();
   for (const { tag, match } of CAPABILITY_TERMS) {
@@ -341,8 +332,6 @@ export async function extractGitHub(input: ExtractorInput): Promise<AnalyzeRespo
   const repoFullName = meta.data?.full_name ?? `${owner}/${repo}`;
   const repoHomepage = meta.data?.homepage ?? null;
   const readmeText = readme.data?.content ? decodeBase64(readme.data.content) : '';
-  const title_draft =
-    meta.data?.description?.trim() || readmeFirstHeading(readmeText) || repoFullName;
   let description_draft = readmeText.slice(0, README_TRUNCATE);
   if (rateLimited && !readmeText) {
     description_draft =
@@ -396,6 +385,7 @@ export async function extractGitHub(input: ExtractorInput): Promise<AnalyzeRespo
 
   // Stack — dep manifests (fetch contents only for files present at top level).
   const depFetches: Array<Promise<StackElement[]>> = [];
+  let packageName: string | null = null;
   for (const f of contents.data ?? []) {
     if (f.type !== 'file') continue;
     if (f.name === 'package.json') {
@@ -403,7 +393,17 @@ export async function extractGitHub(input: ExtractorInput): Promise<AnalyzeRespo
         ghFetch<{ content: string; encoding: string }>(
           `/repos/${owner}/${repo}/contents/package.json`,
           `${base}:package.json`
-        ).then((r) => (r.data ? parsePackageJsonDeps(decodeBase64(r.data.content)) : []))
+        ).then((r) => {
+          if (!r.data) return [];
+          const content = decodeBase64(r.data.content);
+          try {
+            const name = (JSON.parse(content) as { name?: unknown }).name;
+            if (typeof name === 'string') packageName = name;
+          } catch {
+            /* ignore parse errors */
+          }
+          return parsePackageJsonDeps(content);
+        })
       );
     } else if (f.name === 'requirements.txt') {
       depFetches.push(
@@ -423,6 +423,14 @@ export async function extractGitHub(input: ExtractorInput): Promise<AnalyzeRespo
   }
   const depStacks = await Promise.all(depFetches);
   for (const s of depStacks) stack.push(...s);
+
+  // Title — chosen after the manifests so package.json `name` is a candidate.
+  const title_draft = pickGitHubTitle({
+    description: meta.data?.description,
+    readme: readmeText,
+    packageName,
+    repoFullName,
+  });
 
   // Capabilities — keyword harvest over README.
   const capabilities = harvestCapabilities(readmeText);
