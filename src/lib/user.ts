@@ -1,11 +1,13 @@
 import { createServerSupabaseClient } from './supabase-server'
 import { createClient } from '@supabase/supabase-js'
 
+const ADMIN_EMAIL = 'oxleethomas+admin@gmail.com'
+
 export type EntityModes = {
   builder: boolean        // has a profiles row
   hirer: boolean          // has an active full_access subscription (retired later; kept during transition)
   member: boolean         // has an active subscription — canonical paid-access primitive (messaging, directory)
-  admin: boolean          // user_metadata.role === 'admin'
+  admin: boolean          // email === ADMIN_EMAIL (never user_metadata — user-editable)
   team_admin: boolean     // has a row in team_admins (Phase 9)
   agent_owner: boolean    // owns at least one entity where kind='agent' (Phase 9)
 }
@@ -108,7 +110,6 @@ export async function getUserState(): Promise<UserState> {
     const profile = profileRes.data
     const teamRow = teamRes.data as any
     const agentRow = agentRes.data as any
-    const metaRole = user.user_metadata?.role
 
     const teamRel = teamRow?.team
     const team_slug = (Array.isArray(teamRel) ? teamRel[0]?.slug : teamRel?.slug) ?? undefined
@@ -145,7 +146,7 @@ export async function getUserState(): Promise<UserState> {
       builder: !!profile,
       hirer: !!subscription,
       member: !!subscription,
-      admin: metaRole === 'admin',
+      admin: user.email === ADMIN_EMAIL,
       team_admin: !!teamRow,
       agent_owner: !!agentRow,
     }

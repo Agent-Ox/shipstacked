@@ -151,7 +151,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
     }
 
-    const isAdmin = user.email === ADMIN_EMAIL || user.user_metadata?.role === 'admin'
+    // Admin is the fixed admin email only — user_metadata is user-editable
+    // (supabase.auth.updateUser) and must never grant privilege.
+    const isAdmin = user.email === ADMIN_EMAIL
     const isOwner = profile.user_id === user.id
     if (!isAdmin && !isOwner) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
